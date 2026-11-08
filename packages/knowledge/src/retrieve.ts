@@ -6,6 +6,8 @@ export interface Chunk {
   path: string;
   tags: string[];
   status: string;
+  /** Front matter `applies: always`. A policy that governs every brief, whatever words the brief uses. */
+  always: boolean;
   text: string;
   score: number;
 }
@@ -50,6 +52,7 @@ function walk(dir: string, root: string, into: Chunk[]): void {
       path: relative(root, full).split("\\").join("/"),
       tags: parsed.tags,
       status: parsed.meta.status ?? "",
+      always: parsed.meta.applies === "always",
       text: parsed.body,
       score: 0,
     });
@@ -63,23 +66,39 @@ export function loadPack(root: string): Chunk[] {
   return chunks;
 }
 
+/**
+ * The forms a word or tag can match on: itself, each part of a hyphenated compound, and a plain plural's singular.
+ * "denial-specialist" matches a brief that says "specialist", and "denials" matches the tag "denial".
+ */
+export function matchTerms(word: string): string[] {
+  const lower = word.toLowerCase();
+  const parts = lower.split("-").filter((part) => part.length > 2);
+  const forms = parts.length > 1 ? [lower, ...parts] : [lower];
+  return forms.flatMap((form) => (form.length > 3 && form.endsWith("s") && !form.endsWith("ss") ? [form, form.slice(0, -1)] : [form]));
+}
+
 export function scoreChunk(chunk: Chunk, nouns: string[]): number {
-  const wanted = new Set(nouns.map((noun) => noun.toLowerCase()));
+  const wanted = new Set(nouns.flatMap(matchTerms));
+  const hits = (word: string) => matchTerms(word).some((form) => wanted.has(form));
   let score = 0;
   for (const tag of chunk.tags) {
-    if (wanted.has(tag.toLowerCase())) score += 2;
+    if (hits(tag)) score += 2;
   }
-  if (chunk.id && wanted.has(chunk.id.toLowerCase())) score += 2;
+  if (chunk.id && hits(chunk.id)) score += 2;
   return score;
 }
 
-/** Tag overlap only. Returns at most `limit` chunks, highest score first, path as the tie break. */
-export function retrieve(chunks: Chunk[], nouns: string[], limit = 6): Chunk[] {
+/** Every chunk that applies to the brief: the always-on policies, then tag matches by score, path as the tie break. */
+export function relevant(chunks: Chunk[], nouns: string[]): Chunk[] {
   return chunks
     .map((chunk) => ({ ...chunk, score: scoreChunk(chunk, nouns) }))
-    .filter((chunk) => chunk.score > 0)
-    .sort((a, b) => b.score - a.score || a.path.localeCompare(b.path))
-    .slice(0, limit);
+    .filter((chunk) => chunk.always || chunk.score > 0)
+    .sort((a, b) => Number(b.always) - Number(a.always) || b.score - a.score || a.path.localeCompare(b.path));
+}
+
+/** The first `limit` relevant chunks. Always-on policies come first, so a short list still carries them. */
+export function retrieve(chunks: Chunk[], nouns: string[], limit = 6): Chunk[] {
+  return relevant(chunks, nouns).slice(0, limit);
 }
 
 export function citationPaths(chunks: Chunk[]): Set<string> {

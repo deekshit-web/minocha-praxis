@@ -33,8 +33,8 @@ import {
   FEATURE_C_CITATIONS,
   RULES,
   architecturePanel,
+  groundedCitations,
   implementationPanel,
-  knownCitations,
   panelCalls,
   playwrightTitles,
   prdPanel,
@@ -124,7 +124,7 @@ export function walkFeatureB(options: { record?: boolean } = {}): FeatureBRun {
 
   const prd = prdPanel();
   demand(
-    [...publishPlain(run, "prd", prd), ...prdGateIssues(prd.synthesis, prdIssues(prd.synthesis, knownCitations(), RULES))],
+    [...publishPlain(run, "prd", prd), ...prdGateIssues(prd.synthesis, prdIssues(prd.synthesis, groundedCitations(FEATURE_B_BRIEF), RULES))],
     "prd",
   );
   run.transition("prd_gate", "orchestrator");
@@ -133,7 +133,7 @@ export function walkFeatureB(options: { record?: boolean } = {}): FeatureBRun {
 
   const architecture = architecturePanel();
   const criterionIds = prd.synthesis.acceptanceCriteria.map((criterion) => criterion.id);
-  const pendingIssues = architectureIssues(architecture.synthesis, criterionIds, knownCitations(), RULES);
+  const pendingIssues = architectureIssues(architecture.synthesis, criterionIds, groundedCitations(FEATURE_B_BRIEF), RULES);
   if (!pendingIssues.includes("pending-suggestion:S-1")) {
     throw new Error(`Suggestion S-1 must stay pending until a person accepts it: ${pendingIssues.join(", ")}`);
   }
@@ -142,7 +142,7 @@ export function walkFeatureB(options: { record?: boolean } = {}): FeatureBRun {
     [
       ...reviewPanelIssues(architecture, panelCalls(architecture, FEATURE_B_BRIEF)),
       ...untestableFenceIssues(architecture),
-      ...architectureIssues(accepted, criterionIds, knownCitations(), RULES),
+      ...architectureIssues(accepted, criterionIds, groundedCitations(FEATURE_B_BRIEF), RULES),
     ],
     "architecture",
   );

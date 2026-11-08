@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { loadPack, retrieve } from "./retrieve.ts";
+import { loadPack, matchTerms, relevant, retrieve, scoreChunk } from "./retrieve.ts";
 
 const packRoot = process.env.NORTHWIND_ROOT
   ? join(process.env.NORTHWIND_ROOT, "packages/knowledge/pack")
@@ -25,4 +25,25 @@ test("Feature A left a coverage decision Feature C can cite", () => {
   assert.ok(decision);
   assert.match(decision.text, /PAT-###/);
   assert.ok(decision.tags.includes("feature-a"));
+});
+
+test("a tag matches on its hyphenated parts and a brief's plural matches the singular tag", () => {
+  assert.deepEqual(matchTerms("denial-specialist"), ["denial-specialist", "denial", "specialist"]);
+  assert.deepEqual(matchTerms("denials"), ["denials", "denial"]);
+  assert.deepEqual(matchTerms("co-50"), ["co-50"]);
+  assert.deepEqual(matchTerms("class"), ["class"]);
+  const roles = loadPack(packRoot).find((chunk) => chunk.path === "roles.md");
+  assert.ok(roles);
+  assert.ok(scoreChunk(roles, ["specialist"]) > 0);
+});
+
+test("an always-on policy is retrieved for any brief and leads a short list", () => {
+  const chunks = loadPack(packRoot);
+  assert.deepEqual(
+    chunks.filter((chunk) => chunk.always).map((chunk) => chunk.path),
+    ["phi-policy.md"],
+  );
+  assert.deepEqual(retrieve(chunks, ["unrelated"]).map((chunk) => chunk.path), ["phi-policy.md"]);
+  assert.equal(retrieve(chunks, ["co-50", "denial", "appeal", "deadline"], 2)[0]?.path, "phi-policy.md");
+  assert.equal(relevant(chunks, ["co-50"]).some((chunk) => chunk.path === "glossary.md"), false);
 });

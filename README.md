@@ -19,6 +19,7 @@ Read this before anything else.
 | Hash-bound approval | `orchestrator/src/run.ts` | An approval no longer counts once the approved document changes |
 | State machine | `orchestrator/src/states.ts` | Any transition not in the table, including a change request returning to the wrong draft |
 | Panel review | `orchestrator/src/panel.ts` | Missing seats, analysts that saw a proposal, unresolved P0 defects, quality attributes with no note |
+| Grounded citations | `harness/src/panels.ts`, `knowledge/src/retrieve.ts` | A PRD or architecture citation to a pack file that retrieval did not find relevant to the brief |
 | File fence | `orchestrator/src/fence.ts` | Writes outside the approved globs, and any fence that admits the factory, the gates, the tooling or secret files |
 | Assertion guard | `implementer/src/tree.ts` | A test-file write that deletes a required assertion id |
 | Execution gate | `orchestrator/src/method.ts` | A review that calls a red test accurate |
@@ -54,7 +55,7 @@ Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 | --- | --- |
 | `packages/domain` | The product rules: CARC table, `appealReady`, timely filing, eligibility, and the synthetic practice seed |
 | `packages/rcm` | The denial workbench: workqueue, denial detail, lead summary, eligibility, and the P0 checks run against it |
-| `packages/knowledge` | A markdown knowledge pack with front-matter tags, and tag-overlap retrieval over it |
+| `packages/knowledge` | A markdown knowledge pack with front-matter tags, and tag-overlap retrieval over it. Tags match on hyphenated parts and plurals, and a file marked `applies: always` (the PHI policy) is retrieved for every brief |
 | `packages/orchestrator` | Run state, gates, panel rules, scanners, fence and trace matrix |
 | `packages/implementer` | The fenced sandbox tree that seeds, patches and tests `appealReady` |
 | `packages/harness` | The recorded panels and a headless walk of Feature B used by the tests |
@@ -78,7 +79,7 @@ The packages are npm workspaces. Each library exports only `src/index.ts`, so ot
 
 - No live model. Wiring one into `ModelProvider` is the real test of whether the gates hold.
 - Clarifying answers and change requests do not regenerate documents.
-- Citations are checked against the files in the knowledge pack, not against what retrieval returned for the brief. Retrieval is tag overlap only, and for the Feature B brief it misses `phi-policy.md` and `roles.md`, which the PRD cites.
+- Retrieval is still tag matching, not semantic search. A brief that uses a synonym no tag carries ("clinician" for a role) finds nothing for it.
 - The isolation check looks for seat markers in prompts the harness writes itself, so it cannot catch a paraphrased leak.
 - There is still no login. The request guard stops other websites, not other local processes.
 - `FactorySession` still sequences the stages itself. A live model would need that sequencing moved into the orchestrator.
