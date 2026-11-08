@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Northwind factory</title>
+    <style>
+      :root {
+        --paper: #f3ecdf;
+        --paper-2: #fffaf3;
+        --ink: #1c1915;
+        --muted: #5e564c;
+        --line: #e3d5c3;
+        --teal: #0e6b66;
+        --teal-deep: #084743;
+        --moss: #2a6840;
+        --clay: #8d3d2c;
+        --shadow: 0 1px 0 rgba(28, 25, 21, 0.04);
+        color-scheme: light;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding-bottom: 128px;
+        background:
+          linear-gradient(180deg, rgba(14, 107, 102, 0.06), transparent 180px),
+          var(--paper);
+        color: var(--ink);
+        font: 16px/1.45 ui-sans-serif, system-ui, sans-serif;
+      }
+      header, main, aside { min-width: 0; }
+      header {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: flex-end;
+        padding: 28px 32px 12px;
+      }
+      .how {
+        margin: 0 32px 16px;
+        color: var(--muted);
+      }
+      .eyebrow, h2, .rail-kicker {
+        margin: 0;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--teal-deep);
+      }
+      h1 {
+        margin: 4px 0 0;
+        font: 40px/1.05 Palatino, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+        font-weight: 500;
+      }
+      #subtitle, .quiet { margin: 6px 0 0; color: var(--muted); }
+      .chips { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+      a.chip { color: inherit; text-decoration: none; }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--paper-2);
+        font-size: 13px;
+      }
+      .chip i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--teal);
+        display: block;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr) 300px;
+        gap: 0;
+        align-items: start;
+      }
+      .rail, .side { padding: 8px 16px 32px; }
+      .rail { border-right: 1px solid var(--line); }
+      .side { border-left: 1px solid var(--line); }
+      main { padding: 8px 28px 32px; }
+      ol { list-style: none; margin: 12px 0 0; padding: 0; }
+      .rail li {
+        display: flex;
+        gap: 8px;
+        align-items: baseline;
+        padding: 8px 10px;
+        border-left: 3px solid transparent;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .rail li b { font-weight: 650; font-size: 12px; }
+      .rail li.current {
+        border-left-color: var(--teal);
+        background: var(--paper-2);
+        color: var(--ink);
+        font-weight: 650;
+      }
+      .rail li.done { color: var(--moss); }
+      #rail-detail { margin: 8px 10px 0; }
+      .now, .card, #document, #banner, details.card {
+        background: var(--paper-2);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+      }
+      .now, #banner, #questions, .card, details.card { padding: 14px 16px; margin: 0 0 14px; }
+      .now h2 {
+        margin: 4px 0 0;
+        font: 28px/1.15 Palatino, Georgia, serif;
+        font-weight: 500;
+        letter-spacing: 0;
+        text-transform: none;
+        color: var(--ink);
+      }
+      #banner { border-color: #e7c2b8; color: var(--clay); }
+      #tab-hint { margin: 0 0 8px; }
+      #tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+      #proposed-links { display: flex; flex-wrap: wrap; gap: 8px; }
+      #document a { display: block; margin: 8px 0; color: var(--teal); }
+      #proposed-links a { text-decoration: none; }
+      #reset {
+        border: 1px solid var(--line);
+        background: var(--paper-2);
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+      #proposed-links a, #tabs button, #probe, #dock button {
+        border: 1px solid var(--line);
+        background: var(--paper-2);
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 8px 14px;
+        font: inherit;
+        cursor: pointer;
+      }
+      #tabs button[aria-selected="true"] {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #f7fffe;
+      }
+      #dock button.primary {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #f7fffe;
+        padding: 10px 18px;
+        font-weight: 650;
+      }
+      button:disabled { opacity: 0.45; cursor: not-allowed; }
+      #document { padding: 8px 18px 18px; }
+      #document h3 {
+        margin: 16px 0 6px;
+        font: 18px/1.2 Palatino, Georgia, serif;
+        font-weight: 500;
+      }
+      #document p, .card li, .card p, details.card p { margin: 0 0 6px; }
+      #document .callout {
+        margin: 12px 0;
+        padding: 4px 12px 8px;
+        border-left: 3px solid var(--teal);
+        background: #f4faf9;
+      }
+      fieldset {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        margin: 0 0 12px;
+        padding: 8px 14px 12px;
+      }
+      legend { padding: 0 6px; font-weight: 650; }
+      label { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; }
+      .side h2, details.card summary { margin-bottom: 8px; }
+      details.card summary { cursor: pointer; font-weight: 650; }
+      .card + .card, details.card { margin-top: 12px; }
+      .card ul, .card ol, details.card ol { margin: 8px 0 0; padding-left: 18px; }
+      .card li, details.card li { margin: 4px 0; }
+      .match { color: var(--moss); }
+      .miss { color: var(--clay); }
+      textarea, input[type="text"] {
+        width: 100%;
+        margin-top: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        padding: 8px;
+      }
+      .status { margin-top: 16px; color: var(--clay); }
+      #dock {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: center;
+        padding: 14px 28px;
+        background: var(--paper-2);
+        border-top: 1px solid var(--line);
+        box-shadow: 0 -8px 24px rgba(28, 25, 21, 0.06);
+      }
+      #dock p { margin: 0; }
+      #dock-title { font-weight: 650; }
+      #actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+      #comment-label { display: block; max-width: 420px; }
+      @media (max-width: 980px) {
+        header, #dock { flex-direction: column; align-items: flex-start; }
+        .layout { grid-template-columns: 1fr; }
+        .rail, .side { border: 0; }
+        #actions { justify-content: flex-start; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <p class="eyebrow">Northwind Imaging</p>
+        <h1 id="title">Factory</h1>
+        <p id="subtitle">A specialist cannot mark a CO-50 denial ready for appeal unless a clinical note and a filing deadline are both present.</p>
+      </div>
+      <div class="chips">
+        <div class="chip"><i></i><span id="mode">Recorded run</span></div>
+        <a class="chip" href="http://127.0.0.1:4173/">Denial workbench</a>
+        <a class="chip" href="http://127.0.0.1:4173/eligibility">Eligibility</a>
+        <button id="reset" type="button">Reset</button>
+      </div>
+    </header>
+    <p id="how" class="how">Both analysts returned the same document. The two drafts split on the architecture step.</p>
+    <div class="layout">
+      <aside class="rail">
+        <p class="rail-kicker">Where you are</p>
+        <ol id="rail"></ol>
+        <p id="rail-detail" class="quiet"></p>
+      </aside>
+      <main>
+        <section class="now">
+          <p class="eyebrow">Do this</p>
+          <h2 id="now-title"></h2>
+          <p id="now-body"></p>
+          <p id="latest" class="quiet" hidden></p>
+        </section>
+        <p id="banner" hidden></p>
+        <div id="questions"></div>
+        <p id="tab-hint" class="quiet" hidden></p>
+        <div id="tabs" role="tablist"></div>
+        <article id="document"></article>
+        <section id="proposed" class="card" hidden>
+          <h2>Proposed screens</h2>
+          <p class="quiet">Mockups in the workbench layout. Each one is marked Proposed. This is not the running denial workbench.</p>
+          <div id="proposed-links"></div>
+        </section>
+        <p id="status" class="status" hidden></p>
+      </main>
+      <aside class="side">
+        <section class="card">
+          <h2>Pages used</h2>
+          <p class="quiet">The brief overlapped these knowledge pages.</p>
+          <ul id="knowledge"></ul>
+          <p id="knowledge-error" class="miss" hidden></p>
+        </section>
+        <section class="card">
+          <h2>Your approvals</h2>
+          <ul id="approvals"></ul>
+        </section>
+        <details class="card">
+          <summary>What happened</summary>
+          <ol id="log"></ol>
+        </details>
+        <details class="card">
+          <summary>How this step is checked</summary>
+          <p id="method-note"></p>
+          <p id="method" class="quiet"></p>
+        </details>
+        <details class="card">
+          <summary>Try a brief that must be refused</summary>
+          <p class="quiet">A social security number stops intake. Documents already on this run stay as they are.</p>
+          <textarea id="probe-brief" rows="3">Patient SSN 123-45-6789</textarea>
+          <button id="probe" type="button">Scan this example</button>
+        </details>
+        <details class="card">
+          <summary>About this demo</summary>
+          <p>This panel is a recorded run. Priority cases are requested from the denial workbench. A browser is not launched. A green deploy gate does not start the denial workbench.</p>
+          <p>Reset asks for a second click, then clears this factory run and the workbench ready marks. The domain file stays as it is.</p>
+        </details>
+      </aside>
+    </div>
+    <div id="dock">
+      <div>
+        <p id="dock-kicker" class="quiet"></p>
+        <p id="dock-title"></p>
+        <p id="dock-reason" class="miss" hidden></p>
+        <label id="comment-label" hidden>What should change?<input id="comment" type="text" placeholder="Name PR-1" /></label>
+      </div>
+      <div id="actions"></div>
+    </div>
+    <script>
+      const STORY = [
+        { label: "Start", states: ["intake"] },
+        { label: "Questions", states: ["clarifying"] },
+        { label: "Requirements", states: ["prd_draft", "prd_gate"] },
+        { label: "Architecture", states: ["architecture_draft", "architecture_gate"] },
+        { label: "Code", states: ["implementing", "unit_loop"] },
+        { label: "Tests", states: ["test_design", "test_gate", "automating", "e2e"] },
+        { label: "Record", states: ["deploy_gate", "deployed"] },
+      ];
+      const TAB_LABEL = {
+        "proposal-a": "Draft A",
+        "proposal-b": "Draft B",
+        critiques: "Critiques",
+        synthesis: "What you approve",
+        unit: "The failure",
+        brief: "The brief",
+        deploy: "Checklist",
+        matrix: "Trace",
+      };
+      const TAB_HINT = {
+        "proposal-a": "Draft A was written without seeing draft B.",
+        "proposal-b": "Draft B was written without seeing draft A.",
+        critiques: "Each analyst judged the other draft. They did not grade their own.",
+        synthesis: "This is the combined result. Approve locks this one.",
+        unit: "The workbench already calls the fixed function. This red test is a seeded copy inside the file fence.",
+        brief: "This is the feature the factory was given. The workbench already calls the fixed function.",
+        deploy: "Recording stores a local result. It does not serve the workbench.",
+        matrix: "Each row is one requirement, the case that ran, and the screen it opened.",
+      };
+      const ACTION_LABEL = {
+        begin: "Start",
+        answers: "Continue",
+        approve: "Approve",
+        changes: "Send back",
+        "accept-suggestion": "Accept the suggestion",
+        "reject-suggestion": "Reject the suggestion",
+        repair: "Fix the failing test",
+        deploy: "Record the result",
+      };
+      const GATE_LABEL = { prd: "Requirements", architecture: "Architecture", test_cases: "Tests" };
+      const REFUSAL = {
+        "p0-red": "the priority checks are still red",
+        "prd-approval": "the requirements are not approved",
+        "architecture-approval": "the architecture is not approved",
+        "test-case-approval": "the tests are not approved",
+        "unit-red": "a unit test is still failing",
+        phi: "the brief contains patient data",
+        secrets: "a secret was found",
+      };
+
+      let view = null;
+      let activeTab = null;
+      let seenState = null;
+
+      function text(id, value) {
+        document.getElementById(id).textContent = value ?? "";
+      }
+
+      function clear(node) {
+        while (node.firstChild) node.removeChild(node.firstChild);
+      }
+
+      function plainLine(line) {
+        if (!line.startsWith("Refused: ")) return line;
+        const code = line.slice("Refused: ".length);
+        const words = REFUSAL[code];
+        return words ? "Refused: " + words + " (" + code + ")." : line;
+      }
+
+      function lineNode(line) {
+        if (line.startsWith("link:")) {
+          const rest = line.slice("link:".length);
+          const splitAt = rest.indexOf(" ");
+          const href = splitAt === -1 ? rest : rest.slice(0, splitAt);
+          const label = splitAt === -1 ? rest : rest.slice(splitAt + 1);
+          if (href.startsWith("http://") || href.startsWith("https://") || href.startsWith("/")) {
+            const anchor = document.createElement("a");
+            anchor.href = href;
+            anchor.textContent = label;
+            if (href.startsWith("http")) anchor.target = "_blank";
+            return anchor;
+          }
+        }
+        const paragraph = document.createElement("p");
+        paragraph.textContent = plainLine(line);
+        return paragraph;
+      }
+
+      function guide(next) {
+        const accept = (next.actions || []).find((action) => action.id === "accept-suggestion");
+        if (next.state === "blocked") {
+          return ["This run is stopped", next.blockedReason || "A guardrail closed the run.", "Stopped"];
+        }
+        if (next.state === "intake") {
+          return ["Check the brief", "Nothing is written until the brief is free of patient data.", "Start when the brief looks right."];
+        }
+        if (next.state === "clarifying") {
+          return ["Answer five questions", "Nothing is selected. The suggested answer is marked on each question. Choose each one, including Nobody in v1 for the override. The answers become assumptions in the requirements.", "Choose the suggested answers, then continue."];
+        }
+        if (next.state === "prd_gate" || next.state === "prd_draft") {
+          return ["Approve the requirements", "Both analysts returned the same document. Approve locks it. The three screens under the document are marked Proposed.", "Approve the requirements, or send them back."];
+        }
+        if (next.state === "architecture_gate" || next.state === "architecture_draft") {
+          const approveAction = (next.actions || []).find((action) => action.id === "approve");
+          if (accept && accept.enabled) {
+            return [
+              "Accept the suggestion, then approve",
+              "Draft A keeps the appeal rule in the screen, so the check cannot run as a unit test. Draft B places the rule in the domain package. Accept that suggestion, or reject it and send the draft back. Approve stays off until you accept.",
+              "Accept the suggestion. Approve stays off until then.",
+            ];
+          }
+          if (approveAction && !approveAction.enabled) {
+            return ["Send this architecture back", approveAction.reason || "Approve is closed.", approveAction.reason || "Send it back."];
+          }
+          return ["Approve the architecture", "The suggestion is in. The file fence now includes the domain package. Approve locks this combined result.", "Approve the architecture, or send it back."];
+        }
+        if (next.state === "unit_loop" || next.state === "implementing") {
+          return ["Fix the failing test", "The workbench already calls the fixed function. This red test is a seeded copy inside the file fence. The copy marked a CO-50 appeal ready without a clinical note. node:test is red. One patch deletes that branch.", "Fix the failing test."];
+        }
+        if (next.state === "test_gate" || next.state === "test_design") {
+          return ["Approve the tests", "The patch removed the seeded CO-50 branch that ignored a missing clinical note. The workbench was already on the fixed function. node:test passed. Each priority case comes from a scenario in the requirements.", "Approve the tests, or send them back."];
+        }
+        if (next.state === "automating" || next.state === "e2e") {
+          return ["Checking the scenarios", "The factory is requesting each priority case from the denial workbench.", "Wait for the record."];
+        }
+        if (next.state === "deploy_gate") {
+          return next.p0Green
+            ? ["Record the result", "The trace lists each requirement, the workbench case, and the screen. Recording stores a local result. It does not serve the denial workbench.", "Record the result."]
+            : ["The record is closed", "A priority case failed on the workbench, so the result stays unrecorded.", "The record stays shut until the workbench cases pass."];
+        }
+        if (next.state === "deployed") {
+          return ["The result is recorded", "This run is closed. The denial workbench is not served from this screen.", "Nothing left to approve."];
+        }
+        return ["Working", "The factory is between gates.", "Working"];
+      }
+
+      async function post(path, body) {
+        const response = await fetch(path, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Request failed.");
+        return payload;
+      }
+
+      function answersReady() {
+        const questions = (view && view.questions) || [];
+        return questions.length > 0 && questions.every((question) => document.querySelector('input[name="' + CSS.escape(question.id) + '"]:checked'));
+      }
+
+      function refreshAnswers() {
+        const button = document.querySelector('#actions button[data-action="answers"]');
+        const ready = answersReady();
+        if (button) button.disabled = !ready;
+        if (!view || view.state !== "clarifying") return;
+        const dockReason = document.getElementById("dock-reason");
+        if (view.banner) return;
+        dockReason.hidden = ready;
+        dockReason.textContent = ready ? "" : "Choose an answer for each question. The suggested one is marked, and it is not selected.";
+      }
+
+      function showStatus(message) {
+        const node = document.getElementById("status");
+        node.hidden = !message;
+        node.textContent = message || "";
+      }
+
+      async function act(action) {
+        showStatus("");
+        try {
+          render(await post("/api/session/" + encodeURIComponent(view.id) + "/act", action));
+        } catch (error) {
+          showStatus(error instanceof Error ? error.message : "Request failed.");
+        }
+      }
+
+      function preferredTab(next) {
+        if ((next.state === "unit_loop" || next.state === "implementing") && next.tabs.some((tab) => tab.id === "unit")) return "unit";
+        if (next.tabs.some((tab) => tab.id === "matrix")) return "matrix";
+        if (next.tabs.some((tab) => tab.id === "synthesis")) return "synthesis";
+        if (next.tabs.some((tab) => tab.id === "deploy")) return "deploy";
+        if (next.tabs.some((tab) => tab.id === "brief")) return "brief";
+        return next.tabs[0] ? next.tabs[0].id : null;
+      }
+
+      function render(next) {
+        view = next;
+        const resetButton = document.getElementById("reset");
+        if (resetButton.dataset.busy !== "yes") {
+          resetButton.dataset.armed = "";
+          resetButton.textContent = "Reset";
+        }
+        if (next.state !== seenState) {
+          seenState = next.state;
+          activeTab = preferredTab(next);
+        }
+        text("title", next.title);
+        text("mode", next.mode === "recorded" ? "Recorded run" : next.mode);
+        const split = next.state === "architecture_gate" || next.state === "architecture_draft";
+        text(
+          "how",
+          split
+            ? "Two drafts are written apart. Each one critiques the other. You approve only the combined result."
+            : "Both analysts returned the same document. The two drafts split on the architecture step.",
+        );
+        const words = guide(next);
+        text("now-title", words[0]);
+        text("now-body", words[1]);
+        text("dock-title", words[2]);
+        const latestLine = next.log.length ? next.log[next.log.length - 1] : "";
+        const latest = document.getElementById("latest");
+        latest.hidden = !latestLine;
+        latest.textContent = latestLine ? "Just now: " + latestLine : "";
+
+        const banner = document.getElementById("banner");
+        const bannerText = next.banner || next.blockedReason;
+        banner.hidden = !bannerText;
+        banner.textContent = bannerText || "";
+
+        const rail = document.getElementById("rail");
+        clear(rail);
+        let here = "";
+        STORY.forEach((step, index) => {
+          const items = next.rail.filter((item) => step.states.includes(item.id));
+          const status = items.some((item) => item.status === "current") ? "current" : items.length && items.every((item) => item.status === "done") ? "done" : "upcoming";
+          if (status === "current") here = items.find((item) => item.status === "current").label;
+          const row = document.createElement("li");
+          row.className = status;
+          const number = document.createElement("b");
+          number.textContent = String(index + 1);
+          const name = document.createElement("span");
+          name.textContent = step.label;
+          row.append(number, name);
+          rail.appendChild(row);
+        });
+        const currentIndex = STORY.findIndex((step) => step.states.includes(next.state));
+        text("rail-detail", here ? "You are on " + here + "." : next.state === "deployed" ? "Finished." : "");
+        text("dock-kicker", currentIndex >= 0 ? "Step " + (currentIndex + 1) + " of " + STORY.length : "");
+
+        const questions = document.getElementById("questions");
+        clear(questions);
+        if (next.questions) {
+          next.questions.forEach((question, index) => {
+            const field = document.createElement("fieldset");
+            const legend = document.createElement("legend");
+            legend.textContent = index + 1 + " of " + next.questions.length + ". " + question.prompt;
+            field.appendChild(legend);
+            const why = document.createElement("p");
+            why.className = "quiet";
+            why.textContent = question.why;
+            field.appendChild(why);
+            for (const option of question.options) {
+              const label = document.createElement("label");
+              const input = document.createElement("input");
+              input.type = "radio";
+              input.name = question.id;
+              input.value = option.id;
+              input.addEventListener("change", refreshAnswers);
+              const span = document.createElement("span");
+              span.textContent = option.id === question.defaultOptionId ? option.label + " (suggested)" : option.label;
+              label.append(input, span);
+              field.appendChild(label);
+            }
+            questions.appendChild(field);
+          });
+        }
+
+        const tabs = document.getElementById("tabs");
+        clear(tabs);
+        if (!next.tabs.some((tab) => tab.id === activeTab)) activeTab = preferredTab(next);
+        const hint = document.getElementById("tab-hint");
+        hint.hidden = !activeTab;
+        hint.textContent = TAB_HINT[activeTab] || "";
+        for (const tab of next.tabs) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.setAttribute("role", "tab");
+          button.setAttribute("aria-selected", String(tab.id === activeTab));
+          button.textContent = TAB_LABEL[tab.id] || tab.label;
+          button.addEventListener("click", () => {
+            activeTab = tab.id;
+            render(view);
+          });
+          tabs.appendChild(button);
+        }
+
+        const documentPane = document.getElementById("document");
+        clear(documentPane);
+        const selected = next.tabs.find((tab) => tab.id === activeTab);
+        if (selected) {
+          for (const block of selected.blocks) {
+            const section = document.createElement("section");
+            if (block.heading === "File fence" || block.heading === "Suggestion S-1" || block.heading === "Attempt 1" || block.heading === "Patch") section.className = "callout";
+            const heading = document.createElement("h3");
+            heading.textContent = block.heading === "Suggestion S-1" ? "Suggestion" : block.heading;
+            section.appendChild(heading);
+            for (const line of block.lines) {
+              section.appendChild(lineNode(line));
+            }
+            documentPane.appendChild(section);
+          }
+        }
+
+        const knowledge = document.getElementById("knowledge");
+        clear(knowledge);
+        if (next.knowledge.length === 0 && !next.knowledgeError) {
+          const empty = document.createElement("li");
+          empty.textContent = "No pages matched this brief.";
+          knowledge.appendChild(empty);
+        }
+        for (const item of next.knowledge) {
+          const row = document.createElement("li");
+          row.textContent = item.path;
+          knowledge.appendChild(row);
+        }
+        const knowledgeError = document.getElementById("knowledge-error");
+        knowledgeError.hidden = !next.knowledgeError;
+        knowledgeError.textContent = next.knowledgeError || "";
+
+        const approvals = document.getElementById("approvals");
+        clear(approvals);
+        for (const item of next.approvals) {
+          const row = document.createElement("li");
+          const mark = document.createElement("span");
+          mark.className = item.matches ? "match" : "miss";
+          mark.textContent = item.matches ? "Approved" : "Not yet";
+          row.append(document.createTextNode((GATE_LABEL[item.gate] || item.gate) + " · "), mark);
+          approvals.appendChild(row);
+        }
+
+        document.getElementById("comment-label").hidden = !(next.actions || []).some((action) => action.id === "changes");
+
+        const reason = (next.actions || []).map((action) => action.reason).find(Boolean) || "";
+        const dockReason = document.getElementById("dock-reason");
+        dockReason.hidden = !reason;
+        dockReason.textContent = reason;
+
+        const proposed = document.getElementById("proposed");
+        const proposedLinks = document.getElementById("proposed-links");
+        clear(proposedLinks);
+        proposed.hidden = !next.proposed || next.proposed.length === 0;
+        for (const screen of next.proposed || []) {
+          const link = document.createElement("a");
+          link.href = screen.href;
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.textContent = screen.id + " " + screen.title;
+          proposedLinks.appendChild(link);
+        }
+
+        text("method-note", next.methodNote);
+        text("method", next.method);
+
+        const actions = document.getElementById("actions");
+        clear(actions);
+        const ordered = [...(next.actions || [])].sort((a, b) => {
+          const score = (action) => (action.id === "changes" ? 2 : action.enabled ? 0 : 1);
+          return score(a) - score(b);
+        });
+        for (const action of ordered) {
+          if ((action.id === "accept-suggestion" || action.id === "reject-suggestion") && !action.enabled) continue;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.dataset.action = action.id;
+          button.textContent = ACTION_LABEL[action.id] || action.label;
+          button.disabled = action.id === "answers" ? !answersReady() : !action.enabled;
+          if (action.reason) button.title = action.reason;
+          if (action.enabled && action.id !== "changes" && action.id !== "reject-suggestion") button.className = "primary";
+          button.addEventListener("click", () => {
+            if (action.id === "answers") {
+              const choices = {};
+              for (const question of view.questions || []) {
+                const picked = document.querySelector('input[name="' + CSS.escape(question.id) + '"]:checked');
+                if (picked) choices[question.id] = picked.value;
+              }
+              act({ type: "answers", choices });
+              return;
+            }
+            if (action.id === "changes") {
+              act({ type: "changes", comment: document.getElementById("comment").value });
+              return;
+            }
+            act({ type: action.id });
+          });
+          actions.appendChild(button);
+        }
+        if (next.state === "clarifying") refreshAnswers();
+
+        const log = document.getElementById("log");
+        clear(log);
+        if (next.log.length === 0) {
+          const item = document.createElement("li");
+          item.textContent = "Nothing has happened yet.";
+          log.appendChild(item);
+        }
+        for (const line of next.log) {
+          const item = document.createElement("li");
+          item.textContent = line;
+          log.appendChild(item);
+        }
+      }
+
+      document.getElementById("probe").addEventListener("click", () => {
+        act({ type: "probe", brief: document.getElementById("probe-brief").value });
+      });
+
+      document.getElementById("reset").addEventListener("click", async () => {
+        const resetButton = document.getElementById("reset");
+        if (resetButton.dataset.armed !== "yes") {
+          resetButton.dataset.armed = "yes";
+          resetButton.textContent = "Confirm reset";
+          return;
+        }
+        resetButton.dataset.busy = "yes";
+        resetButton.disabled = true;
+        try {
+          seenState = null;
+          render(await post("/api/reset", {}));
+          resetButton.dataset.armed = "";
+          resetButton.textContent = "Reset";
+        } catch (error) {
+          showStatus(error instanceof Error ? error.message : "Reset failed.");
+        } finally {
+          resetButton.dataset.busy = "";
+          resetButton.disabled = false;
+        }
+      });
+
+      post("/api/session", {})
+        .then(render)
+        .catch((error) => showStatus(error instanceof Error ? error.message : "The factory did not start."));
+    </script>
+  </body>
+</html>

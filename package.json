@@ -1,0 +1,10 @@
+{
+  "name": "northwind-factory",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "harness": "node scripts/harness.mjs",
+    "factory": "node scripts/factory.mjs",
+    "rcm": "node scripts/rcm.mjs"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "@northwind/harness",
+  "private": true,
+  "type": "module"
+}

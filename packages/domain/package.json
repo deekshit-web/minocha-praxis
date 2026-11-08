@@ -1,0 +1,5 @@
+{
+  "name": "@northwind/domain",
+  "private": true,
+  "type": "module"
+}

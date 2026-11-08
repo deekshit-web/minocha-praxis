@@ -1,0 +1,5 @@
+{
+  "name": "@northwind/factory",
+  "private": true,
+  "type": "module"
+}
