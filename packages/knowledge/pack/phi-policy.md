@@ -8,7 +8,7 @@ status: demo
 
 Allowed identifiers are `PAT-###`, `CLM-###`, and `DOC-###`.
 
-Intake, diffs, seed data, and deploy are scanned for:
+Intake briefs, diffs, seed data, and everything a run stores before it is recorded are scanned for:
 
 - a social security number shaped `###-##-####`
 - an email address

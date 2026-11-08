@@ -52,7 +52,7 @@ export function traceMatrix(input: {
         detail = "No case cites this scenario.";
       } else if (testCase.priority !== "P0") {
         status = "not-gated";
-        detail = "This case is not a deploy gate.";
+        detail = "This case does not gate the record.";
       } else if (!result) {
         status = "failed";
         detail = "This priority case did not run.";

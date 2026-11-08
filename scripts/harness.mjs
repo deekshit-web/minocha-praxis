@@ -2,9 +2,9 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildSync } from "esbuild";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const esbuild = join(root, "tools/esbuild/esbuild");
 const out = join(root, "runs/harness");
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
@@ -24,10 +24,8 @@ for (const name of ["domain", "knowledge", "orchestrator", "harness", "implement
 const bundled = [];
 for (const file of files) {
   const outfile = join(out, `${bundled.length}.test.mjs`);
-  const result = spawnSync(esbuild, [file, "--bundle", "--platform=node", "--format=esm", `--outfile=${outfile}`], {
-    stdio: "inherit",
-  });
-  if (result.status !== 0) process.exit(result.status ?? 1);
+  // The implementer runs esbuild itself, and esbuild cannot be bundled.
+  buildSync({ entryPoints: [file], bundle: true, platform: "node", format: "esm", outfile, external: ["esbuild"] });
   bundled.push(outfile);
 }
 

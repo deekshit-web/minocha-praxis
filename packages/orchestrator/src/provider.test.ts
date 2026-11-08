@@ -5,7 +5,7 @@ import { hashValue } from "./hash.ts";
 import { isolationIssues } from "./panel.ts";
 import { FixturePlayer, playPanel, recordedLines, UnconfiguredModel } from "./provider.ts";
 import { CARC_RULES } from "../../domain/src/carc.ts";
-import { FEATURE_B_BRIEF, KNOWN_CITATIONS, architecturePanel, prdPanel, questionPanel } from "../../harness/src/panels.ts";
+import { FEATURE_B_BRIEF, architecturePanel, knownCitations, prdPanel, questionPanel } from "../../harness/src/panels.ts";
 
 test("the fixture player serves five seats and then refuses another call", () => {
   const player = new FixturePlayer(recordedLines(questionPanel()));
@@ -34,7 +34,7 @@ test("analyst prompts carry the brief and neither proposal", () => {
   assert.match(played.calls[4]?.prompt ?? "", /<<CRITIQUE_OF_A>>/);
   assert.match(played.calls[4]?.prompt ?? "", /<<CRITIQUE_OF_B>>/);
   assert.equal(hashValue(played.panel.synthesis), hashValue(prdPanel().synthesis));
-  assert.equal(prdGateIssues(played.panel.synthesis, prdIssues(played.panel.synthesis, KNOWN_CITATIONS, CARC_RULES)).length, 0);
+  assert.equal(prdGateIssues(played.panel.synthesis, prdIssues(played.panel.synthesis, knownCitations(), CARC_RULES)).length, 0);
 });
 
 test("a live model is not configured for this demo", () => {
@@ -45,6 +45,15 @@ test("a live model is not configured for this demo", () => {
 
 test("one live implementation panel stops before a draft is stored", () => {
   assert.throws(() => playPanel(new UnconfiguredModel(), "implementation", FEATURE_B_BRIEF), /model-not-configured/);
+});
+
+test("a citation must name a file that is in the knowledge pack", () => {
+  const known = knownCitations();
+  assert.ok(known.has("pack/phi-policy.md"));
+  assert.equal(known.has("pack/gone.md"), false);
+  const prd = prdPanel().synthesis;
+  const issues = prdIssues({ ...prd, citations: [...prd.citations, "pack/gone.md"] }, known, CARC_RULES);
+  assert.deepEqual(issues, ["missing-citation:pack/gone.md"]);
 });
 
 test("the architecture fixture keeps the file-fence disagreement", () => {

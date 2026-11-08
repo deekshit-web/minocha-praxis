@@ -1,6 +1,9 @@
+import { join } from "node:path";
 import { CARC_RULES, carcRule, type CarcCode } from "../../domain/src/carc.ts";
+import { citationPaths, loadPack } from "../../knowledge/src/retrieve.ts";
 import type { Architecture, ImplementationPlan, Prd, QuestionSet, TestCaseSet } from "../../orchestrator/src/documents.ts";
 import { STAGE_METHODS, type AttributeFinding } from "../../orchestrator/src/method.ts";
+import { repoRoot } from "../../orchestrator/src/paths.ts";
 import {
   SEAT,
   buildSeatPrompt,
@@ -13,14 +16,10 @@ import {
 export const FEATURE_B_BRIEF =
   "On CO-50 medical-necessity denials, the specialist must not mark the appeal packet ready unless a clinical-note reference and a filing-deadline date are both present.";
 
-export const KNOWN_CITATIONS = new Set([
-  "pack/carc-demo.md",
-  "pack/payer-northwind.md",
-  "pack/phi-policy.md",
-  "pack/roles.md",
-  "pack/decisions/ADR-001-patient-and-coverage.md",
-  "pack/patterns/detail-checklist.md",
-]);
+/** A document may cite any file in the knowledge pack. It is read from disk, so a deleted or renamed file stops counting. */
+export function knownCitations(): Set<string> {
+  return citationPaths(loadPack(join(repoRoot(), "packages/knowledge/pack")));
+}
 
 export const FEATURE_C_CITATIONS = ["pack/decisions/ADR-001-patient-and-coverage.md"];
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { appealReady, appealReadyBuggy, buildSeed, co50MissingNoteSample } from "../../domain/src/index.ts";
-import { applyDeploy } from "../../orchestrator/src/deploy.ts";
+import { applyRecord } from "../../orchestrator/src/record.ts";
 import { automationIssues } from "../../orchestrator/src/documents.ts";
 import { fenceViolations } from "../../orchestrator/src/fence.ts";
 import { hashValue } from "../../orchestrator/src/hash.ts";
@@ -17,15 +17,15 @@ import {
   playwrightTitles,
   testCasePanel,
 } from "./panels.ts";
-import { blockSsn, deployInput, featureCCitesFeatureA, stallRun, synthesisHash, walkFeatureB } from "./walk.ts";
+import { blockSsn, featureCCitesFeatureA, recordInput, stallRun, synthesisHash, walkFeatureB } from "./walk.ts";
 
 function hashOfPanel(panel: unknown): string {
   return hashValue(panel);
 }
 
-test("Feature B walks every gate to deployed and approves the synthesis", () => {
+test("Feature B walks every gate to recorded and approves the synthesis", () => {
   const { run, unitLog, droppedCases } = walkFeatureB();
-  assert.equal(run.state, "deployed");
+  assert.equal(run.state, "recorded");
   assert.match(unitLog[0]!, /AC-CO50-NOTE/);
   assert.match(unitLog[1]!, /passed/);
   assert.ok(droppedCases.includes("SCN-404"));
@@ -87,26 +87,26 @@ test("dropping a P0 id from the Playwright titles fails the automation check", (
   assert.ok(automationIssues(aligned.cases, titles).includes("p0-without-test:TC-2"));
 });
 
-test("deploy stays on the gate while a P0 is red, then deploys when it is green", () => {
-  const { run } = walkFeatureB({ deploy: false });
-  assert.equal(run.state, "deploy_gate");
-  const red = applyDeploy(run, deployInput(run, { unitGreen: true, p0Green: false }));
+test("the run stays on the record gate while a P0 is red, then records when it is green", () => {
+  const { run } = walkFeatureB({ record: false });
+  assert.equal(run.state, "record_gate");
+  const red = applyRecord(run, recordInput(run, { unitGreen: true, p0Green: false }));
   assert.deepEqual(red, { ok: false, reasons: ["p0-red"] });
-  assert.equal(run.state, "deploy_gate");
-  const green = applyDeploy(run, deployInput(run, { unitGreen: true, p0Green: true }));
+  assert.equal(run.state, "record_gate");
+  const green = applyRecord(run, recordInput(run, { unitGreen: true, p0Green: true }));
   assert.equal(green.ok, true);
-  assert.equal(run.state, "deployed");
+  assert.equal(run.state, "recorded");
 });
 
-test("deploy refuses a red unit run and scans what the run produced, not the seed", () => {
-  const { run } = walkFeatureB({ deploy: false });
-  assert.deepEqual(applyDeploy(run, deployInput(run, { unitGreen: false, p0Green: true })), { ok: false, reasons: ["unit-red"] });
+test("recording refuses a red unit run and scans what the run produced, not the seed", () => {
+  const { run } = walkFeatureB({ record: false });
+  assert.deepEqual(applyRecord(run, recordInput(run, { unitGreen: false, p0Green: true })), { ok: false, reasons: ["unit-red"] });
   run.putArtifact("code.diff", "+ // call the patient at 415-555-0134\n+ const apiKey = sk-abcdef123456;");
-  assert.deepEqual(applyDeploy(run, deployInput(run, { unitGreen: true, p0Green: true })), {
+  assert.deepEqual(applyRecord(run, recordInput(run, { unitGreen: true, p0Green: true })), {
     ok: false,
     reasons: ["phi", "secrets"],
   });
-  assert.equal(run.state, "deploy_gate");
+  assert.equal(run.state, "record_gate");
 });
 
 test("Feature C cites the coverage decision written for Feature A", () => {
@@ -117,7 +117,7 @@ test("the synthetic seed has no PHI and no secret", () => {
   assert.deepEqual(findPhi(JSON.stringify(buildSeed())), []);
 });
 
-test("deployed cannot jump back to intake", () => {
+test("recorded cannot jump back to intake", () => {
   const { run } = walkFeatureB();
   assert.throws(() => run.transition("intake", "agent"), TransitionError);
 });

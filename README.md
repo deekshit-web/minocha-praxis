@@ -25,7 +25,7 @@ Read this before anything else.
 | Mutation oracle | `orchestrator/src/method.ts` | A test case that still passes with the known bug present |
 | Stall detection | `orchestrator/src/stall.ts` | A repeated diff-and-failure fingerprint, or a third failing attempt |
 | Intake scan | `orchestrator/src/phi.ts` | A brief containing an SSN, email, phone number, MRN or labelled date of birth |
-| Deploy gate | `orchestrator/src/deploy.ts`, `harness/src/walk.ts` | Stale approvals, a red unit run, a red P0 case, or PHI or secrets anywhere in the run's stored output |
+| Record gate | `orchestrator/src/record.ts`, `harness/src/walk.ts` | Stale approvals, a red unit run, a red P0 case, or PHI or secrets anywhere in the run's stored output |
 | Request guard | `rcm/src/workbench.ts` | On both servers, a `Host` that is not loopback, and a POST whose `Origin` is another site |
 
 The unit loop is also real. The implementer seeds a sandbox copy under `runs/implementer/`, bundles the test with esbuild, and runs it under `node:test`. The P0 cases run against a live workbench server.
@@ -34,24 +34,17 @@ The PHI and secret scanners are regex demos. They do not detect names, unlabelle
 
 ## Running it
 
-You need Node 22 on Linux x64. The repo ships a pinned esbuild 0.15.18 binary in `tools/esbuild/`, so the scripts have no other dependencies. They do not run on macOS, Windows or ARM yet.
-
-```sh
-npm run harness   # bundle and run every *.test.ts under node:test
-npm run rcm       # denial workbench on http://127.0.0.1:4173
-npm run factory   # factory UI on http://127.0.0.1:4317
-```
-
-Without npm, run the same scripts directly, for example `node scripts/harness.mjs`.
-
-For the full demo, start the workbench first, then the factory. If the workbench runs somewhere else, set `NORTHWIND_WORKBENCH` (for example `http://127.0.0.1:5173`) when starting the factory. In the factory, step through Begin intake → answers → approve PRD → accept suggestion S-1 → approve architecture → apply the repair → approve tests → record. The trace links open the matching workbench pages. Reset clears the factory session, its sandbox and the workbench ready marks.
-
-esbuild strips types without checking them, so type errors only show up in the typecheck. It is the only step that needs installed packages:
+You need Node 22 and npm. esbuild and TypeScript are dev dependencies; npm installs the right esbuild build for your platform.
 
 ```sh
 npm install
-npm run typecheck
+npm run harness     # bundle and run every *.test.ts under node:test
+npm run typecheck   # esbuild strips types without checking them, so this is the only type check
+npm run rcm         # denial workbench on http://127.0.0.1:4173
+npm run factory     # factory UI on http://127.0.0.1:4317
 ```
+
+For the full demo, start the workbench first, then the factory. If the workbench runs somewhere else, set `NORTHWIND_WORKBENCH` (for example `http://127.0.0.1:5173`) when starting the factory. In the factory, step through Begin intake → answers → approve PRD → accept suggestion S-1 → approve architecture → apply the repair → approve tests → record. The trace links open the matching workbench pages. Reset clears the factory session, its sandbox and the workbench ready marks.
 
 Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 
@@ -65,7 +58,7 @@ Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 | `packages/orchestrator` | Run state, gates, panel rules, scanners, fence and trace matrix |
 | `packages/implementer` | The fenced sandbox tree that seeds, patches and tests `appealReady` |
 | `packages/harness` | The recorded panels and a headless walk of Feature B used by the tests |
-| `packages/factory` | The HTTP server and single-page UI that drive a run step by step |
+| `packages/factory` | The HTTP server and single-page UI that drive a run step by step. `session.ts` runs the stages; `view.ts` turns run state into what the page shows |
 
 Packages import each other by relative path (`../../orchestrator/src/...`). The `package.json` names are labels, not installed workspaces.
 
@@ -80,6 +73,7 @@ Packages import each other by relative path (`../../orchestrator/src/...`). The 
 
 - No live model. Wiring one into `ModelProvider` is the real test of whether the gates hold.
 - Clarifying answers and change requests do not regenerate documents.
+- Citations are checked against the files in the knowledge pack, not against what retrieval returned for the brief. Retrieval is tag overlap only, and for the Feature B brief it misses `phi-policy.md` and `roles.md`, which the PRD cites.
 - The isolation check looks for seat markers in prompts the harness writes itself, so it cannot catch a paraphrased leak.
 - There is still no login. The request guard stops other websites, not other local processes.
-- `packages/factory/src/session.ts` mixes orchestration with view rendering.
+- `FactorySession` still sequences the stages itself. A live model would need that sequencing moved into the orchestrator.

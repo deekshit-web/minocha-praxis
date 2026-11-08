@@ -287,7 +287,7 @@
         </details>
         <details class="card">
           <summary>About this demo</summary>
-          <p>This panel is a recorded run. Priority cases are requested from the denial workbench. A browser is not launched. A green deploy gate does not start the denial workbench.</p>
+          <p>This panel is a recorded run. Priority cases are requested from the denial workbench. A browser is not launched. A green record gate does not start the denial workbench.</p>
           <p>Reset asks for a second click, then clears this factory run and the workbench ready marks. The domain file stays as it is.</p>
         </details>
       </aside>
@@ -309,7 +309,7 @@
         { label: "Architecture", states: ["architecture_draft", "architecture_gate"] },
         { label: "Code", states: ["implementing", "unit_loop"] },
         { label: "Tests", states: ["test_design", "test_gate", "automating", "e2e"] },
-        { label: "Record", states: ["deploy_gate", "deployed"] },
+        { label: "Record", states: ["record_gate", "recorded"] },
       ];
       const TAB_LABEL = {
         "proposal-a": "Draft A",
@@ -318,7 +318,7 @@
         synthesis: "What you approve",
         unit: "The failure",
         brief: "The brief",
-        deploy: "Checklist",
+        record: "Checklist",
         matrix: "Trace",
       };
       const TAB_HINT = {
@@ -328,7 +328,7 @@
         synthesis: "This is the combined result. Approve locks this one.",
         unit: "The workbench already calls the fixed function. This red test is a seeded copy inside the file fence.",
         brief: "This is the feature the factory was given. The workbench already calls the fixed function.",
-        deploy: "Recording stores a local result. It does not serve the workbench.",
+        record: "Recording stores a local result. It does not serve the workbench.",
         matrix: "Each row is one requirement, the case that ran, and the screen it opened.",
       };
       const ACTION_LABEL = {
@@ -339,7 +339,7 @@
         "accept-suggestion": "Accept the suggestion",
         "reject-suggestion": "Reject the suggestion",
         repair: "Fix the failing test",
-        deploy: "Record the result",
+        record: "Record the result",
       };
       const GATE_LABEL = { prd: "Requirements", architecture: "Architecture", test_cases: "Tests" };
       const REFUSAL = {
@@ -427,12 +427,12 @@
         if (next.state === "automating" || next.state === "e2e") {
           return ["Checking the scenarios", "The factory is requesting each priority case from the denial workbench.", "Wait for the record."];
         }
-        if (next.state === "deploy_gate") {
+        if (next.state === "record_gate") {
           return next.p0Green
             ? ["Record the result", "The trace lists each requirement, the workbench case, and the screen. Recording stores a local result. It does not serve the denial workbench.", "Record the result."]
             : ["The record is closed", "A priority case failed on the workbench, so the result stays unrecorded.", "The record stays shut until the workbench cases pass."];
         }
-        if (next.state === "deployed") {
+        if (next.state === "recorded") {
           return ["The result is recorded", "This run is closed. The denial workbench is not served from this screen.", "Nothing left to approve."];
         }
         return ["Working", "The factory is between gates.", "Working"];
@@ -484,7 +484,7 @@
         if ((next.state === "unit_loop" || next.state === "implementing") && next.tabs.some((tab) => tab.id === "unit")) return "unit";
         if (next.tabs.some((tab) => tab.id === "matrix")) return "matrix";
         if (next.tabs.some((tab) => tab.id === "synthesis")) return "synthesis";
-        if (next.tabs.some((tab) => tab.id === "deploy")) return "deploy";
+        if (next.tabs.some((tab) => tab.id === "record")) return "record";
         if (next.tabs.some((tab) => tab.id === "brief")) return "brief";
         return next.tabs[0] ? next.tabs[0].id : null;
       }
@@ -543,7 +543,7 @@
           rail.appendChild(row);
         });
         const currentIndex = STORY.findIndex((step) => step.states.includes(next.state));
-        text("rail-detail", here ? "You are on " + here + "." : next.state === "deployed" ? "Finished." : "");
+        text("rail-detail", here ? "You are on " + here + "." : next.state === "recorded" ? "Finished." : "");
         text("dock-kicker", currentIndex >= 0 ? "Step " + (currentIndex + 1) + " of " + STORY.length : "");
 
         const questions = document.getElementById("questions");

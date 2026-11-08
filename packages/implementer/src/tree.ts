@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { buildSync } from "esbuild";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
 import { fenceViolations } from "../../orchestrator/src/fence.ts";
@@ -131,11 +132,10 @@ export class FeatureBTree {
     readonly root: string,
     private readonly fence: string[],
     private readonly assertionIds: string[],
-    private readonly esbuild: string,
   ) {}
 
   static seed(root: string, fence: string[], assertionIds: string[], repoRoot: string): FeatureBTree {
-    const tree = new FeatureBTree(root, fence, assertionIds, join(repoRoot, "tools/esbuild/esbuild"));
+    const tree = new FeatureBTree(root, fence, assertionIds);
     const carc = readFileSync(join(repoRoot, CARC), "utf8");
     for (const [file, contents] of [
       [CARC, carc],
@@ -188,11 +188,10 @@ export class FeatureBTree {
   /** Bundle the seeded test with esbuild and run it under node:test. Vitest is not installed. */
   test(): UnitRun {
     const outfile = join(this.root, "unit.test.mjs");
-    const bundled = spawnSync(this.esbuild, [join(this.root, TEST), "--bundle", "--platform=node", "--format=esm", `--outfile=${outfile}`], {
-      encoding: "utf8",
-    });
-    if (bundled.status !== 0) {
-      return { passed: false, output: `${bundled.stdout ?? ""}${bundled.stderr ?? ""}`.trim() };
+    try {
+      buildSync({ entryPoints: [join(this.root, TEST)], bundle: true, platform: "node", format: "esm", outfile, logLevel: "silent" });
+    } catch (error) {
+      return { passed: false, output: error instanceof Error ? error.message : String(error) };
     }
     const env = { ...process.env };
     // The harness itself is node --test. A child inherits NODE_TEST_CONTEXT and then skips the file, exiting 0.
