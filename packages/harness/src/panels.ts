@@ -324,7 +324,7 @@ function architectureBody(fence: string[], moduleName: string, testKind: "unit" 
 }
 
 export function architecturePanel(): ReviewPanel<Architecture> {
-  const proposalA = architectureBody(["apps/rcm/**"], "DenialDetail", "e2e", "reject", "");
+  const proposalA = architectureBody(["packages/rcm/**"], "DenialDetail", "e2e", "reject", "");
   proposalA.modules = [{ name: "DenialDetail", responsibility: "Decide readiness in the component and render the checklist." }];
   proposalA.requirementMap = proposalA.requirementMap.map((item) => ({
     ...item,
@@ -332,14 +332,14 @@ export function architecturePanel(): ReviewPanel<Architecture> {
     testKind: "e2e" as const,
   }));
   const proposalB = architectureBody(
-    ["packages/domain/**", "apps/rcm/**"],
+    ["packages/domain/**", "packages/rcm/**"],
     "AppealReadiness",
     "unit",
     "pending",
     "",
   );
   const synthesis = architectureBody(
-    ["packages/domain/**", "apps/rcm/**"],
+    ["packages/domain/**", "packages/rcm/**"],
     "AppealReadiness",
     "unit",
     "pending",
@@ -512,6 +512,6 @@ export const RULES = CARC_RULES;
 export function leakedAnalystPrompt(brief: string): PanelCall[] {
   const calls = panelCalls(architecturePanel(), brief);
   const analystB = calls.find((call) => call.role === "analystB")!;
-  analystB.prompt = `${analystB.prompt}\n${SEAT.proposalA}\n{"fileFence":["apps/rcm/**"]}`;
+  analystB.prompt = `${analystB.prompt}\n${SEAT.proposalA}\n{"fileFence":["packages/rcm/**"]}`;
   return calls;
 }

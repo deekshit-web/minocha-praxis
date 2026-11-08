@@ -28,11 +28,24 @@ export function matchGlob(file: string, pattern: string): boolean {
   return globToRegExp(pattern).test(file);
 }
 
+/** The factory, its gates, and the tooling that runs them. The implementer never writes here. */
+export const PROTECTED_ROOTS = [
+  "packages/factory",
+  "packages/orchestrator",
+  "packages/implementer",
+  "packages/harness",
+  "scripts",
+  "tools",
+] as const;
+
+function namesProtectedRoot(path: string): boolean {
+  return PROTECTED_ROOTS.some((root) => path === root || path.startsWith(`${root}/`));
+}
+
 export function isForbiddenPath(file: string): boolean {
   const normalized = file.replaceAll("\\", "/").replace(/^\.\//, "");
   return (
-    normalized === "apps/factory" ||
-    normalized.startsWith("apps/factory/") ||
+    namesProtectedRoot(normalized) ||
     normalized === ".env" ||
     normalized.includes("/.env") ||
     normalized.startsWith(".env") ||
@@ -58,18 +71,17 @@ export function fenceViolations(files: string[], fence: string[]): FenceViolatio
   return violations;
 }
 
-const FENCE_PROBES = ["apps/factory/src/page.tsx", ".env"];
+const FENCE_PROBES = [...PROTECTED_ROOTS.map((root) => `${root}/src/index.ts`), ".env"];
 
 /**
- * A pattern is illegal when it is a secret path, names the factory app, or matches those probes.
- * A product glob such as apps/rcm/** stays legal; the diff check still rejects secret files inside it.
+ * A pattern is illegal when it is a secret path, names a protected root, or matches those probes.
+ * A product glob such as packages/rcm/** stays legal; the diff check still rejects secret files inside it.
  */
 export function fencePatternIssues(fence: string[]): string[] {
   const issues: string[] = [];
   for (const pattern of fence) {
-    const namesFactory = pattern === "apps/factory" || pattern.startsWith("apps/factory/");
     const admitsProbe = FENCE_PROBES.some((probe) => matchGlob(probe, pattern));
-    if (namesFactory || isForbiddenPath(pattern) || admitsProbe) issues.push(`fence-admits:${pattern}`);
+    if (isForbiddenPath(pattern) || admitsProbe) issues.push(`fence-admits:${pattern}`);
   }
   return issues;
 }

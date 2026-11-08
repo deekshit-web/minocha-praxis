@@ -50,7 +50,7 @@ test("one live implementation panel stops before a draft is stored", () => {
 test("the architecture fixture keeps the file-fence disagreement", () => {
   const played = playPanel(new FixturePlayer(recordedLines(architecturePanel())), "architecture", FEATURE_B_BRIEF);
   assert.equal(isolationIssues(played.calls).length, 0);
-  assert.deepEqual(played.panel.proposalA.fileFence, ["apps/rcm/**"]);
+  assert.deepEqual(played.panel.proposalA.fileFence, ["packages/rcm/**"]);
   assert.ok(played.panel.synthesis.fileFence.includes("packages/domain/**"));
   assert.equal(played.panel.synthesis.suggestions[0]?.decision, "pending");
   assert.equal(played.calls[0]?.prompt.includes("<<PROPOSAL_B>>"), false);
