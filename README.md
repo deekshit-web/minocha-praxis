@@ -34,24 +34,17 @@ The PHI and secret scanners are regex demos. They do not detect names, unlabelle
 
 ## Running it
 
-You need Node 22 on Linux x64. The repo ships a pinned esbuild 0.15.18 binary in `tools/esbuild/`, so the scripts have no other dependencies. They do not run on macOS, Windows or ARM yet.
-
-```sh
-npm run harness   # bundle and run every *.test.ts under node:test
-npm run rcm       # denial workbench on http://127.0.0.1:4173
-npm run factory   # factory UI on http://127.0.0.1:4317
-```
-
-Without npm, run the same scripts directly, for example `node scripts/harness.mjs`.
-
-For the full demo, start the workbench first, then the factory. If the workbench runs somewhere else, set `NORTHWIND_WORKBENCH` (for example `http://127.0.0.1:5173`) when starting the factory. In the factory, step through Begin intake → answers → approve PRD → accept suggestion S-1 → approve architecture → apply the repair → approve tests → record. The trace links open the matching workbench pages. Reset clears the factory session, its sandbox and the workbench ready marks.
-
-esbuild strips types without checking them, so type errors only show up in the typecheck. It is the only step that needs installed packages:
+You need Node 22 and npm. esbuild and TypeScript are dev dependencies; npm installs the right esbuild build for your platform.
 
 ```sh
 npm install
-npm run typecheck
+npm run harness     # bundle and run every *.test.ts under node:test
+npm run typecheck   # esbuild strips types without checking them, so this is the only type check
+npm run rcm         # denial workbench on http://127.0.0.1:4173
+npm run factory     # factory UI on http://127.0.0.1:4317
 ```
+
+For the full demo, start the workbench first, then the factory. If the workbench runs somewhere else, set `NORTHWIND_WORKBENCH` (for example `http://127.0.0.1:5173`) when starting the factory. In the factory, step through Begin intake → answers → approve PRD → accept suggestion S-1 → approve architecture → apply the repair → approve tests → record. The trace links open the matching workbench pages. Reset clears the factory session, its sandbox and the workbench ready marks.
 
 Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 

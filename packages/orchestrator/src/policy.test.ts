@@ -35,7 +35,7 @@ test("a broad fence cannot admit the factory, the gates, or the tooling", () => 
     "packages/implementer/src/tree.ts",
     "packages/harness/src/walk.ts",
     "scripts/harness.mjs",
-    "tools/esbuild/esbuild",
+    "node_modules/esbuild/lib/main.js",
   ]) {
     assert.deepEqual(fenceViolations([file], ["**/*"]), [{ file, reason: "forbidden" }], file);
   }

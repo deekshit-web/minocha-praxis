@@ -35,7 +35,7 @@ export const PROTECTED_ROOTS = [
   "packages/implementer",
   "packages/harness",
   "scripts",
-  "tools",
+  "node_modules",
 ] as const;
 
 function namesProtectedRoot(path: string): boolean {
