@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { prdGateIssues, prdIssues, questionSetIssues } from "./documents.ts";
+import { prdGateIssues, prdIssues, questionSetIssues, type Architecture, type Prd, type QuestionSet } from "./documents.ts";
 import { hashValue } from "./hash.ts";
 import { isolationIssues } from "./panel.ts";
 import { FixturePlayer, playPanel, recordedLines, UnconfiguredModel } from "./provider.ts";
@@ -9,7 +9,7 @@ import { FEATURE_B_BRIEF, KNOWN_CITATIONS, architecturePanel, prdPanel, question
 
 test("the fixture player serves five seats and then refuses another call", () => {
   const player = new FixturePlayer(recordedLines(questionPanel()));
-  const played = playPanel(player, "questions", FEATURE_B_BRIEF);
+  const played = playPanel<QuestionSet>(player, "questions", FEATURE_B_BRIEF);
   assert.equal(played.calls.length, 5);
   assert.deepEqual(
     played.calls.map((call) => call.role),
@@ -21,7 +21,7 @@ test("the fixture player serves five seats and then refuses another call", () =>
 });
 
 test("analyst prompts carry the brief and neither proposal", () => {
-  const played = playPanel(new FixturePlayer(recordedLines(prdPanel())), "prd", FEATURE_B_BRIEF);
+  const played = playPanel<Prd>(new FixturePlayer(recordedLines(prdPanel())), "prd", FEATURE_B_BRIEF);
   const analystA = played.calls[0]?.prompt ?? "";
   const analystB = played.calls[1]?.prompt ?? "";
   assert.match(analystA, /CO-50/);
@@ -48,7 +48,7 @@ test("one live implementation panel stops before a draft is stored", () => {
 });
 
 test("the architecture fixture keeps the file-fence disagreement", () => {
-  const played = playPanel(new FixturePlayer(recordedLines(architecturePanel())), "architecture", FEATURE_B_BRIEF);
+  const played = playPanel<Architecture>(new FixturePlayer(recordedLines(architecturePanel())), "architecture", FEATURE_B_BRIEF);
   assert.equal(isolationIssues(played.calls).length, 0);
   assert.deepEqual(played.panel.proposalA.fileFence, ["packages/rcm/**"]);
   assert.ok(played.panel.synthesis.fileFence.includes("packages/domain/**"));

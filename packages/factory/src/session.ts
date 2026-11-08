@@ -323,7 +323,7 @@ export class FactorySession {
       return;
     }
     this.run.transition("clarifying", "orchestrator");
-    const questions = playPanel(new FixturePlayer(recordedLines(questionPanel())), "questions", FEATURE_B_BRIEF);
+    const questions = playPanel<QuestionSet>(new FixturePlayer(recordedLines(questionPanel())), "questions", FEATURE_B_BRIEF);
     const issues = [
       ...publish(this.run, "questions", questions.panel, questions.calls),
       ...questionSetIssues(questions.panel.synthesis),
@@ -359,7 +359,7 @@ export class FactorySession {
     });
     this.run.putArtifact("answers", { choices: picked });
     this.run.transition("prd_draft", "orchestrator");
-    const prd = playPanel(new FixturePlayer(recordedLines(prdPanel())), "prd", FEATURE_B_BRIEF);
+    const prd = playPanel<Prd>(new FixturePlayer(recordedLines(prdPanel())), "prd", FEATURE_B_BRIEF);
     const issues = [
       ...publish(this.run, "prd", prd.panel, prd.calls),
       ...prdGateIssues(prd.panel.synthesis, prdIssues(prd.panel.synthesis, KNOWN_CITATIONS, RULES)),
@@ -561,7 +561,7 @@ export class FactorySession {
   }
 
   private openArchitecture(): void {
-    const played = playPanel(new FixturePlayer(recordedLines(architecturePanel())), "architecture", FEATURE_B_BRIEF);
+    const played = playPanel<Architecture>(new FixturePlayer(recordedLines(architecturePanel())), "architecture", FEATURE_B_BRIEF);
     const issues = publish(this.run, "architecture", played.panel, played.calls);
     if (issues.length > 0) {
       this.run.block(issues[0] ?? "architecture");
@@ -573,7 +573,7 @@ export class FactorySession {
   }
 
   private openUnit(): void {
-    const played = playPanel(new FixturePlayer(recordedLines(implementationPanel())), "implementation", FEATURE_B_BRIEF);
+    const played = playPanel<ImplementationPlan>(new FixturePlayer(recordedLines(implementationPanel())), "implementation", FEATURE_B_BRIEF);
     const implementation = played.panel;
     const fence = (this.run.artifacts.get("architecture")?.body as Architecture).fileFence;
     const issues = [

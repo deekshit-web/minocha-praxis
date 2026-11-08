@@ -46,7 +46,7 @@ Without npm, run the same scripts directly, for example `node scripts/harness.mj
 
 For the full demo, start the workbench first, then the factory. If the workbench runs somewhere else, set `NORTHWIND_WORKBENCH` (for example `http://127.0.0.1:5173`) when starting the factory. In the factory, step through Begin intake → answers → approve PRD → accept suggestion S-1 → approve architecture → apply the repair → approve tests → record. The trace links open the matching workbench pages. Reset clears the factory session, its sandbox and the workbench ready marks.
 
-Type checking is set up but has not been run against the code yet:
+esbuild strips types without checking them, so type errors only show up in the typecheck. It is the only step that needs installed packages:
 
 ```sh
 npm install
