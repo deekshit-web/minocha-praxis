@@ -1,5 +1,13 @@
 {
   "name": "@northwind/factory",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@northwind/domain": "*",
+    "@northwind/harness": "*",
+    "@northwind/implementer": "*",
+    "@northwind/knowledge": "*",
+    "@northwind/orchestrator": "*",
+    "@northwind/rcm": "*"
+  }
 }

@@ -1,27 +1,33 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { repoRoot } from "../../orchestrator/src/paths.ts";
-import { appealReady, appealReadyBuggy, co50MissingNoteSample } from "../../domain/src/index.ts";
-import { citationPaths, loadPack } from "../../knowledge/src/index.ts";
-import { applyRecord, type RecordInput } from "../../orchestrator/src/record.ts";
 import {
+  Run,
   acceptSuggestion,
   alignTestCases,
+  applyRecord,
   architectureIssues,
   automationIssues,
+  executionGate,
+  fenceViolations,
+  findPhi,
+  findSecrets,
+  hashValue,
+  intakeDecision,
   missingAssertions,
+  mutationOracleIssues,
+  nextUnitAttempt,
   prdGateIssues,
   prdIssues,
   questionSetIssues,
-} from "../../orchestrator/src/documents.ts";
-import { fenceViolations } from "../../orchestrator/src/fence.ts";
-import { executionGate, mutationOracleIssues, type AttributeFinding } from "../../orchestrator/src/method.ts";
-import { hashValue } from "../../orchestrator/src/hash.ts";
-import { reviewPanelIssues, untestableFenceIssues, type ReviewPanel } from "../../orchestrator/src/panel.ts";
-import { findPhi, intakeDecision } from "../../orchestrator/src/phi.ts";
-import { Run } from "../../orchestrator/src/run.ts";
-import { findSecrets } from "../../orchestrator/src/secrets.ts";
-import { nextUnitAttempt } from "../../orchestrator/src/stall.ts";
+  repoRoot,
+  reviewPanelIssues,
+  untestableFenceIssues,
+  type AttributeFinding,
+  type RecordInput,
+  type ReviewPanel,
+} from "@northwind/orchestrator";
+import { appealReady, appealReadyBuggy, co50MissingNoteSample } from "@northwind/domain";
+import { citationPaths, loadPack } from "@northwind/knowledge";
 import {
   FEATURE_B_BRIEF,
   FEATURE_C_CITATIONS,

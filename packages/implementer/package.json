@@ -1,5 +1,11 @@
 {
   "name": "@northwind/implementer",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@northwind/orchestrator": "*"
+  }
 }

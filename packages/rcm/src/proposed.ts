@@ -1,7 +1,15 @@
-import { carcRule, type CarcClass } from "../../domain/src/carc.ts";
-import { appealReady } from "../../domain/src/appealReady.ts";
-import { buildSeed, type Denial, type Patient, type PracticeSeed } from "../../domain/src/seed.ts";
-import { daysRemaining, deadlineRisk, type DeadlineRisk } from "../../domain/src/filing.ts";
+import {
+  appealReady,
+  buildSeed,
+  carcRule,
+  daysRemaining,
+  deadlineRisk,
+  type CarcClass,
+  type DeadlineRisk,
+  type Denial,
+  type Patient,
+  type PracticeSeed,
+} from "@northwind/domain";
 
 export const PROPOSED_SCREENS = ["SCR-1", "SCR-2", "SCR-3"] as const;
 

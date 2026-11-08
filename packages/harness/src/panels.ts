@@ -1,17 +1,22 @@
 import { join } from "node:path";
-import { CARC_RULES, carcRule, type CarcCode } from "../../domain/src/carc.ts";
-import { citationPaths, loadPack } from "../../knowledge/src/retrieve.ts";
-import type { Architecture, ImplementationPlan, Prd, QuestionSet, TestCaseSet } from "../../orchestrator/src/documents.ts";
-import { STAGE_METHODS, type AttributeFinding } from "../../orchestrator/src/method.ts";
-import { repoRoot } from "../../orchestrator/src/paths.ts";
+import { CARC_RULES, carcRule, type CarcCode } from "@northwind/domain";
+import { citationPaths, loadPack } from "@northwind/knowledge";
 import {
   SEAT,
+  STAGE_METHODS,
   buildSeatPrompt,
+  repoRoot,
+  type Architecture,
+  type AttributeFinding,
+  type ImplementationPlan,
   type PanelCall,
   type PanelCritique,
   type PanelStage,
+  type Prd,
+  type QuestionSet,
   type ReviewPanel,
-} from "../../orchestrator/src/panel.ts";
+  type TestCaseSet,
+} from "@northwind/orchestrator";
 
 export const FEATURE_B_BRIEF =
   "On CO-50 medical-necessity denials, the specialist must not mark the appeal packet ready unless a clinical-note reference and a filing-deadline date are both present.";

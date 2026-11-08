@@ -4,8 +4,8 @@ import { prdGateIssues, prdIssues, questionSetIssues, type Architecture, type Pr
 import { hashValue } from "./hash.ts";
 import { isolationIssues } from "./panel.ts";
 import { FixturePlayer, playPanel, recordedLines, UnconfiguredModel } from "./provider.ts";
-import { CARC_RULES } from "../../domain/src/carc.ts";
-import { FEATURE_B_BRIEF, architecturePanel, knownCitations, prdPanel, questionPanel } from "../../harness/src/panels.ts";
+import { CARC_RULES } from "@northwind/domain";
+import { FEATURE_B_BRIEF, architecturePanel, knownCitations, prdPanel, questionPanel } from "@northwind/harness";
 
 test("the fixture player serves five seats and then refuses another call", () => {
   const player = new FixturePlayer(recordedLines(questionPanel()));

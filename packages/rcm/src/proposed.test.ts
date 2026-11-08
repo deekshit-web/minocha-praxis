@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { findPhi } from "../../orchestrator/src/phi.ts";
-import { buildSeed } from "../../domain/src/seed.ts";
-import { daysRemaining } from "../../domain/src/filing.ts";
+import { findPhi } from "@northwind/orchestrator";
+import { buildSeed, daysRemaining } from "@northwind/domain";
 import { PROPOSED_SCREENS, renderProposedScreen } from "./proposed.ts";
 
 test("three proposed screens are watermarked and free of PHI", () => {

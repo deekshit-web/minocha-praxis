@@ -1,4 +1,4 @@
-import { carcRule, type CarcRule } from "../../domain/src/carc.ts";
+import { carcRule, type CarcRule } from "@northwind/domain";
 import { fencePatternIssues } from "./fence.ts";
 
 export interface Assumption {

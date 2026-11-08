@@ -2,8 +2,7 @@ import { spawnSync } from "node:child_process";
 import { buildSync } from "esbuild";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
-import { fenceViolations } from "../../orchestrator/src/fence.ts";
-import { missingAssertions } from "../../orchestrator/src/documents.ts";
+import { fenceViolations, missingAssertions } from "@northwind/orchestrator";
 
 const PRODUCT = "packages/domain/src/appealReady.ts";
 const TEST = "packages/domain/src/appealReady.test.ts";

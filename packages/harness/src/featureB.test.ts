@@ -1,14 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { appealReady, appealReadyBuggy, buildSeed, co50MissingNoteSample } from "../../domain/src/index.ts";
-import { applyRecord } from "../../orchestrator/src/record.ts";
-import { automationIssues } from "../../orchestrator/src/documents.ts";
-import { fenceViolations } from "../../orchestrator/src/fence.ts";
-import { hashValue } from "../../orchestrator/src/hash.ts";
-import { reviewPanelIssues } from "../../orchestrator/src/panel.ts";
-import { findPhi } from "../../orchestrator/src/phi.ts";
-import { TransitionError } from "../../orchestrator/src/run.ts";
-import { alignTestCases } from "../../orchestrator/src/documents.ts";
+import { appealReady, appealReadyBuggy, buildSeed, co50MissingNoteSample } from "@northwind/domain";
+import {
+  TransitionError,
+  alignTestCases,
+  applyRecord,
+  automationIssues,
+  fenceViolations,
+  findPhi,
+  hashValue,
+  reviewPanelIssues,
+} from "@northwind/orchestrator";
 import {
   FEATURE_B_BRIEF,
   architecturePanel,
