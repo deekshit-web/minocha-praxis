@@ -22,10 +22,10 @@ import { fenceViolations } from "../../orchestrator/src/fence.ts";
 import { recordInput } from "../../harness/src/walk.ts";
 import {
   FEATURE_B_BRIEF,
-  KNOWN_CITATIONS,
   RULES,
   architecturePanel,
   implementationPanel,
+  knownCitations,
   panelCalls,
   prdPanel,
   questionPanel,
@@ -214,7 +214,7 @@ export class FactorySession {
     const prd = playPanel<Prd>(new FixturePlayer(recordedLines(prdPanel())), "prd", FEATURE_B_BRIEF);
     const issues = [
       ...publish(this.run, "prd", prd.panel, prd.calls),
-      ...prdGateIssues(prd.panel.synthesis, prdIssues(prd.panel.synthesis, KNOWN_CITATIONS, RULES)),
+      ...prdGateIssues(prd.panel.synthesis, prdIssues(prd.panel.synthesis, knownCitations(), RULES)),
     ];
     if (issues.length > 0) {
       this.run.block(issues[0] ?? "prd");
@@ -295,7 +295,7 @@ export class FactorySession {
     const issues = [
       ...reviewPanelIssues(panel, stored ?? panelCalls(panel, FEATURE_B_BRIEF)),
       ...untestableFenceIssues(panel),
-      ...architectureIssues(accepted, criterionIds, KNOWN_CITATIONS, RULES),
+      ...architectureIssues(accepted, criterionIds, knownCitations(), RULES),
     ];
     if (issues.length > 0) {
       this.run.block(issues[0] ?? "architecture");

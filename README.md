@@ -73,6 +73,7 @@ Packages import each other by relative path (`../../orchestrator/src/...`). The 
 
 - No live model. Wiring one into `ModelProvider` is the real test of whether the gates hold.
 - Clarifying answers and change requests do not regenerate documents.
+- Citations are checked against the files in the knowledge pack, not against what retrieval returned for the brief. Retrieval is tag overlap only, and for the Feature B brief it misses `phi-policy.md` and `roles.md`, which the PRD cites.
 - The isolation check looks for seat markers in prompts the harness writes itself, so it cannot catch a paraphrased leak.
 - There is still no login. The request guard stops other websites, not other local processes.
 - `FactorySession` still sequences the stages itself. A live model would need that sequencing moved into the orchestrator.
