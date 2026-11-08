@@ -5,8 +5,8 @@ import type { Server } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { buildSeed } from "../../domain/src/seed.ts";
-import { createWorkbenchServer } from "../../rcm/src/workbench.ts";
+import { buildSeed } from "@northwind/domain";
+import { createWorkbenchServer } from "@northwind/rcm";
 import { createFactoryServer } from "./server.ts";
 
 async function withServer(run: (port: number) => Promise<void>): Promise<void> {

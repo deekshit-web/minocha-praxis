@@ -1,5 +1,5 @@
 import type { Server } from "node:http";
-import { buildSeed } from "../../domain/src/seed.ts";
+import { buildSeed } from "@northwind/domain";
 import { createWorkbenchServer } from "./workbench.ts";
 
 export interface PriorityResult {

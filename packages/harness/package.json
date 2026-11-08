@@ -1,5 +1,13 @@
 {
   "name": "@northwind/harness",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@northwind/domain": "*",
+    "@northwind/knowledge": "*",
+    "@northwind/orchestrator": "*"
+  }
 }

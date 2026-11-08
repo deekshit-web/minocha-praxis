@@ -1,25 +1,41 @@
 import { join } from "node:path";
-import { appealReady, appealReadyBuggy, co50MissingNoteSample } from "../../domain/src/index.ts";
-import { FeatureBTree, failureExcerpt } from "../../implementer/src/tree.ts";
-import { loadPack, retrieve } from "../../knowledge/src/retrieve.ts";
-import { applyRecord, recordDecision } from "../../orchestrator/src/record.ts";
+import { appealReady, appealReadyBuggy, co50MissingNoteSample } from "@northwind/domain";
+import { FeatureBTree, failureExcerpt } from "@northwind/implementer";
+import { loadPack, retrieve } from "@northwind/knowledge";
 import {
+  FixturePlayer,
+  MAIN_LINE,
+  Run,
   acceptSuggestion,
-  rejectSuggestion,
   alignTestCases,
+  applyRecord,
   architectureIssues,
+  executionGate,
+  fenceViolations,
+  intakeDecision,
+  intakeNouns,
   missingAssertions,
+  mutationOracleIssues,
+  nextUnitAttempt,
+  playPanel,
   prdGateIssues,
   prdIssues,
   questionSetIssues,
+  recordDecision,
+  recordedLines,
+  rejectSuggestion,
+  repoRoot,
+  reviewPanelIssues,
+  traceMatrix,
+  untestableFenceIssues,
   type Architecture,
   type ImplementationPlan,
+  type PanelCall,
   type Prd,
   type QuestionSet,
+  type ReviewPanel,
   type TestCaseSet,
-} from "../../orchestrator/src/documents.ts";
-import { fenceViolations } from "../../orchestrator/src/fence.ts";
-import { recordInput } from "../../harness/src/walk.ts";
+} from "@northwind/orchestrator";
 import {
   FEATURE_B_BRIEF,
   RULES,
@@ -29,17 +45,9 @@ import {
   panelCalls,
   prdPanel,
   questionPanel,
+  recordInput,
   testCasePanel,
-} from "../../harness/src/panels.ts";
-import { executionGate, mutationOracleIssues } from "../../orchestrator/src/method.ts";
-import { reviewPanelIssues, untestableFenceIssues, type PanelCall, type ReviewPanel } from "../../orchestrator/src/panel.ts";
-import { FixturePlayer, playPanel, recordedLines } from "../../orchestrator/src/provider.ts";
-import { intakeDecision, intakeNouns } from "../../orchestrator/src/phi.ts";
-import { repoRoot } from "../../orchestrator/src/paths.ts";
-import { Run } from "../../orchestrator/src/run.ts";
-import { nextUnitAttempt } from "../../orchestrator/src/stall.ts";
-import { traceMatrix } from "../../orchestrator/src/trace.ts";
-import { MAIN_LINE } from "../../orchestrator/src/states.ts";
+} from "@northwind/harness";
 import {
   RAIL_LABELS,
   architectureBlocks,
@@ -55,7 +63,7 @@ import {
   type ViewTab,
 } from "./view.ts";
 import { readFileSync } from "node:fs";
-import { runPriorityChecks, type PriorityResult } from "../../rcm/src/priority.ts";
+import { runPriorityChecks, type PriorityResult } from "@northwind/rcm";
 
 export type FactoryAct =
   | { type: "begin" }

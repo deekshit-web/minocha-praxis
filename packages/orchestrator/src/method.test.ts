@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { STAGE_METHODS, executionGate, mutationOracleIssues } from "./method.ts";
 import { reviewPanelIssues } from "./panel.ts";
-import { architecturePanel, panelCalls, prdPanel } from "../../harness/src/panels.ts";
-import { FEATURE_B_BRIEF } from "../../harness/src/panels.ts";
+import { FEATURE_B_BRIEF, architecturePanel, panelCalls, prdPanel } from "@northwind/harness";
 
 test("quality outranks a second code generation", () => {
   assert.equal(STAGE_METHODS.prd.method, "analyze-critique-synthesize");

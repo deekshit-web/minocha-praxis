@@ -2,6 +2,9 @@
   "name": "northwind-factory",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "harness": "node scripts/harness.mjs",
     "typecheck": "tsc -p tsconfig.json",

@@ -1,9 +1,17 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { carcRule, type CarcClass } from "../../domain/src/carc.ts";
-import { appealReady } from "../../domain/src/appealReady.ts";
-import { coverageSnapshot, schedulingDecision } from "../../domain/src/eligibility.ts";
-import { buildSeed, type Denial, type PracticeSeed } from "../../domain/src/seed.ts";
-import { daysRemaining, deadlineRisk, type DeadlineRisk } from "../../domain/src/filing.ts";
+import {
+  appealReady,
+  buildSeed,
+  carcRule,
+  coverageSnapshot,
+  daysRemaining,
+  deadlineRisk,
+  schedulingDecision,
+  type CarcClass,
+  type DeadlineRisk,
+  type Denial,
+  type PracticeSeed,
+} from "@northwind/domain";
 
 const CLASSES = ["denial", "patient-responsibility", "informational"] as const;
 

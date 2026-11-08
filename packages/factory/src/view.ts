@@ -1,8 +1,13 @@
-import type { Architecture, Prd, QuestionSet, TestCaseSet } from "../../orchestrator/src/documents.ts";
-import { STAGE_METHODS } from "../../orchestrator/src/method.ts";
-import type { ReviewPanel } from "../../orchestrator/src/panel.ts";
-import type { Run } from "../../orchestrator/src/run.ts";
-import type { State } from "../../orchestrator/src/states.ts";
+import {
+  STAGE_METHODS,
+  type Architecture,
+  type Prd,
+  type QuestionSet,
+  type ReviewPanel,
+  type Run,
+  type State,
+  type TestCaseSet,
+} from "@northwind/orchestrator";
 
 /** What the factory page renders. Nothing here reads or changes a session. */
 export interface Block {

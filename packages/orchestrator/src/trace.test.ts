@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { alignTestCases } from "./documents.ts";
 import { traceMatrix } from "./trace.ts";
-import { prdPanel, testCasePanel } from "../../harness/src/panels.ts";
+import { prdPanel, testCasePanel } from "@northwind/harness";
 
 const prd = prdPanel().synthesis;
 const aligned = alignTestCases(testCasePanel().synthesis, prd.scenarios.map((item) => item.id));

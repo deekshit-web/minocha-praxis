@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
 import { request, type Server } from "node:http";
 import test from "node:test";
-import { findPhi } from "../../orchestrator/src/phi.ts";
-import { carcRule } from "../../domain/src/carc.ts";
-import { buildSeed } from "../../domain/src/seed.ts";
+import { findPhi } from "@northwind/orchestrator";
+import { buildSeed, carcRule } from "@northwind/domain";
 import { createWorkbenchServer, denialView } from "./workbench.ts";
 
 async function withServer(run: (origin: string) => Promise<void>): Promise<void> {

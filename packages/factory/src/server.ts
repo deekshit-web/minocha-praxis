@@ -3,9 +3,8 @@ import { rm } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
-import { repoRoot } from "../../orchestrator/src/paths.ts";
-import { renderProposedScreen, type ProposedScreenId } from "../../rcm/src/proposed.ts";
-import { foreignRequest } from "../../rcm/src/workbench.ts";
+import { repoRoot } from "@northwind/orchestrator";
+import { foreignRequest, renderProposedScreen, type ProposedScreenId } from "@northwind/rcm";
 import { DEFAULT_WORKBENCH, FactorySession, type FactoryAct } from "./session.ts";
 import type { FactoryView } from "./view.ts";
 

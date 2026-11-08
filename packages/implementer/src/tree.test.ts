@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { nextUnitAttempt } from "../../orchestrator/src/stall.ts";
+import { nextUnitAttempt } from "@northwind/orchestrator";
 import { FeatureBTree, SEEDED_APPEAL_READY } from "./tree.ts";
 
 const FENCE = ["packages/domain/**", "packages/rcm/**"];

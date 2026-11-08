@@ -60,7 +60,12 @@ Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 | `packages/harness` | The recorded panels and a headless walk of Feature B used by the tests |
 | `packages/factory` | The HTTP server and single-page UI that drive a run step by step. `session.ts` runs the stages; `view.ts` turns run state into what the page shows |
 
-Packages import each other by relative path (`../../orchestrator/src/...`). The `package.json` names are labels, not installed workspaces.
+The packages are npm workspaces. Each library exports only `src/index.ts`, so other packages import it by name (`import { Run } from "@northwind/orchestrator"`) and cannot reach its other files. `npm install` links them into `node_modules/@northwind/`.
+
+- To use something from another package, export it from that package's `index.ts` and add the package to the importer's `dependencies` (or `devDependencies` when only tests use it).
+- Imports inside a package stay relative.
+- `harness/src/boundaries.test.ts` fails on a relative import into another package and on an `@northwind/*` import the package does not declare.
+- `factory` is the app. Nothing imports it, so it has no exports.
 
 ## Conventions
 
