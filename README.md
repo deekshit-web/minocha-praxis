@@ -24,12 +24,13 @@ Read this before anything else.
 | Execution gate | `orchestrator/src/method.ts` | A review that calls a red test accurate |
 | Mutation oracle | `orchestrator/src/method.ts` | A test case that still passes with the known bug present |
 | Stall detection | `orchestrator/src/stall.ts` | A repeated diff-and-failure fingerprint, or a third failing attempt |
-| Intake scan | `orchestrator/src/phi.ts` | A brief containing an SSN, email, phone number or MRN |
+| Intake scan | `orchestrator/src/phi.ts` | A brief containing an SSN, email, phone number, MRN or labelled date of birth |
 | Deploy gate | `orchestrator/src/deploy.ts`, `harness/src/walk.ts` | Stale approvals, a red unit run, a red P0 case, or PHI or secrets anywhere in the run's stored output |
+| Request guard | `rcm/src/workbench.ts` | On both servers, a `Host` that is not loopback, and a POST whose `Origin` is another site |
 
 The unit loop is also real. The implementer seeds a sandbox copy under `runs/implementer/`, bundles the test with esbuild, and runs it under `node:test`. The P0 cases run against a live workbench server.
 
-The PHI and secret scanners are regex demos. They do not detect names, dates of birth, addresses or member ids. Use synthetic data only.
+The PHI and secret scanners are regex demos. They do not detect names, unlabelled dates of birth, addresses or member ids. Use synthetic data only.
 
 ## Running it
 
@@ -43,7 +44,7 @@ npm run factory   # factory UI on http://127.0.0.1:4317
 
 Without npm, run the same scripts directly, for example `node scripts/harness.mjs`.
 
-For the full demo, start the workbench first, then the factory. In the factory, step through Begin intake → answers → approve PRD → accept suggestion S-1 → approve architecture → apply the repair → approve tests → record. The trace links open the matching workbench pages. Reset clears the factory session, its sandbox and the workbench ready marks.
+For the full demo, start the workbench first, then the factory. If the workbench runs somewhere else, set `NORTHWIND_WORKBENCH` (for example `http://127.0.0.1:5173`) when starting the factory. In the factory, step through Begin intake → answers → approve PRD → accept suggestion S-1 → approve architecture → apply the repair → approve tests → record. The trace links open the matching workbench pages. Reset clears the factory session, its sandbox and the workbench ready marks.
 
 Type checking is set up but has not been run against the code yet:
 
@@ -80,5 +81,5 @@ Packages import each other by relative path (`../../orchestrator/src/...`). The 
 - No live model. Wiring one into `ModelProvider` is the real test of whether the gates hold.
 - Clarifying answers and change requests do not regenerate documents.
 - The isolation check looks for seat markers in prompts the harness writes itself, so it cannot catch a paraphrased leak.
-- `/api/reset` and `/reset` are unauthenticated POSTs on localhost.
+- There is still no login. The request guard stops other websites, not other local processes.
 - `packages/factory/src/session.ts` mixes orchestration with view rendering.

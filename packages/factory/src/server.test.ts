@@ -145,3 +145,13 @@ test("reset still clears the factory when the workbench does not answer", async 
     await close(factory);
   }
 });
+
+test("a cross-site page cannot reset the factory", async () => {
+  await withServer(async (port) => {
+    const origin = `http://127.0.0.1:${port}`;
+    const session = await (await fetch(`${origin}/api/session`, { method: "POST" })).json();
+    const refused = await fetch(`${origin}/api/reset`, { method: "POST", headers: { origin: "https://evil.example" } });
+    assert.equal(refused.status, 403);
+    assert.equal((await fetch(`${origin}/api/session/${session.id}`)).status, 200);
+  });
+});

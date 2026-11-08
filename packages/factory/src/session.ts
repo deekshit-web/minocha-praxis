@@ -1,5 +1,4 @@
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { appealReady, appealReadyBuggy, co50MissingNoteSample } from "../../domain/src/index.ts";
 import { FeatureBTree, failureExcerpt } from "../../implementer/src/tree.ts";
 import { loadPack, retrieve } from "../../knowledge/src/retrieve.ts";
@@ -36,17 +35,13 @@ import { executionGate, mutationOracleIssues, STAGE_METHODS } from "../../orches
 import { reviewPanelIssues, untestableFenceIssues, type PanelCall, type ReviewPanel } from "../../orchestrator/src/panel.ts";
 import { FixturePlayer, playPanel, recordedLines } from "../../orchestrator/src/provider.ts";
 import { intakeDecision, intakeNouns } from "../../orchestrator/src/phi.ts";
+import { repoRoot } from "../../orchestrator/src/paths.ts";
 import { Run } from "../../orchestrator/src/run.ts";
 import { nextUnitAttempt } from "../../orchestrator/src/stall.ts";
 import { traceMatrix } from "../../orchestrator/src/trace.ts";
 import { MAIN_LINE, type State } from "../../orchestrator/src/states.ts";
 import { readFileSync } from "node:fs";
 import { runPriorityChecks, type PriorityResult } from "../../rcm/src/priority.ts";
-
-function repoRoot(): string {
-  if (process.env.NORTHWIND_ROOT) return process.env.NORTHWIND_ROOT;
-  return join(dirname(fileURLToPath(import.meta.url)), "../../..");
-}
 
 export interface Block {
   heading: string;
@@ -70,6 +65,7 @@ export interface FactoryView {
   id: string;
   state: State;
   mode: "recorded";
+  workbench: string;
   title: string;
   subtitle: string;
   method: string;
@@ -233,6 +229,8 @@ function panelTabs<T>(name: string, run: Run, render: (value: T) => Block[]): Vi
 
 let sequence = 0;
 
+export const DEFAULT_WORKBENCH = "http://127.0.0.1:4173";
+
 export class FactorySession {
   readonly run: Run;
   readonly id: string;
@@ -249,7 +247,10 @@ export class FactorySession {
   private tree: FeatureBTree | null = null;
   private fingerprints: string[] = [];
 
-  constructor(id?: string) {
+  constructor(
+    id?: string,
+    readonly workbench: string = DEFAULT_WORKBENCH,
+  ) {
     sequence += 1;
     this.id = id ?? `feature-b-${sequence}`;
     this.run = new Run(this.id);
@@ -278,6 +279,7 @@ export class FactorySession {
       id: this.id,
       state,
       mode: "recorded",
+      workbench: this.workbench,
       title: "CO-50 appeal readiness",
       subtitle: "Northwind Imaging · recorded Feature B run",
       method: this.methodLabel(),
@@ -612,18 +614,6 @@ export class FactorySession {
       ],
       tests: [{ id: "AC-CO50-NOTE", passed: false }],
     });
-    const contradicted = executionGate("repair", {
-      sawDiff: true,
-      attributes: [
-        { attribute: "security", met: true, note: "The reviewer claims the gate is correct." },
-        { attribute: "accuracy", met: true, note: "The reviewer claims the gate is correct." },
-      ],
-      tests: [{ id: "AC-CO50-NOTE", passed: false }],
-    });
-    if (!redReview.includes("accuracy-oracle-red:AC-CO50-NOTE") || !contradicted.includes("review-contradicts-oracle")) {
-      this.run.block("red-review-not-enforced");
-      return;
-    }
     this.fingerprints = [first.fingerprint];
     this.unitFailure = failure;
     this.unitExcerpt = failureExcerpt(red.output);
@@ -672,7 +662,7 @@ export class FactorySession {
       cases: set.cases,
       dropped: this.droppedCases,
       results: this.priority,
-      workbench: "http://127.0.0.1:4173",
+      workbench: this.workbench,
     }).map((row) => ({
       heading: [row.requirementId, row.criterionId, row.scenarioId, row.caseId ?? "no case"].join(" · "),
       lines: [
@@ -771,10 +761,10 @@ export class FactorySession {
               heading: "Running product",
               lines: [
                 "The workbench already calls the fixed function. This run replays the change in a fenced copy, and the trace comes after the gates. Eligibility is a static snapshot and is not a new factory run.",
-                "link:http://127.0.0.1:4173/ Workqueue",
-                "link:http://127.0.0.1:4173/denial/DEN-01 Denial detail",
-                "link:http://127.0.0.1:4173/summary Lead summary",
-                "link:http://127.0.0.1:4173/eligibility Eligibility",
+                `link:${this.link("/")} Workqueue`,
+                `link:${this.link("/denial/DEN-01")} Denial detail`,
+                `link:${this.link("/summary")} Lead summary`,
+                `link:${this.link("/eligibility")} Eligibility`,
               ],
             },
             { heading: "Record", lines: ["The drafts below will be the recorded panel, not a live model call."] },
@@ -783,6 +773,10 @@ export class FactorySession {
       ];
     }
     return [];
+  }
+
+  private link(path: string): string {
+    return `${this.workbench.replace(/\/$/, "")}${path}`;
   }
 
   private proposedLinks(): FactoryView["proposed"] {

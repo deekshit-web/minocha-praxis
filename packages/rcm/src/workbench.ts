@@ -1,4 +1,4 @@
-import { createServer, type Server, type ServerResponse } from "node:http";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { carcRule, type CarcClass } from "../../domain/src/carc.ts";
 import { appealReady } from "../../domain/src/appealReady.ts";
 import { coverageSnapshot, schedulingDecision } from "../../domain/src/eligibility.ts";
@@ -60,6 +60,20 @@ function send(res: ServerResponse, status: number, html: string): void {
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
   res.end(JSON.stringify(body));
+}
+
+const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]"]);
+
+/**
+ * The workbench and the factory listen on loopback with no login, but any page in the browser can still send them requests.
+ * Refuse a Host that is not loopback, which stops DNS rebinding, and a POST whose Origin is another site.
+ */
+export function foreignRequest(req: IncomingMessage): boolean {
+  const host = req.headers.host ?? "";
+  if (!LOOPBACK.has(host.replace(/:\d+$/, ""))) return true;
+  if (req.method !== "POST") return false;
+  const origin = req.headers.origin;
+  return origin !== undefined && origin !== `http://${host}`;
 }
 
 function page(title: string, body: string): string {
@@ -250,6 +264,10 @@ function summary(seed: PracticeSeed): string {
 export function createWorkbenchServer(seed: PracticeSeed = buildSeed()): Server {
   const readyIds = new Set<string>();
   return createServer((req, res) => {
+    if (foreignRequest(req)) {
+      send(res, 403, page("Refused", "<p>The workbench only answers pages it served.</p>"));
+      return;
+    }
     const url = new URL(req.url ?? "/", "http://127.0.0.1");
     const denialMatch = url.pathname.match(/^\/denial\/(DEN-\d{2})(\/ready)?$/);
     if (denialMatch) {
