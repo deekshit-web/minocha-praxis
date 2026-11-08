@@ -38,7 +38,7 @@ export class FixturePlayer implements ModelProvider {
 export class UnconfiguredModel implements ModelProvider {
   readonly mode = "live" as const;
 
-  complete(): string {
+  complete(_request: CompletionRequest): string {
     throw new Error("model-not-configured");
   }
 }
