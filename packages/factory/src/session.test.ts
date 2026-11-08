@@ -11,7 +11,7 @@ function fenceLines(blocks: Block[]): string {
   return blocks.find((block) => block.heading === "File fence")?.lines.join(" ") ?? "";
 }
 
-test("Feature B pauses at each human gate and deploys only after the P0 trace is green", async () => {
+test("Feature B pauses at each human gate and records only after the P0 trace is green", async () => {
   const product = join(process.env.NORTHWIND_ROOT ?? "", "packages/domain/src/appealReady.ts");
   const before = readFileSync(product, "utf8");
   const session = new FactorySession("gate-path");
@@ -96,10 +96,10 @@ test("Feature B pauses at each human gate and deploys only after the P0 trace is
   assert.ok(patch?.lines.every((line) => line.startsWith("- ")));
 
   view = await session.act({ type: "approve" });
-  assert.equal(view.state, "deploy_gate");
+  assert.equal(view.state, "record_gate");
   assert.equal(view.p0Green, true);
-  assert.equal(view.actions.find((action) => action.id === "deploy")?.enabled, true);
-  const checks = view.tabs.find((tab) => tab.id === "deploy")?.blocks.find((block) => block.heading === "Priority checks")?.lines.join("\n") ?? "";
+  assert.equal(view.actions.find((action) => action.id === "record")?.enabled, true);
+  const checks = view.tabs.find((tab) => tab.id === "record")?.blocks.find((block) => block.heading === "Priority checks")?.lines.join("\n") ?? "";
   assert.match(checks, /TC-1 passed/);
   assert.match(checks, /clinical note/);
   assert.match(checks, /filing deadline/);
@@ -112,19 +112,19 @@ test("Feature B pauses at each human gate and deploys only after the P0 trace is
   assert.match(trace, /SCN-6 · TC-6/);
   assert.match(trace, /not-gated/);
   assert.equal(trace.includes("TC-99"), false);
-  assert.match(view.tabs.find((tab) => tab.id === "deploy")?.blocks.map((block) => block.lines.join(" ")).join(" ") ?? "", /not served/);
+  assert.match(view.tabs.find((tab) => tab.id === "record")?.blocks.map((block) => block.lines.join(" ")).join(" ") ?? "", /not served/);
 
   session.p0Green = false;
   const refused = session.view();
-  assert.equal(refused.actions.find((action) => action.id === "deploy")?.enabled, false);
-  assert.match(refused.tabs.find((tab) => tab.id === "deploy")?.blocks[0]?.lines.join(" ") ?? "", /p0-red/);
-  view = await session.act({ type: "deploy" });
-  assert.equal(view.state, "deploy_gate");
+  assert.equal(refused.actions.find((action) => action.id === "record")?.enabled, false);
+  assert.match(refused.tabs.find((tab) => tab.id === "record")?.blocks[0]?.lines.join(" ") ?? "", /p0-red/);
+  view = await session.act({ type: "record" });
+  assert.equal(view.state, "record_gate");
   assert.match(view.log.join("\n"), /p0-red/);
 
   session.p0Green = true;
-  view = await session.act({ type: "deploy" });
-  assert.equal(view.state, "deployed");
+  view = await session.act({ type: "record" });
+  assert.equal(view.state, "recorded");
   assert.match(view.log.join("\n"), /not served/);
   assert.equal(view.approvals.every((item) => item.matches), true);
 });

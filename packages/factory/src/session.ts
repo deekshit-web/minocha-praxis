@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { appealReady, appealReadyBuggy, co50MissingNoteSample } from "../../domain/src/index.ts";
 import { FeatureBTree, failureExcerpt } from "../../implementer/src/tree.ts";
 import { loadPack, retrieve } from "../../knowledge/src/retrieve.ts";
-import { applyDeploy, deployDecision } from "../../orchestrator/src/deploy.ts";
+import { applyRecord, recordDecision } from "../../orchestrator/src/record.ts";
 import {
   acceptSuggestion,
   rejectSuggestion,
@@ -19,7 +19,7 @@ import {
   type TestCaseSet,
 } from "../../orchestrator/src/documents.ts";
 import { fenceViolations } from "../../orchestrator/src/fence.ts";
-import { deployInput } from "../../harness/src/walk.ts";
+import { recordInput } from "../../harness/src/walk.ts";
 import {
   FEATURE_B_BRIEF,
   KNOWN_CITATIONS,
@@ -97,8 +97,8 @@ const RAIL_LABELS: Record<string, string> = {
   test_gate: "Test approval",
   automating: "Trace check",
   e2e: "Scenario trace",
-  deploy_gate: "Record",
-  deployed: "Recorded",
+  record_gate: "Record",
+  recorded: "Recorded",
 };
 
 export type FactoryAct =
@@ -109,7 +109,7 @@ export type FactoryAct =
   | { type: "accept-suggestion" }
   | { type: "reject-suggestion" }
   | { type: "repair" }
-  | { type: "deploy" }
+  | { type: "record" }
   | { type: "probe"; brief: string };
 
 function publish<T>(run: Run, name: string, panel: ReviewPanel<T>, calls: PanelCall[] = panelCalls(panel, FEATURE_B_BRIEF)): string[] {
@@ -259,7 +259,7 @@ export class FactorySession {
   async act(action: FactoryAct): Promise<FactoryView> {
     this.banner = null;
     if (action.type === "probe") return this.probe(action.brief);
-    if (this.run.state === "blocked" || this.run.state === "deployed") return this.view();
+    if (this.run.state === "blocked" || this.run.state === "recorded") return this.view();
     if (action.type === "begin") this.begin();
     else if (action.type === "answers") this.answer(action.choices ?? {});
     else if (action.type === "approve") await this.approve();
@@ -267,7 +267,7 @@ export class FactorySession {
     else if (action.type === "accept-suggestion") this.accept();
     else if (action.type === "reject-suggestion") this.reject();
     else if (action.type === "repair") this.repair();
-    else if (action.type === "deploy") this.deploy();
+    else if (action.type === "record") this.record();
     return this.view();
   }
 
@@ -289,7 +289,7 @@ export class FactorySession {
       rail: MAIN_LINE.map((id, index) => ({
         id,
         label: RAIL_LABELS[id] ?? id,
-        status: state === "deployed" ? "done" : index < currentIndex ? "done" : index === currentIndex ? "current" : "upcoming",
+        status: state === "recorded" ? "done" : index < currentIndex ? "done" : index === currentIndex ? "current" : "upcoming",
       })),
       tabs: this.tabs(),
       questions: state === "clarifying" ? this.questionForm() : null,
@@ -403,7 +403,7 @@ export class FactorySession {
     }
     if (this.run.state === "test_gate") {
       this.run.approve("test_cases", "test_cases", "approve");
-      await this.openDeploy();
+      await this.openRecord();
       return;
     }
     this.banner = "Nothing is waiting for approval.";
@@ -535,12 +535,12 @@ export class FactorySession {
     this.log.push("Repair passed AC-CO50-NOTE. Test synthesis is ready. A case that cannot see the bug was not accepted.");
   }
 
-  private deploy(): void {
-    if (this.run.state !== "deploy_gate") {
+  private record(): void {
+    if (this.run.state !== "record_gate") {
       this.banner = "Recording is only available after the trace.";
       return;
     }
-    const decision = applyDeploy(this.run, deployInput(this.run, { unitGreen: this.unitGreen, p0Green: this.p0Green }));
+    const decision = applyRecord(this.run, recordInput(this.run, { unitGreen: this.unitGreen, p0Green: this.p0Green }));
     if (!decision.ok) {
       this.log.push(`Record refused: ${decision.reasons.join(", ")}.`);
       this.banner = `The record stayed closed: ${decision.reasons.join(", ")}.`;
@@ -624,7 +624,7 @@ export class FactorySession {
     this.log.push(`node:test is red in ${this.sandboxPath}. Review cannot call this test accurate. Repair is one patch, not a second implementation.`);
   }
 
-  private async openDeploy(): Promise<void> {
+  private async openRecord(): Promise<void> {
     const cases = this.run.artifacts.get("test_cases")?.body as TestCaseSet;
     const aligned = alignTestCases(cases, (this.run.artifacts.get("prd")?.body as Prd).scenarios.map((item) => item.id));
     if (aligned.issues.length > 0) {
@@ -643,7 +643,7 @@ export class FactorySession {
     this.p0Green = this.priority.length > 0 && this.priority.every((item) => item.passed);
     this.run.transition("automating", "orchestrator");
     this.run.transition("e2e", "orchestrator");
-    this.run.transition("deploy_gate", "orchestrator");
+    this.run.transition("record_gate", "orchestrator");
     for (const item of this.priority) this.log.push(`${item.id} ${item.passed ? "passed" : "failed"}. ${item.detail}`);
     const failed = this.priority.find((item) => !item.passed);
     this.log.push(
@@ -726,16 +726,16 @@ export class FactorySession {
       if (synthesis && this.repairDiff) synthesis.blocks.unshift({ heading: "Patch", lines: this.repairDiff.split("\n") });
       return tabs;
     }
-    if (state === "deploy_gate" || state === "deployed") {
-      const decision = deployDecision(deployInput(this.run, { unitGreen: this.unitGreen, p0Green: this.p0Green }));
+    if (state === "record_gate" || state === "recorded") {
+      const decision = recordDecision(recordInput(this.run, { unitGreen: this.unitGreen, p0Green: this.p0Green }));
       return [
         { id: "matrix", label: "Trace", blocks: this.matrixBlocks() },
         {
-          id: "deploy",
+          id: "record",
           label: "Record",
           blocks: [
             {
-              heading: state === "deployed" ? "Gate passed" : "Checklist",
+              heading: state === "recorded" ? "Gate passed" : "Checklist",
               lines:
                 decision.ok
                   ? ["Approvals match the synthesis hashes.", "Unit oracle is green.", "Priority cases passed on the workbench.", "PHI and secret scans are clean."]
@@ -838,9 +838,9 @@ export class FactorySession {
       list.push({ id: "changes", label: "Request changes", enabled: true, reason: "" });
     }
     if (state === "unit_loop") list.push({ id: "repair", label: "Apply the repair", enabled: true, reason: "" });
-    if (state === "deploy_gate") {
+    if (state === "record_gate") {
       list.push({
-        id: "deploy",
+        id: "record",
         label: "Record the result",
         enabled: this.p0Green,
         reason: this.p0Green ? "" : this.priority.find((item) => !item.passed)?.detail || "A priority case failed on the workbench.",
@@ -856,7 +856,7 @@ export class FactorySession {
     if (state === "architecture_gate" || state === "architecture_draft") return STAGE_METHODS.architecture.method;
     if (state === "prd_gate" || state === "prd_draft") return STAGE_METHODS.prd.method;
     if (state === "clarifying") return STAGE_METHODS.questions.method;
-    if (state === "deploy_gate" || state === "deployed") return "deterministic gate";
+    if (state === "record_gate" || state === "recorded") return "deterministic gate";
     return "intake scan";
   }
 
@@ -867,7 +867,7 @@ export class FactorySession {
     if (state === "architecture_gate") return STAGE_METHODS.architecture.reason;
     if (state === "prd_gate") return STAGE_METHODS.prd.reason;
     if (state === "clarifying") return STAGE_METHODS.questions.reason;
-    if (state === "deploy_gate") return "The record reads approvals, the unit oracle, the workbench priority cases, and the PHI scan. A model cannot open it.";
+    if (state === "record_gate") return "The record reads approvals, the unit oracle, the workbench priority cases, and the PHI scan. A model cannot open it.";
     return "The brief is scanned before any document is written.";
   }
 }

@@ -11,8 +11,8 @@ export const MAIN_LINE = [
   "test_gate",
   "automating",
   "e2e",
-  "deploy_gate",
-  "deployed",
+  "record_gate",
+  "recorded",
 ] as const;
 
 export type MainState = (typeof MAIN_LINE)[number];
@@ -32,9 +32,9 @@ export const TRANSITIONS: Record<State, readonly State[]> = {
   test_design: ["test_gate", "blocked"],
   test_gate: ["automating", "changes_requested", "blocked"],
   automating: ["e2e", "blocked"],
-  e2e: ["deploy_gate", "blocked"],
-  deploy_gate: ["deployed", "blocked"],
-  deployed: [],
+  e2e: ["record_gate", "blocked"],
+  record_gate: ["recorded", "blocked"],
+  recorded: [],
   blocked: [],
   abandoned: [],
 };

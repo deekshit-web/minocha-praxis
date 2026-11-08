@@ -51,7 +51,7 @@ function parseAct(raw: string): FactoryAct {
     case "accept-suggestion":
     case "reject-suggestion":
     case "repair":
-    case "deploy":
+    case "record":
       return { type: action.type };
     case "answers":
       return { type: "answers", choices: recordOfStrings(action.choices) };

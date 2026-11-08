@@ -31,7 +31,7 @@ test("a broad fence cannot admit the factory, the gates, or the tooling", () => 
   assert.deepEqual(fencePatternIssues(["packages/orchestrator/src/*.ts"]), ["fence-admits:packages/orchestrator/src/*.ts"]);
   for (const file of [
     "packages/factory/src/server.ts",
-    "packages/orchestrator/src/deploy.ts",
+    "packages/orchestrator/src/record.ts",
     "packages/implementer/src/tree.ts",
     "packages/harness/src/walk.ts",
     "scripts/harness.mjs",

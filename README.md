@@ -25,7 +25,7 @@ Read this before anything else.
 | Mutation oracle | `orchestrator/src/method.ts` | A test case that still passes with the known bug present |
 | Stall detection | `orchestrator/src/stall.ts` | A repeated diff-and-failure fingerprint, or a third failing attempt |
 | Intake scan | `orchestrator/src/phi.ts` | A brief containing an SSN, email, phone number, MRN or labelled date of birth |
-| Deploy gate | `orchestrator/src/deploy.ts`, `harness/src/walk.ts` | Stale approvals, a red unit run, a red P0 case, or PHI or secrets anywhere in the run's stored output |
+| Record gate | `orchestrator/src/record.ts`, `harness/src/walk.ts` | Stale approvals, a red unit run, a red P0 case, or PHI or secrets anywhere in the run's stored output |
 | Request guard | `rcm/src/workbench.ts` | On both servers, a `Host` that is not loopback, and a POST whose `Origin` is another site |
 
 The unit loop is also real. The implementer seeds a sandbox copy under `runs/implementer/`, bundles the test with esbuild, and runs it under `node:test`. The P0 cases run against a live workbench server.

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { repoRoot } from "../../orchestrator/src/paths.ts";
 import { appealReady, appealReadyBuggy, co50MissingNoteSample } from "../../domain/src/index.ts";
 import { citationPaths, loadPack } from "../../knowledge/src/index.ts";
-import { applyDeploy, type DeployInput } from "../../orchestrator/src/deploy.ts";
+import { applyRecord, type RecordInput } from "../../orchestrator/src/record.ts";
 import {
   acceptSuggestion,
   alignTestCases,
@@ -62,7 +62,7 @@ export interface FeatureBRun {
   droppedCases: string[];
 }
 
-const TO_DEPLOY_GATE = [
+const TO_RECORD_GATE = [
   "clarifying",
   "prd_draft",
   "prd_gate",
@@ -74,11 +74,11 @@ const TO_DEPLOY_GATE = [
   "test_gate",
   "automating",
   "e2e",
-  "deploy_gate",
+  "record_gate",
 ] as const;
 
-export function reach(run: Run, target: (typeof TO_DEPLOY_GATE)[number]): void {
-  for (const state of TO_DEPLOY_GATE) {
+export function reach(run: Run, target: (typeof TO_RECORD_GATE)[number]): void {
+  for (const state of TO_RECORD_GATE) {
     run.transition(state, "orchestrator");
     if (state === target) return;
   }
@@ -90,7 +90,7 @@ export function runOutput(run: Run): string {
 }
 
 /** Approvals come from the hashes, the unit and P0 results from the caller's runs, and the scans from the run output. */
-export function deployInput(run: Run, checks: { unitGreen: boolean; p0Green: boolean }): DeployInput {
+export function recordInput(run: Run, checks: { unitGreen: boolean; p0Green: boolean }): RecordInput {
   const output = runOutput(run);
   return {
     prdApproved: run.approvalMatches("prd", "prd"),
@@ -103,7 +103,7 @@ export function deployInput(run: Run, checks: { unitGreen: boolean; p0Green: boo
   };
 }
 
-export function walkFeatureB(options: { deploy?: boolean } = {}): FeatureBRun {
+export function walkFeatureB(options: { record?: boolean } = {}): FeatureBRun {
   const run = new Run("feature-b");
   const intake = intakeDecision(FEATURE_B_BRIEF);
   if (!intake.ok) {
@@ -215,14 +215,14 @@ export function walkFeatureB(options: { deploy?: boolean } = {}): FeatureBRun {
   run.transition("automating", "orchestrator");
   demand(automationIssues(aligned.cases, playwrightTitles()), "automation");
   run.transition("e2e", "orchestrator");
-  run.transition("deploy_gate", "orchestrator");
+  run.transition("record_gate", "orchestrator");
 
   const source = readFileSync(join(repoRoot(), "packages/domain/src/appealReady.test.ts"), "utf8");
   demand(missingAssertions(source, implementation.synthesis.assertionIds), "assertions");
 
-  if (options.deploy !== false) {
-    const deployed = applyDeploy(run, deployInput(run, { unitGreen: oracle.ready === false, p0Green: true }));
-    if (!deployed.ok) throw new Error(deployed.reasons.join(","));
+  if (options.record !== false) {
+    const recorded = applyRecord(run, recordInput(run, { unitGreen: oracle.ready === false, p0Green: true }));
+    if (!recorded.ok) throw new Error(recorded.reasons.join(","));
   }
   return { run, unitLog: [failure, "AC-CO50-NOTE passed"], droppedCases: aligned.dropped };
 }

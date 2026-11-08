@@ -1,4 +1,4 @@
-export { applyDeploy, deployDecision, type DeployInput } from "./deploy.ts";
+export { applyRecord, recordDecision, type RecordInput } from "./record.ts";
 export {
   acceptSuggestion,
   rejectSuggestion,

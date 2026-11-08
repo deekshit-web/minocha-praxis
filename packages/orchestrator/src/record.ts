@@ -1,6 +1,6 @@
 import { Run } from "./run.ts";
 
-export interface DeployInput {
+export interface RecordInput {
   prdApproved: boolean;
   architectureApproved: boolean;
   testCasesApproved: boolean;
@@ -10,7 +10,7 @@ export interface DeployInput {
   secretsClean: boolean;
 }
 
-export function deployDecision(input: DeployInput): { ok: true } | { ok: false; reasons: string[] } {
+export function recordDecision(input: RecordInput): { ok: true } | { ok: false; reasons: string[] } {
   const reasons: string[] = [];
   if (!input.prdApproved) reasons.push("prd-approval");
   if (!input.architectureApproved) reasons.push("architecture-approval");
@@ -23,11 +23,11 @@ export function deployDecision(input: DeployInput): { ok: true } | { ok: false; 
   return { ok: true };
 }
 
-/** Refusal leaves the run on the deploy gate. A passing check is what moves it to deployed. */
-export function applyDeploy(run: Run, input: DeployInput): { ok: true } | { ok: false; reasons: string[] } {
-  if (run.state !== "deploy_gate") throw new Error(`Deploy is only available from deploy_gate, not ${run.state}`);
-  const decision = deployDecision(input);
+/** Refusal leaves the run on the record gate. A passing check is what moves it to recorded. */
+export function applyRecord(run: Run, input: RecordInput): { ok: true } | { ok: false; reasons: string[] } {
+  if (run.state !== "record_gate") throw new Error(`Record is only available from record_gate, not ${run.state}`);
+  const decision = recordDecision(input);
   if (!decision.ok) return decision;
-  run.transition("deployed", "orchestrator", "local production build");
+  run.transition("recorded", "orchestrator", "local result recorded");
   return { ok: true };
 }
