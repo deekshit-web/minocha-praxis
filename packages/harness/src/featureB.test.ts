@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import test from "node:test";
 import { appealReady, appealReadyBuggy, buildSeed, co50MissingNoteSample } from "@northwind/domain";
+import { loadPack, retrieve } from "@northwind/knowledge";
 import {
   TransitionError,
   alignTestCases,
@@ -9,14 +11,18 @@ import {
   fenceViolations,
   findPhi,
   hashValue,
+  intakeNouns,
+  repoRoot,
   reviewPanelIssues,
 } from "@northwind/orchestrator";
 import {
   FEATURE_B_BRIEF,
   architecturePanel,
+  groundedCitations,
   leakedAnalystPrompt,
   panelCalls,
   playwrightTitles,
+  prdPanel,
   testCasePanel,
 } from "./panels.ts";
 import { blockSsn, featureCCitesFeatureA, recordInput, stallRun, synthesisHash, walkFeatureB } from "./walk.ts";
@@ -122,4 +128,14 @@ test("the synthetic seed has no PHI and no secret", () => {
 test("recorded cannot jump back to intake", () => {
   const { run } = walkFeatureB();
   assert.throws(() => run.transition("intake", "agent"), TransitionError);
+});
+
+test("retrieval for the Feature B brief finds every file the PRD and architecture cite", () => {
+  const grounded = groundedCitations(FEATURE_B_BRIEF);
+  const cited = [...prdPanel().synthesis.citations, ...architecturePanel().synthesis.citations];
+  assert.ok(cited.includes("pack/phi-policy.md"));
+  assert.ok(cited.includes("pack/roles.md"));
+  assert.deepEqual(cited.filter((citation) => !grounded.has(citation)), []);
+  const shown = retrieve(loadPack(join(repoRoot(), "packages/knowledge/pack")), intakeNouns(FEATURE_B_BRIEF), 4);
+  assert.equal(shown[0]?.path, "phi-policy.md");
 });

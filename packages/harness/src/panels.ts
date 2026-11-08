@@ -1,10 +1,11 @@
 import { join } from "node:path";
 import { CARC_RULES, carcRule, type CarcCode } from "@northwind/domain";
-import { citationPaths, loadPack } from "@northwind/knowledge";
+import { citationPaths, loadPack, relevant } from "@northwind/knowledge";
 import {
   SEAT,
   STAGE_METHODS,
   buildSeatPrompt,
+  intakeNouns,
   repoRoot,
   type Architecture,
   type AttributeFinding,
@@ -21,9 +22,12 @@ import {
 export const FEATURE_B_BRIEF =
   "On CO-50 medical-necessity denials, the specialist must not mark the appeal packet ready unless a clinical-note reference and a filing-deadline date are both present.";
 
-/** A document may cite any file in the knowledge pack. It is read from disk, so a deleted or renamed file stops counting. */
-export function knownCitations(): Set<string> {
-  return citationPaths(loadPack(join(repoRoot(), "packages/knowledge/pack")));
+/**
+ * A document may cite a pack file only when retrieval finds it relevant to the brief: an always-on policy or a tag match.
+ * The pack is read from disk, so a deleted or renamed file stops counting.
+ */
+export function groundedCitations(brief: string): Set<string> {
+  return citationPaths(relevant(loadPack(join(repoRoot(), "packages/knowledge/pack")), intakeNouns(brief)));
 }
 
 export const FEATURE_C_CITATIONS = ["pack/decisions/ADR-001-patient-and-coverage.md"];

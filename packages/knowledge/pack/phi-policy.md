@@ -2,6 +2,7 @@
 id: phi-policy
 tags: [phi, privacy, synthetic, ssn, mrn]
 status: demo
+applies: always
 ---
 
 # Synthetic patients only

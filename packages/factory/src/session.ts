@@ -40,8 +40,8 @@ import {
   FEATURE_B_BRIEF,
   RULES,
   architecturePanel,
+  groundedCitations,
   implementationPanel,
-  knownCitations,
   panelCalls,
   prdPanel,
   questionPanel,
@@ -222,7 +222,7 @@ export class FactorySession {
     const prd = playPanel<Prd>(new FixturePlayer(recordedLines(prdPanel())), "prd", FEATURE_B_BRIEF);
     const issues = [
       ...publish(this.run, "prd", prd.panel, prd.calls),
-      ...prdGateIssues(prd.panel.synthesis, prdIssues(prd.panel.synthesis, knownCitations(), RULES)),
+      ...prdGateIssues(prd.panel.synthesis, prdIssues(prd.panel.synthesis, groundedCitations(FEATURE_B_BRIEF), RULES)),
     ];
     if (issues.length > 0) {
       this.run.block(issues[0] ?? "prd");
@@ -303,7 +303,7 @@ export class FactorySession {
     const issues = [
       ...reviewPanelIssues(panel, stored ?? panelCalls(panel, FEATURE_B_BRIEF)),
       ...untestableFenceIssues(panel),
-      ...architectureIssues(accepted, criterionIds, knownCitations(), RULES),
+      ...architectureIssues(accepted, criterionIds, groundedCitations(FEATURE_B_BRIEF), RULES),
     ];
     if (issues.length > 0) {
       this.run.block(issues[0] ?? "architecture");
