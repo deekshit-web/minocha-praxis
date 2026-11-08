@@ -58,7 +58,7 @@ Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 | `packages/orchestrator` | Run state, gates, panel rules, scanners, fence and trace matrix |
 | `packages/implementer` | The fenced sandbox tree that seeds, patches and tests `appealReady` |
 | `packages/harness` | The recorded panels and a headless walk of Feature B used by the tests |
-| `packages/factory` | The HTTP server and single-page UI that drive a run step by step |
+| `packages/factory` | The HTTP server and single-page UI that drive a run step by step. `session.ts` runs the stages; `view.ts` turns run state into what the page shows |
 
 Packages import each other by relative path (`../../orchestrator/src/...`). The `package.json` names are labels, not installed workspaces.
 
@@ -75,4 +75,4 @@ Packages import each other by relative path (`../../orchestrator/src/...`). The 
 - Clarifying answers and change requests do not regenerate documents.
 - The isolation check looks for seat markers in prompts the harness writes itself, so it cannot catch a paraphrased leak.
 - There is still no login. The request guard stops other websites, not other local processes.
-- `packages/factory/src/session.ts` mixes orchestration with view rendering.
+- `FactorySession` still sequences the stages itself. A live model would need that sequencing moved into the orchestrator.

@@ -6,7 +6,8 @@ import { join, resolve, sep } from "node:path";
 import { repoRoot } from "../../orchestrator/src/paths.ts";
 import { renderProposedScreen, type ProposedScreenId } from "../../rcm/src/proposed.ts";
 import { foreignRequest } from "../../rcm/src/workbench.ts";
-import { DEFAULT_WORKBENCH, FactorySession, type FactoryAct, type FactoryView } from "./session.ts";
+import { DEFAULT_WORKBENCH, FactorySession, type FactoryAct } from "./session.ts";
+import type { FactoryView } from "./view.ts";
 
 export interface FactoryServerOptions {
   workbench?: string;

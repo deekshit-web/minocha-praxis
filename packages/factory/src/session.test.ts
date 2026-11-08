@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import type { Block } from "./session.ts";
+import type { Block } from "./view.ts";
 import { FactorySession } from "./session.ts";
 
 const SUGGESTED = { "Q-1": "co50", "Q-2": "nobody", "Q-3": "doc-id", "Q-4": "dos-90", "Q-5": "named" };
