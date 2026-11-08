@@ -4,7 +4,12 @@
   "type": "module",
   "scripts": {
     "harness": "node scripts/harness.mjs",
+    "typecheck": "tsc -p tsconfig.json",
     "factory": "node scripts/factory.mjs",
     "rcm": "node scripts/rcm.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "~5.9.3"
   }
 }

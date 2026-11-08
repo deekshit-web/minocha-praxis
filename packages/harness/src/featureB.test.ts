@@ -17,7 +17,7 @@ import {
   playwrightTitles,
   testCasePanel,
 } from "./panels.ts";
-import { blockSsn, cleanDeployInput, featureCCitesFeatureA, stallRun, synthesisHash, walkFeatureB } from "./walk.ts";
+import { blockSsn, deployInput, featureCCitesFeatureA, stallRun, synthesisHash, walkFeatureB } from "./walk.ts";
 
 function hashOfPanel(panel: unknown): string {
   return hashValue(panel);
@@ -66,10 +66,10 @@ test("a repeated unit failure stalls", () => {
 
 test("a factory path is outside the Feature B fence", () => {
   const hits = fenceViolations(
-    ["apps/factory/src/page.tsx", "packages/domain/src/appealReady.ts"],
+    ["packages/factory/src/page.ts", "packages/domain/src/appealReady.ts"],
     architecturePanel().synthesis.fileFence,
   );
-  assert.deepEqual(hits, [{ file: "apps/factory/src/page.tsx", reason: "forbidden" }]);
+  assert.deepEqual(hits, [{ file: "packages/factory/src/page.ts", reason: "forbidden" }]);
 });
 
 test("an SSN in the brief blocks intake before a document exists", () => {
@@ -90,12 +90,23 @@ test("dropping a P0 id from the Playwright titles fails the automation check", (
 test("deploy stays on the gate while a P0 is red, then deploys when it is green", () => {
   const { run } = walkFeatureB({ deploy: false });
   assert.equal(run.state, "deploy_gate");
-  const red = applyDeploy(run, cleanDeployInput(run, false));
+  const red = applyDeploy(run, deployInput(run, { unitGreen: true, p0Green: false }));
   assert.deepEqual(red, { ok: false, reasons: ["p0-red"] });
   assert.equal(run.state, "deploy_gate");
-  const green = applyDeploy(run, cleanDeployInput(run, true));
+  const green = applyDeploy(run, deployInput(run, { unitGreen: true, p0Green: true }));
   assert.equal(green.ok, true);
   assert.equal(run.state, "deployed");
+});
+
+test("deploy refuses a red unit run and scans what the run produced, not the seed", () => {
+  const { run } = walkFeatureB({ deploy: false });
+  assert.deepEqual(applyDeploy(run, deployInput(run, { unitGreen: false, p0Green: true })), { ok: false, reasons: ["unit-red"] });
+  run.putArtifact("code.diff", "+ // call the patient at 415-555-0134\n+ const apiKey = sk-abcdef123456;");
+  assert.deepEqual(applyDeploy(run, deployInput(run, { unitGreen: true, p0Green: true })), {
+    ok: false,
+    reasons: ["phi", "secrets"],
+  });
+  assert.equal(run.state, "deploy_gate");
 });
 
 test("Feature C cites the coverage decision written for Feature A", () => {

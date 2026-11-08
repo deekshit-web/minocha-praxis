@@ -6,7 +6,7 @@ import test from "node:test";
 import { nextUnitAttempt } from "../../orchestrator/src/stall.ts";
 import { FeatureBTree, SEEDED_APPEAL_READY } from "./tree.ts";
 
-const FENCE = ["packages/domain/**", "apps/rcm/**"];
+const FENCE = ["packages/domain/**", "packages/rcm/**"];
 const ASSERTIONS = ["AC-CO50-NOTE", "AC-CO50-DEADLINE", "AC-CO50-READY", "AC-PR1-NOT-DENIAL"];
 
 function repoRoot(): string {
@@ -64,7 +64,7 @@ test("a repeated failing patch stalls, and the fence refuses the factory and a d
     assert.equal(second.action, "stalled");
     assert.equal(red.passed, false);
 
-    const factory = scratchTree.tree.write("apps/factory/src/page.tsx", "export const page = 1;\n");
+    const factory = scratchTree.tree.write("packages/factory/src/page.ts", "export const page = 1;\n");
     assert.equal(factory.ok, false);
     const secret = scratchTree.tree.write(".env", "TOKEN=sk-abcdefgh\n");
     assert.equal(secret.ok, false);

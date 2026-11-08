@@ -6,7 +6,7 @@ function repoRoot(): string {
   if (process.env.NORTHWIND_ROOT) return process.env.NORTHWIND_ROOT;
   return join(dirname(fileURLToPath(import.meta.url)), "../../..");
 }
-import { appealReady, appealReadyBuggy, buildSeed, co50MissingNoteSample } from "../../domain/src/index.ts";
+import { appealReady, appealReadyBuggy, co50MissingNoteSample } from "../../domain/src/index.ts";
 import { citationPaths, loadPack } from "../../knowledge/src/index.ts";
 import { applyDeploy, type DeployInput } from "../../orchestrator/src/deploy.ts";
 import {
@@ -89,16 +89,22 @@ export function reach(run: Run, target: (typeof TO_DEPLOY_GATE)[number]): void {
   }
 }
 
-export function cleanDeployInput(run: Run, p0Green: boolean): DeployInput {
-  const seed = JSON.stringify(buildSeed());
+/** Everything the run produced: each stored document, panel, prompt, and code diff. */
+export function runOutput(run: Run): string {
+  return JSON.stringify([...run.artifacts.values()].map((artifact) => artifact.body));
+}
+
+/** Approvals come from the hashes, the unit and P0 results from the caller's runs, and the scans from the run output. */
+export function deployInput(run: Run, checks: { unitGreen: boolean; p0Green: boolean }): DeployInput {
+  const output = runOutput(run);
   return {
     prdApproved: run.approvalMatches("prd", "prd"),
     architectureApproved: run.approvalMatches("architecture", "architecture"),
     testCasesApproved: run.approvalMatches("test_cases", "test_cases"),
-    unitGreen: true,
-    p0Green,
-    phiClean: findPhi(seed).length === 0,
-    secretsClean: findSecrets(seed).length === 0,
+    unitGreen: checks.unitGreen,
+    p0Green: checks.p0Green,
+    phiClean: findPhi(output).length === 0,
+    secretsClean: findSecrets(output).length === 0,
   };
 }
 
@@ -220,7 +226,7 @@ export function walkFeatureB(options: { deploy?: boolean } = {}): FeatureBRun {
   demand(missingAssertions(source, implementation.synthesis.assertionIds), "assertions");
 
   if (options.deploy !== false) {
-    const deployed = applyDeploy(run, cleanDeployInput(run, true));
+    const deployed = applyDeploy(run, deployInput(run, { unitGreen: oracle.ready === false, p0Green: true }));
     if (!deployed.ok) throw new Error(deployed.reasons.join(","));
   }
   return { run, unitLog: [failure, "AC-CO50-NOTE passed"], droppedCases: aligned.dropped };

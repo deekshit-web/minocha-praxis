@@ -20,7 +20,7 @@ import {
   type TestCaseSet,
 } from "../../orchestrator/src/documents.ts";
 import { fenceViolations } from "../../orchestrator/src/fence.ts";
-import { cleanDeployInput } from "../../harness/src/walk.ts";
+import { deployInput } from "../../harness/src/walk.ts";
 import {
   FEATURE_B_BRIEF,
   KNOWN_CITATIONS,
@@ -237,6 +237,7 @@ export class FactorySession {
   readonly run: Run;
   readonly id: string;
   p0Green = false;
+  unitGreen = false;
   priority: PriorityResult[] = [];
   log: string[] = [];
   banner: string | null = null;
@@ -476,6 +477,7 @@ export class FactorySession {
       return;
     }
     this.repairDiff = wrote.diff;
+    this.run.putArtifact("code.diff", wrote.diff);
     const ran = this.tree.test();
     if (!ran.passed) {
       const attempt = nextUnitAttempt({ priorFingerprints: this.fingerprints, diff: wrote.diff, failureOutput: ran.output });
@@ -510,6 +512,7 @@ export class FactorySession {
       return;
     }
     this.fingerprints.push(advanced.fingerprint);
+    this.unitGreen = true;
     this.run.putArtifact("code.review", { method: "review-and-execute", sawDiff: true });
     this.run.transition("test_design", "orchestrator", "AC-CO50-NOTE passed");
     const tests = testCasePanel();
@@ -535,7 +538,7 @@ export class FactorySession {
       this.banner = "Recording is only available after the trace.";
       return;
     }
-    const decision = applyDeploy(this.run, cleanDeployInput(this.run, this.p0Green));
+    const decision = applyDeploy(this.run, deployInput(this.run, { unitGreen: this.unitGreen, p0Green: this.p0Green }));
     if (!decision.ok) {
       this.log.push(`Record refused: ${decision.reasons.join(", ")}.`);
       this.banner = `The record stayed closed: ${decision.reasons.join(", ")}.`;
@@ -734,7 +737,7 @@ export class FactorySession {
       return tabs;
     }
     if (state === "deploy_gate" || state === "deployed") {
-      const decision = deployDecision(cleanDeployInput(this.run, this.p0Green));
+      const decision = deployDecision(deployInput(this.run, { unitGreen: this.unitGreen, p0Green: this.p0Green }));
       return [
         { id: "matrix", label: "Trace", blocks: this.matrixBlocks() },
         {

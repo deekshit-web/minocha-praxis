@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { findPhi, intakeDecision } from "./phi.ts";
 import { findSecrets } from "./secrets.ts";
-import { fencePatternIssues, matchGlob } from "./fence.ts";
+import { fencePatternIssues, fenceViolations, matchGlob } from "./fence.ts";
 import { nextUnitAttempt } from "./stall.ts";
 import { Run, TransitionError } from "./run.ts";
 import { hashValue } from "./hash.ts";
@@ -20,7 +20,22 @@ test("secret shapes are rejected and the domain fence does not admit the factory
   assert.equal(findSecrets("token = sk-live-abcdef1234").length > 0, true);
   assert.equal(matchGlob("packages/domain/src/appealReady.ts", "packages/domain/**"), true);
   assert.ok(fencePatternIssues(["**"]).length > 0);
-  assert.deepEqual(fencePatternIssues(["packages/domain/**", "apps/rcm/**"]), []);
+  assert.deepEqual(fencePatternIssues(["packages/domain/**", "packages/rcm/**"]), []);
+});
+
+test("a broad fence cannot admit the factory, the gates, or the tooling", () => {
+  assert.deepEqual(fencePatternIssues(["packages/**"]), ["fence-admits:packages/**"]);
+  assert.deepEqual(fencePatternIssues(["packages/orchestrator/src/*.ts"]), ["fence-admits:packages/orchestrator/src/*.ts"]);
+  for (const file of [
+    "packages/factory/src/server.ts",
+    "packages/orchestrator/src/deploy.ts",
+    "packages/implementer/src/tree.ts",
+    "packages/harness/src/walk.ts",
+    "scripts/harness.mjs",
+    "tools/esbuild/esbuild",
+  ]) {
+    assert.deepEqual(fenceViolations([file], ["**/*"]), [{ file, reason: "forbidden" }], file);
+  }
 });
 
 test("three distinct failures hit the attempt cap and a new fingerprint may retry", () => {

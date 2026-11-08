@@ -55,7 +55,7 @@ test("Feature B pauses at each human gate and deploys only after the P0 trace is
   assert.equal(view.approvals.find((item) => item.gate === "prd")?.matches, true);
   const proposalA = view.tabs.find((tab) => tab.id === "proposal-a");
   const proposalB = view.tabs.find((tab) => tab.id === "proposal-b");
-  assert.match(fenceLines(proposalA?.blocks ?? []), /apps\/rcm/);
+  assert.match(fenceLines(proposalA?.blocks ?? []), /packages\/rcm/);
   assert.doesNotMatch(fenceLines(proposalA?.blocks ?? []), /packages\/domain/);
   assert.match(fenceLines(proposalB?.blocks ?? []), /packages\/domain/);
   assert.equal(view.actions.find((action) => action.id === "approve")?.enabled, false);
