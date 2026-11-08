@@ -1,5 +1,5 @@
 export interface PhiFinding {
-  kind: "ssn" | "email" | "phone" | "mrn";
+  kind: "ssn" | "email" | "phone" | "mrn" | "dob";
   match: string;
 }
 
@@ -8,6 +8,8 @@ const SSN = /\b\d{3}-\d{2}-\d{4}\b/g;
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const PHONE = /\b(?:\+?1[-.\s])?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}\b/g;
 const MRN = /\bMRN[:\s#-]*[A-Za-z0-9]{4,}\b/gi;
+/** A date only counts when it is labelled as a birth date. Service dates and deadlines are not PHI on their own here. */
+const DOB = /\b(?:DOB|D\.O\.B\.?|date of birth|birth ?date)[:\s]*\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}\b/gi;
 
 function collect(text: string, pattern: RegExp, kind: PhiFinding["kind"], into: PhiFinding[]): void {
   pattern.lastIndex = 0;
@@ -24,6 +26,7 @@ export function findPhi(text: string): PhiFinding[] {
   collect(masked, EMAIL, "email", findings);
   collect(masked, PHONE, "phone", findings);
   collect(masked, MRN, "mrn", findings);
+  collect(masked, DOB, "dob", findings);
   return findings;
 }
 

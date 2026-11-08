@@ -228,8 +228,8 @@
       </div>
       <div class="chips">
         <div class="chip"><i></i><span id="mode">Recorded run</span></div>
-        <a class="chip" href="http://127.0.0.1:4173/">Denial workbench</a>
-        <a class="chip" href="http://127.0.0.1:4173/eligibility">Eligibility</a>
+        <a class="chip" id="workbench-link" href="http://127.0.0.1:4173/">Denial workbench</a>
+        <a class="chip" id="eligibility-link" href="http://127.0.0.1:4173/eligibility">Eligibility</a>
         <button id="reset" type="button">Reset</button>
       </div>
     </header>
@@ -502,6 +502,9 @@
         }
         text("title", next.title);
         text("mode", next.mode === "recorded" ? "Recorded run" : next.mode);
+        const workbench = next.workbench.replace(/\/$/, "");
+        document.getElementById("workbench-link").href = workbench + "/";
+        document.getElementById("eligibility-link").href = workbench + "/eligibility";
         const split = next.state === "architecture_gate" || next.state === "architecture_draft";
         text(
           "how",

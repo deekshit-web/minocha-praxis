@@ -31,6 +31,7 @@ export {
 } from "./panel.ts";
 export { FixturePlayer, playPanel, recordedLines, UnconfiguredModel } from "./provider.ts";
 export type { CompletionRequest, ModelProvider } from "./provider.ts";
+export { repoRoot } from "./paths.ts";
 export { findPhi, intakeDecision } from "./phi.ts";
 export { Run, TransitionError } from "./run.ts";
 export type { Approval, Artifact } from "./run.ts";

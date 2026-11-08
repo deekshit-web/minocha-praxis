@@ -1,11 +1,6 @@
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
-function repoRoot(): string {
-  if (process.env.NORTHWIND_ROOT) return process.env.NORTHWIND_ROOT;
-  return join(dirname(fileURLToPath(import.meta.url)), "../../..");
-}
+import { join } from "node:path";
+import { repoRoot } from "../../orchestrator/src/paths.ts";
 import { appealReady, appealReadyBuggy, co50MissingNoteSample } from "../../domain/src/index.ts";
 import { citationPaths, loadPack } from "../../knowledge/src/index.ts";
 import { applyDeploy, type DeployInput } from "../../orchestrator/src/deploy.ts";

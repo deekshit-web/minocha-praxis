@@ -7,12 +7,15 @@ import { nextUnitAttempt } from "./stall.ts";
 import { Run, TransitionError } from "./run.ts";
 import { hashValue } from "./hash.ts";
 
-test("PHI scanner ignores synthetic ids and catches an SSN, an email, a phone, and an MRN", () => {
+test("PHI scanner ignores synthetic ids and catches an SSN, an email, a phone, an MRN, and a labelled birth date", () => {
   assert.deepEqual(findPhi("See PAT-001 on CLM-014 with DOC-003."), []);
   assert.equal(findPhi("SSN 123-45-6789")[0]?.kind, "ssn");
   assert.equal(findPhi("write ada@example.com")[0]?.kind, "email");
   assert.equal(findPhi("call 415-555-0134")[0]?.kind, "phone");
   assert.equal(findPhi("MRN: 445566")[0]?.kind, "mrn");
+  assert.equal(findPhi("DOB 1961-04-09")[0]?.kind, "dob");
+  assert.equal(findPhi("date of birth: 04/09/1961")[0]?.kind, "dob");
+  assert.deepEqual(findPhi("Filing deadline 2026-12-01, date of service 2026-09-02"), []);
   assert.equal(intakeDecision("PAT-001 eligibility").ok, true);
 });
 

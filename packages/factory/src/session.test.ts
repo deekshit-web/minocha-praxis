@@ -164,3 +164,11 @@ test("an SSN probe sets a banner and does not move the run", async () => {
   assert.equal(session.run.artifacts.size, 0);
   assert.equal(session.run.state, "intake");
 });
+
+test("workbench links follow the configured workbench", () => {
+  const view = new FactorySession("workbench", "http://127.0.0.1:9999/").view();
+  assert.equal(view.workbench, "http://127.0.0.1:9999/");
+  const lines = view.tabs.flatMap((tab) => tab.blocks.flatMap((block) => block.lines));
+  assert.ok(lines.includes("link:http://127.0.0.1:9999/summary Lead summary"));
+  assert.equal(lines.some((line) => line.includes("4173")), false);
+});

@@ -2,19 +2,15 @@ import { readFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve, sep } from "node:path";
+import { repoRoot } from "../../orchestrator/src/paths.ts";
 import { renderProposedScreen, type ProposedScreenId } from "../../rcm/src/proposed.ts";
-import { FactorySession, type FactoryAct, type FactoryView } from "./session.ts";
+import { foreignRequest } from "../../rcm/src/workbench.ts";
+import { DEFAULT_WORKBENCH, FactorySession, type FactoryAct, type FactoryView } from "./session.ts";
 
 export interface FactoryServerOptions {
   workbench?: string;
   sandboxRoot?: string;
-}
-
-function repoRoot(): string {
-  if (process.env.NORTHWIND_ROOT) return process.env.NORTHWIND_ROOT;
-  return join(dirname(fileURLToPath(import.meta.url)), "../../..");
 }
 
 function pagePath(): string {
@@ -90,7 +86,7 @@ async function resetFactory(sessions: Map<string, FactorySession>, sandboxRoot: 
   } catch {
     workbenchCleared = false;
   }
-  const session = new FactorySession();
+  const session = new FactorySession(undefined, workbench);
   sessions.set(session.id, session);
   session.banner = workbenchCleared
     ? "Factory run cleared. Workbench ready marks cleared. The domain file was not changed."
@@ -101,7 +97,7 @@ async function resetFactory(sessions: Map<string, FactorySession>, sandboxRoot: 
 
 export function createFactoryServer(options: FactoryServerOptions = {}): Server {
   const sessions = new Map<string, FactorySession>();
-  const workbench = options.workbench ?? "http://127.0.0.1:4173";
+  const workbench = options.workbench ?? DEFAULT_WORKBENCH;
   const sandboxRoot = options.sandboxRoot ?? join(repoRoot(), "runs/implementer");
   return createServer((req, res) => {
     void handle(req, res, sessions, workbench, sandboxRoot);
@@ -115,6 +111,10 @@ async function handle(
   workbench: string,
   sandboxRoot: string,
 ): Promise<void> {
+  if (foreignRequest(req)) {
+    send(res, 403, { error: "foreign-origin" });
+    return;
+  }
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   try {
     if (req.method === "GET" && url.pathname === "/") {
@@ -127,7 +127,7 @@ async function handle(
       return;
     }
     if (req.method === "POST" && url.pathname === "/api/session") {
-      const session = new FactorySession();
+      const session = new FactorySession(undefined, workbench);
       sessions.set(session.id, session);
       send(res, 201, session.view());
       return;
@@ -164,8 +164,8 @@ async function handle(
   }
 }
 
-export function listen(port = 4317): Promise<{ port: number; close: () => Promise<void> }> {
-  const server = createFactoryServer();
+export function listen(port = 4317, options: FactoryServerOptions = {}): Promise<{ port: number; close: () => Promise<void> }> {
+  const server = createFactoryServer(options);
   return new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, "127.0.0.1", () => {

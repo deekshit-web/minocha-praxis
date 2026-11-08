@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import type { Server } from "node:http";
+import { request, type Server } from "node:http";
 import test from "node:test";
 import { findPhi } from "../../orchestrator/src/phi.ts";
 import { carcRule } from "../../domain/src/carc.ts";
@@ -103,5 +103,31 @@ test("reset clears an in-memory ready mark and leaves the seed denial blocked ag
     const again = await (await fetch(`${origin}/denial/${open.id}`)).text();
     assert.equal(again.includes("Marked appeal ready"), false);
     assert.match(again, /type="submit">Mark appeal ready<\/button>/);
+  });
+});
+
+function rawStatus(origin: string, method: string, path: string, headers: Record<string, string>): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const sent = request(`${origin}${path}`, { method, headers }, (res) => {
+      res.resume();
+      resolve(res.statusCode ?? 0);
+    });
+    sent.on("error", reject);
+    sent.end();
+  });
+}
+
+test("the workbench refuses a cross-site POST and a non-loopback Host", async () => {
+  const open = buildSeed().denials.find((item) => item.carc === "CO-16");
+  assert.ok(open);
+  await withServer(async (origin) => {
+    const host = new URL(origin).host;
+    assert.equal(await rawStatus(origin, "POST", "/reset", { origin: "https://evil.example" }), 403);
+    assert.equal(await rawStatus(origin, "POST", `/denial/${open.id}/ready`, { origin: "https://evil.example" }), 403);
+    assert.equal(await rawStatus(origin, "GET", "/", { host: "rebound.example:80" }), 403);
+    assert.equal(await rawStatus(origin, "POST", "/reset", { origin: `http://${host}` }), 200);
+    assert.equal(await rawStatus(origin, "POST", "/reset", {}), 200);
+    const page = await (await fetch(`${origin}/denial/${open.id}`)).text();
+    assert.equal(page.includes("Marked appeal ready"), false);
   });
 });
