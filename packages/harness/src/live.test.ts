@@ -10,7 +10,7 @@ import {
   recordedLines,
   type Prd,
 } from "@northwind/orchestrator";
-import { livePrdSeats, prdContext, runLivePrd, summarizeLiveRun } from "./live.ts";
+import { livePrdSeats, prdContext, runLivePrd, summarizeLiveRun, withChains } from "./live.ts";
 import { FEATURE_B_BRIEF, prdPanel } from "./panels.ts";
 
 interface FakeReply {
@@ -169,4 +169,29 @@ test("a malformed synthesis fails, keeps the four finished answers and every bil
 test("a resumed seat whose prompt changed is refused rather than replayed", async () => {
   const provider = new ResumingProvider([{ role: "analystA", prompt: "an older brief", text: "{}" }], new FixturePlayer(recordedLines(prdPanel())));
   await assert.rejects(provider.complete({ role: "analystA", prompt: "a new brief" }), /resume-prompt-changed:analystA/);
+});
+
+test("a resumed or re-checked run reports what the whole chain of attempts cost and took", () => {
+  const run = (file: string, kind: "live" | "resumed" | "recheck", resumedFrom: string | null, costUsd: number, durationMs: number) => ({
+    file,
+    kind,
+    resumedFrom,
+    startedAt: null,
+    durationMs,
+    verdict: "pass" as const,
+    issues: [],
+    costUsd,
+    chainCostUsd: costUsd,
+    chainDurationMs: durationMs,
+    rows: [],
+  });
+  const chained = withChains([
+    run("d.json", "recheck", "c.json", 0, 0),
+    run("c.json", "resumed", "b.json", 0.87, 319_500),
+    run("b.json", "resumed", "a.json", 0.91, 1_027_000),
+    run("a.json", "live", null, 0.3, 426_000),
+  ]);
+  assert.equal(chained[0]?.chainCostUsd?.toFixed(2), "2.08");
+  assert.equal(chained[0]?.chainDurationMs, 1_772_500);
+  assert.equal(chained[3]?.chainCostUsd, 0.3);
 });

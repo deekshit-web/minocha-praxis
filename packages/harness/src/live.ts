@@ -173,12 +173,18 @@ interface SavedLiveRunV1 {
 
 export interface LiveRunSummary {
   file: string;
+  /** "recheck" replayed every seat, so it made no model call; "resumed" replayed some and paid for the rest. */
+  kind: "live" | "resumed" | "recheck";
+  resumedFrom: string | null;
   startedAt: string | null;
   durationMs: number | null;
   verdict: "pass" | "issues" | "failed";
   issues: string[];
-  /** Null when any call has no known price. */
+  /** This run's own spend. Null when any call has no known price. */
   costUsd: number | null;
+  /** This run plus every run it resumed from: what the result really took. */
+  chainCostUsd: number | null;
+  chainDurationMs: number | null;
   rows: CallRow[];
 }
 
@@ -189,13 +195,18 @@ function totalCost(rows: CallRow[]): number | null {
 export function summarizeLiveRun(file: string, saved: SavedLiveRun | SavedLiveRunV1): LiveRunSummary {
   if ("format" in saved) {
     const rows = callRows("PRD", saved.metrics, saved.quality ?? null);
+    const replayed = saved.metrics.filter((metric) => metric.source === "resumed").length;
     return {
       file,
+      kind: replayed === 0 ? "live" : replayed === saved.metrics.length && !saved.failure ? "recheck" : "resumed",
+      resumedFrom: saved.resumedFrom ?? null,
       startedAt: saved.startedAt,
       durationMs: saved.durationMs,
       verdict: saved.failure ? "failed" : (saved.issues ?? []).length === 0 ? "pass" : "issues",
       issues: saved.failure ? [saved.failure] : (saved.issues ?? []),
       costUsd: totalCost(rows),
+      chainCostUsd: totalCost(rows),
+      chainDurationMs: saved.durationMs,
       rows,
     };
   }
@@ -208,7 +219,20 @@ export function summarizeLiveRun(file: string, saved: SavedLiveRun | SavedLiveRu
     costUsd: callCost(usage.model, usage),
   }));
   const rows = callRows("PRD", metrics, seatQuality(saved.panel, saved.calls, prdChecks(saved.brief)));
-  return { file, startedAt: null, durationMs: null, verdict: saved.issues.length === 0 ? "pass" : "issues", issues: saved.issues, costUsd: totalCost(rows), rows };
+  const cost = totalCost(rows);
+  return {
+    file,
+    kind: "live",
+    resumedFrom: null,
+    startedAt: null,
+    durationMs: null,
+    verdict: saved.issues.length === 0 ? "pass" : "issues",
+    issues: saved.issues,
+    costUsd: cost,
+    chainCostUsd: cost,
+    chainDurationMs: null,
+    rows,
+  };
 }
 
 /** Every saved live PRD run, newest first. A file that cannot be read is skipped, not fatal. */
@@ -227,5 +251,22 @@ export function readLiveRuns(dir = join(repoRoot(), "runs/live")): LiveRunSummar
       continue;
     }
   }
-  return runs;
+  return withChains(runs);
+}
+
+/** Adds each run's predecessors along its resumedFrom links, so a resumed result shows what it really cost and took. */
+export function withChains(runs: LiveRunSummary[]): LiveRunSummary[] {
+  const byFile = new Map(runs.map((run) => [run.file, run]));
+  return runs.map((run) => {
+    let cost: number | null = run.costUsd;
+    let duration: number | null = run.durationMs;
+    const seen = new Set([run.file]);
+    for (let previous = run.resumedFrom ? byFile.get(run.resumedFrom) : undefined; previous && !seen.has(previous.file); ) {
+      seen.add(previous.file);
+      cost = cost === null || previous.costUsd === null ? null : cost + previous.costUsd;
+      duration = duration === null || previous.durationMs === null ? null : duration + previous.durationMs;
+      previous = previous.resumedFrom ? byFile.get(previous.resumedFrom) : undefined;
+    }
+    return { ...run, chainCostUsd: cost, chainDurationMs: duration };
+  });
 }

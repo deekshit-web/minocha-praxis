@@ -13,6 +13,9 @@ test("PHI scanner ignores synthetic ids and catches an SSN, an email, a phone, a
   assert.equal(findPhi("write ada@example.com")[0]?.kind, "email");
   assert.equal(findPhi("call 415-555-0134")[0]?.kind, "phone");
   assert.equal(findPhi("MRN: 445566")[0]?.kind, "mrn");
+  assert.equal(findPhi("MRN A12345")[0]?.kind, "mrn");
+  assert.equal(findPhi("mrn#ABC123")[0]?.kind, "mrn");
+  assert.deepEqual(findPhi("A raw MRN followed by an identifier blocks the run."), []);
   assert.equal(findPhi("DOB 1961-04-09")[0]?.kind, "dob");
   assert.equal(findPhi("date of birth: 04/09/1961")[0]?.kind, "dob");
   assert.deepEqual(findPhi("Filing deadline 2026-12-01, date of service 2026-09-02"), []);

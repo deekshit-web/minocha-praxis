@@ -830,8 +830,9 @@
           return;
         }
         text("live-value", run.verdict === "pass" ? "Gates passed" : run.verdict === "failed" ? "Run failed" : "Gates refused");
-        const cost = run.costUsd === null ? "price unknown" : "$" + run.costUsd.toFixed(2);
-        text("live-sub", cost + " · " + formatMs(run.durationMs) + " · " + liveRuns.length + " saved");
+        const cost = run.chainCostUsd === null ? "price unknown" : "$" + run.chainCostUsd.toFixed(2);
+        const chained = run.resumedFrom ? " across all attempts" : "";
+        text("live-sub", cost + " · " + formatMs(run.chainDurationMs) + chained);
       }
 
       function renderCalls(next) {
@@ -861,9 +862,23 @@
           badge.className = "badge " + run.verdict;
           badge.textContent = run.verdict === "pass" ? "Gates passed" : run.verdict === "failed" ? "Run failed" : "Gates refused";
           const when = run.startedAt ? new Date(run.startedAt).toLocaleString() : run.file;
-          const cost = run.costUsd === null ? "price unknown" : "$" + run.costUsd.toFixed(2);
-          summary.append(badge, document.createTextNode(when + " · " + run.rows.length + " calls · " + cost + " · " + formatMs(run.durationMs)));
+          const money = (value) => (value === null ? "price unknown" : "$" + value.toFixed(2));
+          const kind = run.kind === "recheck" ? "Re-check, no model calls" : run.kind === "resumed" ? "Resumed" : "Live run";
+          summary.append(badge, document.createTextNode(when + " · " + kind + " · " + money(run.costUsd) + " · " + formatMs(run.durationMs)));
           details.appendChild(summary);
+          if (run.resumedFrom) {
+            const lineage = document.createElement("p");
+            lineage.className = "quiet";
+            lineage.textContent =
+              (run.kind === "recheck" ? "Replays every answer from " : "Continues ") +
+              run.resumedFrom +
+              ". With every earlier attempt: " +
+              money(run.chainCostUsd) +
+              " and " +
+              formatMs(run.chainDurationMs) +
+              ".";
+            details.appendChild(lineage);
+          }
           if (run.issues.length > 0) {
             const list = document.createElement("ul");
             for (const issue of run.issues) {

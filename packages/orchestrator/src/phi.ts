@@ -7,7 +7,8 @@ const ALLOWED_ID = /\b(?:PAT|CLM|DOC)-\d{3}\b/g;
 const SSN = /\b\d{3}-\d{2}-\d{4}\b/g;
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const PHONE = /\b(?:\+?1[-.\s])?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}\b/g;
-const MRN = /\bMRN[:\s#-]*[A-Za-z0-9]{4,}\b/gi;
+/** An MRN identifier carries a digit, so prose such as "a raw MRN followed by an identifier" is not a hit. */
+const MRN = /\bMRN[:\s#-]*(?=[A-Za-z]*\d)[A-Za-z0-9]{4,}\b/gi;
 /** A date only counts when it is labelled as a birth date. Service dates and deadlines are not PHI on their own here. */
 const DOB = /\b(?:DOB|D\.O\.B\.?|date of birth|birth ?date)[:\s]*\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}\b/gi;
 

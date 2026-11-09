@@ -31,6 +31,7 @@ export {
   readLiveRuns,
   runLivePrd,
   summarizeLiveRun,
+  withChains,
   type LivePrdResult,
   type LiveRunSummary,
   type SavedLiveRun,

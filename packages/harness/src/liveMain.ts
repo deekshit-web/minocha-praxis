@@ -7,10 +7,12 @@ import {
   PanelCallError,
   ResumingProvider,
   SeatRouter,
+  recordedLines,
   repoRoot,
   type CallMetric,
   type ModelProvider,
   type PanelRole,
+  type SeatAnswer,
 } from "@northwind/orchestrator";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
@@ -34,15 +36,29 @@ function save(run: SavedLiveRun): string {
   return file;
 }
 
-/** `--resume <file>` continues a failed run: its finished seats are replayed, only the rest are paid for. */
-function resumeFrom(): { file: string; run: SavedLiveRun } | null {
+/** A failed run saved its finished answers. A completed run's answers are rebuilt from its panel and prompts. */
+function savedAnswers(run: SavedLiveRun): SeatAnswer[] {
+  if (run.answers?.length) return run.answers;
+  if (!run.panel || !run.calls) return [];
+  const lines = recordedLines(run.panel);
+  return run.calls.map((call, index) => {
+    const metric = run.metrics.find((item) => item.role === call.role);
+    return { role: call.role, prompt: call.prompt, text: lines[index] ?? "", model: metric?.model ?? undefined, usage: metric?.usage ?? undefined };
+  });
+}
+
+/**
+ * `--resume <file>` replays a saved run's finished seats and pays only for the rest. On a failed run that
+ * continues it; on a completed run every seat is replayed, so it re-checks the panel with today's gates for $0.
+ */
+function resumeFrom(): { file: string; answers: SeatAnswer[] } | null {
   const flag = process.argv.indexOf("--resume");
   if (flag === -1) return null;
   const path = process.argv[flag + 1];
   if (!path) throw new Error("--resume needs the path of a saved run under runs/live/.");
-  const run = JSON.parse(readFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), path), "utf8")) as SavedLiveRun;
-  if (!run.failure || !run.answers?.length) throw new Error(`${path} is not a failed run with saved answers.`);
-  return { file: basename(path), run };
+  const answers = savedAnswers(JSON.parse(readFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), path), "utf8")) as SavedLiveRun);
+  if (answers.length === 0) throw new Error(`${path} has no saved answers to replay.`);
+  return { file: basename(path), answers };
 }
 
 const startedAt = new Date().toISOString();
@@ -65,16 +81,26 @@ const seats: Record<PanelRole, string> = {
 const routed = grok
   ? new SeatRouter({ analystA: claude, analystB: grok, critiqueOfA: grok, critiqueOfB: claude, synthesizer: claude })
   : claude;
-const model: ModelProvider = resume ? new ResumingProvider(resume.run.answers ?? [], routed) : routed;
-const lineup = [...new Set(Object.values(seats))].join(" + ");
-console.log(resume ? `Resuming ${resume.file}: replaying ${resume.run.answers?.length} finished seat(s).` : "Playing the Feature B PRD panel: five calls, one at a time.");
-for (const [role, seatModel] of Object.entries(seats)) console.log(`  ${role.padEnd(12)} ${seatModel}`);
-if (!grok) console.log("XAI_API_KEY is not set, so both analysts run on Claude.");
+const model: ModelProvider = resume ? new ResumingProvider(resume.answers, routed) : routed;
+/** The models that actually answered, which for a replayed seat is the model that answered originally. */
+const answeredBy = (metrics: CallMetric[]) => [...new Set(metrics.map((metric) => metric.model ?? "unknown"))].join(" + ");
+const recheck = resume?.answers.length === 5;
+console.log(
+  !resume
+    ? "Playing the Feature B PRD panel: five calls, one at a time."
+    : resume.answers.length === 5
+      ? `Re-checking ${resume.file} with the current gates: all five seats replayed, no model calls.`
+      : `Resuming ${resume.file}: replaying ${resume.answers.length} finished seat(s).`,
+);
+if (!recheck) {
+  for (const [role, seatModel] of Object.entries(seats)) console.log(`  ${role.padEnd(12)} ${seatModel}`);
+  if (!grok) console.log("XAI_API_KEY is not set, so both analysts run on Claude.");
+}
 try {
   const result = await runLivePrd(model);
   const file = save({
     format: 2,
-    model: lineup,
+    model: answeredBy(result.metrics),
     brief: FEATURE_B_BRIEF,
     startedAt,
     durationMs: result.durationMs,
@@ -104,7 +130,7 @@ try {
   if (metrics.length > 0) {
     const file = save({
       format: 2,
-      model: lineup,
+      model: answeredBy(metrics),
       brief: FEATURE_B_BRIEF,
       startedAt,
       durationMs: performance.now() - started,
