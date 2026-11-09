@@ -1,0 +1,136 @@
+{
+  "about": "Part A: planted defects. Each draft is a known base PRD with one edit. Seeded edits plant a defect the code gates cannot see; clean edits are harmless rewording. A reviewer detects a case when its critique names the planted defect.",
+  "cases": [
+    {
+      "id": "A01",
+      "base": "live-synthesis",
+      "kind": "seeded",
+      "defect": "date-band",
+      "notice": "AC-32 calls a deadline 15 days away urgent. Urgent is 14 days or fewer, so 15 days is soon.",
+      "edits": [{ "section": "acceptanceCriteria", "id": "AC-32", "field": "then", "find": "2026-12-02 soon (15 days)", "replace": "2026-12-02 urgent (15 days)" }]
+    },
+    {
+      "id": "A02",
+      "base": "live-synthesis",
+      "kind": "seeded",
+      "defect": "date-arithmetic",
+      "notice": "AC-13 says the deadline is 2026-11-28, but the date of service 2026-08-20 plus 90 days is 2026-11-18.",
+      "edits": [{ "section": "acceptanceCriteria", "id": "AC-13", "field": "then", "find": "2026-11-18, which is the date of service plus 90 days", "replace": "2026-11-28, which is the date of service plus 90 days" }]
+    },
+    {
+      "id": "A03",
+      "base": "live-synthesis",
+      "kind": "seeded",
+      "defect": "contradiction",
+      "notice": "REQ-12 lets the PFS lead override the gate, contradicting REQ-3 (nobody may override) and the agreed answer 'Nobody in v1'.",
+      "edits": [{ "section": "requirements", "id": "REQ-12", "field": "statement", "find": "None of these roles has a ready action or an override.", "replace": "None of these roles has a ready action, except that the PFS lead may override the gate with a written justification." }]
+    },
+    {
+      "id": "A04",
+      "base": "live-synthesis",
+      "kind": "seeded",
+      "defect": "scope-vs-answer",
+      "notice": "REQ-1 applies the gate to every denial class, but the agreed answer was CO-50 only, and the rest of the document assumes CO-50 only.",
+      "edits": [{ "section": "requirements", "id": "REQ-1", "field": "statement", "find": "The readiness gate applies only to CO-50 denial lines. CO-16, CO-197, CO-4, PR-1, and OA-23 keep their current paths and are never gated.", "replace": "The readiness gate applies to every denial class: CO-50, CO-16, CO-197, and CO-4. PR-1 and OA-23 keep their current paths and are never gated." }]
+    },
+    {
+      "id": "A05",
+      "base": "live-synthesis",
+      "kind": "seeded",
+      "defect": "wrong-payer-action",
+      "notice": "REQ-8 gives PR-1 lines an appeal action, but PR-1's only allowed action is to post the amount to patient responsibility and not open an appeal.",
+      "edits": [{ "section": "requirements", "id": "REQ-8", "field": "statement", "find": "An unknown code stays unmapped with no invented meaning and no gate.", "replace": "An unknown code stays unmapped with no invented meaning and no gate. PR-1 lines offer an appeal action so the specialist can contest the deductible." }]
+    },
+    {
+      "id": "A06",
+      "base": "live-synthesis",
+      "kind": "seeded",
+      "defect": "untestable",
+      "notice": "AC-8's outcome is a feeling ('easy to understand', 'feels confident'), so no test can observe whether it passed.",
+      "edits": [{ "section": "acceptanceCriteria", "id": "AC-8", "field": "then", "find": "Line A's control is enabled and line A becomes appeal-ready, while line B's control stays disabled naming the clinical-note reference and line B stays in denied.", "replace": "The specialist finds the two-line claim easy to understand and feels confident about which line is ready." }]
+    },
+    {
+      "id": "A07",
+      "base": "live-synthesis",
+      "kind": "seeded",
+      "defect": "phi",
+      "notice": "AC-5 uses a real-looking patient name and street address. Only synthetic PAT-, CLM- and DOC- ids are allowed.",
+      "edits": [{ "section": "acceptanceCriteria", "id": "AC-5", "field": "given", "find": "CLM-221 for PAT-221", "replace": "CLM-221 for Maria Alvarez of 1420 Elm Street, Springfield" }]
+    },
+    {
+      "id": "A08",
+      "base": "live-synthesis",
+      "kind": "seeded",
+      "defect": "role-permission",
+      "notice": "REQ-12 lets the front desk mark a packet ready, contradicting its own first sentence (only the denial specialist may) and the roles policy.",
+      "edits": [{ "section": "requirements", "id": "REQ-12", "field": "statement", "find": "The front desk has no denial workqueue route at all;", "replace": "The front desk may mark a CO-50 packet ready when no specialist is available;" }]
+    },
+    {
+      "id": "A09",
+      "base": "live-synthesis",
+      "kind": "seeded",
+      "defect": "silent-default",
+      "notice": "REQ-5 fills a missing deadline with 90 days from today and passes the gate, but a blank deadline must fail the gate.",
+      "edits": [{ "section": "requirements", "id": "REQ-5", "field": "statement", "find": "When neither is available the deadline is blank, is labelled missing, and fails the gate.", "replace": "When neither is available the deadline defaults to 90 days from today and the gate passes." }]
+    },
+    {
+      "id": "A10",
+      "base": "recorded",
+      "kind": "seeded",
+      "defect": "wrong-fact",
+      "notice": "The Q-4 assumption says the deadline is the date of service plus 180 days. The payer rule, and the agreed answer, say 90 days.",
+      "edits": [{ "section": "assumptions", "id": "Q-4", "field": "text", "find": "date of service plus 90 days", "replace": "date of service plus 180 days, per Northwind Health's timely-filing rule" }]
+    },
+    {
+      "id": "A11",
+      "base": "recorded",
+      "kind": "seeded",
+      "defect": "contradiction",
+      "notice": "New REQ-5 requires a clinical-note reference on CO-16 denials, contradicting REQ-2 (CO-16 is unchanged) and AC-4.",
+      "edits": [
+        { "section": "requirements", "append": { "id": "REQ-5", "statement": "CO-16 denials also need a clinical-note reference before they can be marked ready.", "rationale": "Keeps the checklist the same across denial codes." } },
+        { "section": "acceptanceCriteria", "append": { "id": "AC-7", "requirementId": "REQ-5", "given": "A CO-16 denial with no clinical-note reference", "when": "The specialist marks it ready", "then": "The packet stays not ready and names the clinical-note reference", "priority": "P1" } }
+      ]
+    },
+    {
+      "id": "A12",
+      "base": "recorded",
+      "kind": "seeded",
+      "defect": "silent-default",
+      "notice": "AC-2 marks the packet ready when the deadline is missing, contradicting REQ-1 (both items must be present).",
+      "edits": [{ "section": "acceptanceCriteria", "id": "AC-2", "field": "then", "find": "The packet stays not ready and the missing item is the filing deadline", "replace": "The packet becomes ready, because a missing deadline is filled in as 90 days from today" }]
+    },
+    {
+      "id": "C01",
+      "base": "live-synthesis",
+      "kind": "clean",
+      "defect": "none",
+      "notice": "No planted defect.",
+      "edits": []
+    },
+    {
+      "id": "C02",
+      "base": "recorded",
+      "kind": "clean",
+      "defect": "none",
+      "notice": "No planted defect.",
+      "edits": []
+    },
+    {
+      "id": "C03",
+      "base": "live-synthesis",
+      "kind": "clean",
+      "defect": "none",
+      "notice": "No planted defect; REQ-3 is reworded without changing its meaning.",
+      "edits": [{ "section": "requirements", "id": "REQ-3", "field": "statement", "find": "Nobody may override the gate in v1.", "replace": "No one may override the gate in v1." }]
+    },
+    {
+      "id": "C04",
+      "base": "recorded",
+      "kind": "clean",
+      "defect": "none",
+      "notice": "No planted defect; REQ-4 is reworded without changing its meaning.",
+      "edits": [{ "section": "requirements", "id": "REQ-4", "field": "statement", "find": "When the gate blocks, the specialist sees the names of the missing items.", "replace": "When the gate blocks, the specialist is shown the names of the missing items." }]
+    }
+  ]
+}

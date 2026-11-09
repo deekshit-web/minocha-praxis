@@ -4,3 +4,4 @@ runs/
 .env
 .env.*
 *.log
+evals/prd-panel/inputs.html

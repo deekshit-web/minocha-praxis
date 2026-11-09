@@ -1,0 +1,141 @@
+{
+  "about": "Part B: new briefs, run end to end through each setup. Answers stand in for the question round. Checks are what the jury verifies in the final PRD; each is a concrete, checkable claim drawn from the knowledge pack or the answers.",
+  "briefs": [
+    {
+      "id": "B01",
+      "topic": "CO-197 prior authorization",
+      "brief": "On CO-197 denials, the specialist must attach an existing authorization reference before resubmitting, and lines with no authorization reference must go to the authorization desk instead of being resubmitted.",
+      "answers": [
+        { "id": "Q-1", "question": "What counts as an authorization reference?", "answer": "A non-empty AUTH-#### id; free text does not count." },
+        { "id": "Q-2", "question": "Can the specialist resubmit without one?", "answer": "No. The line is routed to the authorization desk for a retro request." },
+        { "id": "Q-3", "question": "Does this change any other denial code?", "answer": "No. Only CO-197 lines are affected." }
+      ],
+      "checks": [
+        "The CO-197 next action is copied exactly: 'Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request.'",
+        "A CO-197 line with no AUTH-#### reference cannot be resubmitted and is routed to the authorization desk.",
+        "Free text in the authorization field does not count as a reference.",
+        "No other denial code's behaviour changes.",
+        "Every acceptance criterion's outcome can be observed by a test."
+      ]
+    },
+    {
+      "id": "B02",
+      "topic": "CO-16 missing information",
+      "brief": "On CO-16 denials, the specialist must see which claim element the remark code says is missing before the claim can be resubmitted.",
+      "answers": [
+        { "id": "Q-1", "question": "Where does the missing element come from?", "answer": "From the remark code on the remit; the product does not guess." },
+        { "id": "Q-2", "question": "Who works CO-16 lines?", "answer": "The biller, as resubmissions." },
+        { "id": "Q-3", "question": "What if the remark code is unknown?", "answer": "The line shows the code as unmapped and resubmission stays blocked." }
+      ],
+      "checks": [
+        "The CO-16 next action is copied exactly: 'Correct the missing element named by the remark and resubmit the claim.'",
+        "The missing element is named from the remark code, never inferred.",
+        "An unknown remark code is shown as unmapped and blocks resubmission.",
+        "The biller, not the front desk, works CO-16 resubmissions.",
+        "Every acceptance criterion's outcome can be observed by a test."
+      ]
+    },
+    {
+      "id": "B03",
+      "topic": "Deadline risk in the workqueue",
+      "brief": "The denial workqueue must sort appealable denials by days remaining to the filing deadline and label each row overdue, urgent, soon, or comfortable.",
+      "answers": [
+        { "id": "Q-1", "question": "Where do the bands start?", "answer": "Urgent is 0 to 14 days, soon is 15 to 45 days, comfortable is more than 45 days, and past the deadline is overdue." },
+        { "id": "Q-2", "question": "Which date is the deadline?", "answer": "Date of service plus 90 days, per Northwind Health timely filing." },
+        { "id": "Q-3", "question": "Where do rows with no deadline go?", "answer": "They are labelled missing and sort before comfortable rows." }
+      ],
+      "checks": [
+        "The deadline is the date of service plus 90 days.",
+        "Band boundaries are exactly: overdue below 0 days, urgent 0-14, soon 15-45, comfortable above 45.",
+        "Any worked date example in the document is arithmetically correct.",
+        "Rows with no deadline are labelled missing and never shown as comfortable.",
+        "Patient-responsibility (PR-1) lines are not in the appealable list."
+      ]
+    },
+    {
+      "id": "B04",
+      "topic": "PR-1 patient responsibility",
+      "brief": "PR-1 deductible lines must go to a patient-responsibility group and must never offer an appeal action.",
+      "answers": [
+        { "id": "Q-1", "question": "Where do PR-1 lines appear?", "answer": "In a separate patient-responsibility group, not the denial list." },
+        { "id": "Q-2", "question": "Can anyone appeal a PR-1 line?", "answer": "No role can." },
+        { "id": "Q-3", "question": "Is the patient statement in scope?", "answer": "No; statements are out of scope for this change." }
+      ],
+      "checks": [
+        "The PR-1 next action is copied exactly: 'Post the amount to patient responsibility. Do not open an appeal.'",
+        "No role has an appeal action on a PR-1 line.",
+        "PR-1 lines never appear in the denial list.",
+        "Patient statements are listed as out of scope.",
+        "Every acceptance criterion's outcome can be observed by a test."
+      ]
+    },
+    {
+      "id": "B05",
+      "topic": "Eligibility at scheduling",
+      "brief": "The front desk must not be able to schedule an imaging visit when the patient's coverage is inactive, and must see why.",
+      "answers": [
+        { "id": "Q-1", "question": "Which coverage states block scheduling?", "answer": "Only inactive. Unknown coverage shows a warning but does not block." },
+        { "id": "Q-2", "question": "Can anyone override the block?", "answer": "No override in this version." },
+        { "id": "Q-3", "question": "Which identifiers can the screen show?", "answer": "Synthetic PAT-### ids only; no names." }
+      ],
+      "checks": [
+        "Inactive coverage blocks scheduling and names the reason.",
+        "Unknown coverage warns but does not block.",
+        "No override path exists for any role.",
+        "Only synthetic PAT-### ids appear; no patient names.",
+        "The front desk has no denial-workqueue actions."
+      ]
+    },
+    {
+      "id": "B06",
+      "topic": "Lead summary",
+      "brief": "The PFS lead needs a summary of open lines counted by CARC class, with the number of appealable denials that are already overdue.",
+      "answers": [
+        { "id": "Q-1", "question": "Which classes are counted?", "answer": "Denial, patient responsibility, and informational, matching the CARC table classes." },
+        { "id": "Q-2", "question": "Can the lead act on lines from the summary?", "answer": "No; the summary is read-only." },
+        { "id": "Q-3", "question": "What does overdue mean?", "answer": "The filing deadline (date of service plus 90 days) has passed." }
+      ],
+      "checks": [
+        "Counts use exactly the CARC table classes: denial, patient responsibility, informational.",
+        "The summary is read-only; the lead has no ready or appeal action from it.",
+        "Overdue is defined from the date of service plus 90 days.",
+        "Informational (OA-23) lines are not counted as denials.",
+        "Every acceptance criterion's outcome can be observed by a test."
+      ]
+    },
+    {
+      "id": "B07",
+      "topic": "OA-23 informational lines",
+      "brief": "OA-23 lines must show the prior payer's adjudication and must never be worked as denials.",
+      "answers": [
+        { "id": "Q-1", "question": "What does the specialist do with an OA-23 line?", "answer": "Confirms the prior payer adjudication; nothing else." },
+        { "id": "Q-2", "question": "Can an OA-23 line reach the appeal path?", "answer": "Never." },
+        { "id": "Q-3", "question": "Does it count toward denial totals?", "answer": "No." }
+      ],
+      "checks": [
+        "The OA-23 next action is copied exactly: 'Confirm the prior payer adjudication. Do not work this as a denial.'",
+        "OA-23 lines never reach appeal-ready or any appeal state.",
+        "OA-23 lines are excluded from denial counts.",
+        "No resubmit or appeal control is offered on OA-23 lines.",
+        "Every acceptance criterion's outcome can be observed by a test."
+      ]
+    },
+    {
+      "id": "B08",
+      "topic": "CO-4 modifier correction",
+      "brief": "On CO-4 denials, the biller must correct the procedure modifier before resubmitting, and the product must never suggest or invent a modifier.",
+      "answers": [
+        { "id": "Q-1", "question": "Who corrects the modifier?", "answer": "The coder sets it; the biller resubmits." },
+        { "id": "Q-2", "question": "Can the product suggest a modifier?", "answer": "No, never." },
+        { "id": "Q-3", "question": "Can a CO-4 line be resubmitted unchanged?", "answer": "No; the modifier must change first." }
+      ],
+      "checks": [
+        "The CO-4 next action is copied exactly: 'Correct the modifier and resubmit. Do not invent a modifier in this product.'",
+        "The product never suggests or fills in a modifier.",
+        "A CO-4 line cannot be resubmitted with an unchanged modifier.",
+        "The coder sets the modifier and the biller resubmits; roles are not mixed.",
+        "Every acceptance criterion's outcome can be observed by a test."
+      ]
+    }
+  ]
+}
