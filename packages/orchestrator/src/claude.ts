@@ -54,9 +54,11 @@ export class ClaudeModel implements ModelProvider {
     const instructions = compiled
       ? seat.instructions
       : `${seat.instructions}\n\nAnswer with one JSON object that matches this JSON Schema, and nothing else:\n${JSON.stringify(z.toJSONSchema(seat.schema))}`;
+    // Streamed, so a long answer gets room without hitting HTTP timeouts. A synthesis of two full PRDs
+    // used all of a 16,000-token limit on thinking and output.
     const params = {
       model: this.model,
-      max_tokens: 16000,
+      max_tokens: 64000,
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default" as const,
       system: [
@@ -65,9 +67,9 @@ export class ClaudeModel implements ModelProvider {
       ],
       messages: [{ role: "user" as const, content: request.prompt }],
     };
-    const response = compiled
-      ? await this.client.beta.messages.parse({ ...params, output_config: { format: betaZodOutputFormat(seat.schema) } })
-      : await this.client.beta.messages.create(params);
+    const response = await this.client.beta.messages
+      .stream(compiled ? { ...params, output_config: { format: betaZodOutputFormat(seat.schema) } } : params)
+      .finalMessage();
     const usage = {
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,
@@ -78,10 +80,9 @@ export class ClaudeModel implements ModelProvider {
       throw new CompletionError(`model-refused:${request.role}:${response.stop_details?.category ?? "unknown"}`, response.model, usage);
     }
     if (response.stop_reason === "max_tokens") throw new CompletionError(`model-truncated:${request.role}`, response.model, usage);
-    const answer =
-      "parsed_output" in response
-        ? response.parsed_output
-        : seat.schema.safeParse(jsonIn(response.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join(""))).data;
+    const answer = compiled
+      ? response.parsed_output
+      : seat.schema.safeParse(jsonIn(response.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join(""))).data;
     if (answer === null || answer === undefined) throw new CompletionError(`model-unparsed:${request.role}`, response.model, usage);
     return { text: JSON.stringify(answer), model: response.model, usage };
   }

@@ -16,9 +16,9 @@ import { FEATURE_B_BRIEF, prdPanel } from "./panels.ts";
 interface FakeReply {
   stop_reason?: string;
   stop_details?: { category: string } | null;
-  /** The answer to a compiled-schema seat (messages.parse). */
+  /** The answer to a compiled-schema seat. */
   parsed_output?: unknown;
-  /** The plain-text answer to a seat without a compiled schema (messages.create). */
+  /** The plain-text answer to a seat without a compiled schema. */
   text?: string;
 }
 
@@ -37,12 +37,15 @@ function fakeClient(replies: FakeReply[]): { client: Anthropic; requests: Array<
       usage: { input_tokens: 1200, output_tokens: 3400, cache_read_input_tokens: 900, cache_creation_input_tokens: 0 },
     };
   };
-  const parse = async (params: Record<string, unknown>) => {
-    const response = answer(params);
-    return { ...response, parsed_output: replies[requests.length - 1]?.parsed_output ?? null };
-  };
-  const create = async (params: Record<string, unknown>) => answer(params);
-  return { client: { beta: { messages: { parse, create } } } as unknown as Anthropic, requests };
+  // Mirrors client.beta.messages.stream(...).finalMessage(): parsed_output is set only when a format was sent.
+  const stream = (params: Record<string, unknown>) => ({
+    finalMessage: async () => {
+      const response = answer(params);
+      const reply = replies[requests.length - 1];
+      return { ...response, parsed_output: params.output_config ? (reply?.parsed_output ?? null) : null };
+    },
+  });
+  return { client: { beta: { messages: { stream } } } as unknown as Anthropic, requests };
 }
 
 /** The recorded PRD panel as Claude would return it: four parsed answers, then the synthesis as fenced JSON text. */
@@ -68,6 +71,7 @@ test("each PRD seat asks Claude with the shared cached context, its own schema, 
     output_config: { format: unknown };
   };
   assert.equal(first.model, "claude-opus-5");
+  assert.equal((first as { max_tokens?: number }).max_tokens, 64000);
   assert.equal(first.fallbacks, "default");
   assert.deepEqual(first.betas, ["server-side-fallback-2026-07-01"]);
   assert.deepEqual(first.system[0]?.cache_control, { type: "ephemeral" });
