@@ -136,6 +136,10 @@ async function handle(
       send(res, 200, renderProposedScreen(proposed[1] as ProposedScreenId), "text/html; charset=utf-8");
       return;
     }
+    if (req.method === "GET" && url.pathname === "/api/showcase") {
+      send(res, 200, showcase());
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/live-runs") {
       send(res, 200, readLiveRuns());
       return;

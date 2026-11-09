@@ -184,6 +184,7 @@ test("a live run shows beside the recorded requirements, and a recorded run ends
   });
   const showcase: LiveShowcase = {
     file: "prd-live.json",
+    brief: "the brief",
     paidAttempts: 3,
     chainCostUsd: 2.08,
     chainDurationMs: 1_772_500,

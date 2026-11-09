@@ -155,3 +155,16 @@ test("a cross-site page cannot reset the factory", async () => {
     assert.equal((await fetch(`${origin}/api/session/${session.id}`)).status, 200);
   });
 });
+
+test("the page can read the saved real run without making a call", async () => {
+  await withServer(async (port) => {
+    const response = await fetch(`http://127.0.0.1:${port}/api/showcase`);
+    assert.equal(response.status, 200);
+    const showcase = (await response.json()) as { seats?: unknown[]; panel?: unknown } | null;
+    // Null on a machine with no passing live run saved; otherwise all five seats and the panel to replay.
+    if (showcase !== null) {
+      assert.equal(showcase.seats?.length, 5);
+      assert.ok(showcase.panel);
+    }
+  });
+});

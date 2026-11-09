@@ -283,6 +283,7 @@ export interface LiveSeat {
 /** The latest live PRD run whose gates passed, ready to show beside the recorded run. */
 export interface LiveShowcase {
   file: string;
+  brief: string;
   /** Runs in its resume chain that made a model call. A free re-check does not count. */
   paidAttempts: number;
   chainCostUsd: number | null;
@@ -339,6 +340,7 @@ export function loadLiveShowcase(dir = join(repoRoot(), "runs/live")): LiveShowc
   });
   return {
     file: best.file,
+    brief: latest.brief,
     paidAttempts: chain.filter((run) => run.metrics.some((metric) => metric.source === "live")).length,
     chainCostUsd: best.chainCostUsd,
     chainDurationMs: best.chainDurationMs,

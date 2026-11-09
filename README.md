@@ -62,6 +62,7 @@ Each seat answers in a fixed JSON shape (`orchestrator/src/schemas.ts`), and the
 - Each run makes five paid calls. The command prints each call's model, time, tokens, cost and quality. xAI calls use the cost xAI reports; Claude calls are priced from list prices, and a model without a known price shows as unknown.
 - A failed run saves its finished answers. `npm run live-prd -- --resume runs/live/<file>.json` replays them and pays only for the seats that did not finish.
 - The panel, prompts, timing and gate results are saved under `runs/live/`, and the factory page lists every saved run with its cost, time and verdict.
+- Every panel step has a "How this step works" diagram: the brief, two analysts walled off from each other, crossed reviews, the synthesis, the checks, and you, each with its model, time and cost. At the PRD step, Replay plays the saved live run on its real timeline at 10×, 30× or 60×, streaming each seat's output with a plain-language caption.
 - The factory's PRD step shows the latest passing live run beside the recorded requirements: both drafts, what each model caught in the other's, the merged synthesis, and each call's time and cost. You still approve the recorded requirements, because the later steps are built on them. The exit code is 0 when every gate passes, 1 when a gate refuses, and 2 when the run fails.
 - Only the PRD stage runs live. The factory's later stages are scripted around the recorded PRD's ids, so a live PRD is checked here rather than carried into the factory.
 
