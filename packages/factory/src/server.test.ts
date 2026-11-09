@@ -29,7 +29,7 @@ test("the factory page and one act are served over HTTP", async () => {
     assert.equal(page.headers.get("content-type"), "text/html; charset=utf-8");
     assert.match(html, /Recorded run/);
     assert.match(html, /does not start the denial workbench/);
-    assert.match(html, /Both analysts returned the same document/);
+    assert.match(html, /Your turn/);
     assert.match(html, /Record the result/);
     assert.match(html, /id="reset"/);
     assert.match(html, /Confirm reset/);

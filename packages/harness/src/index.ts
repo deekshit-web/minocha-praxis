@@ -26,6 +26,7 @@ export {
 } from "./walk.ts";
 export {
   livePrdSeats,
+  loadLiveShowcase,
   prdChecks,
   prdContext,
   readLiveRuns,
@@ -33,6 +34,8 @@ export {
   summarizeLiveRun,
   withChains,
   type LivePrdResult,
+  type LiveSeat,
+  type LiveShowcase,
   type LiveRunSummary,
   type SavedLiveRun,
 } from "./live.ts";

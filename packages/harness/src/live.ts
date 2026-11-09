@@ -270,3 +270,79 @@ export function withChains(runs: LiveRunSummary[]): LiveRunSummary[] {
     return { ...run, chainCostUsd: cost, chainDurationMs: duration };
   });
 }
+
+/** One seat of a live run as the factory shows it: who answered, the real time and cost of the call that succeeded. */
+export interface LiveSeat {
+  role: PanelRole;
+  model: string | null;
+  durationMs: number | null;
+  costUsd: number | null;
+  quality: SeatQuality | null;
+}
+
+/** The latest live PRD run whose gates passed, ready to show beside the recorded run. */
+export interface LiveShowcase {
+  file: string;
+  /** Runs in its resume chain that made a model call. A free re-check does not count. */
+  paidAttempts: number;
+  chainCostUsd: number | null;
+  chainDurationMs: number | null;
+  panel: ReviewPanel<Prd>;
+  seats: LiveSeat[];
+}
+
+const SEATS: PanelRole[] = ["analystA", "analystB", "critiqueOfA", "critiqueOfB", "synthesizer"];
+
+/**
+ * A re-check replays every seat in no time, so a seat's real time and cost come from the attempt where it ran
+ * live and succeeded. In a failed attempt a seat succeeded only if its answer was saved; the seat it stopped on
+ * is skipped there, though its cost still counts in the chain.
+ */
+export function loadLiveShowcase(dir = join(repoRoot(), "runs/live")): LiveShowcase | null {
+  const summaries = readLiveRuns(dir);
+  const best = summaries.find((run) => run.verdict === "pass");
+  if (!best) return null;
+  const load = (file: string): SavedLiveRun | null => {
+    try {
+      const saved = JSON.parse(readFileSync(join(dir, file), "utf8")) as SavedLiveRun;
+      return "format" in saved ? saved : null;
+    } catch {
+      return null;
+    }
+  };
+  const latest = load(best.file);
+  if (!latest?.panel) return null;
+  const chain: SavedLiveRun[] = [];
+  const seen = new Set<string>();
+  for (let file: string | undefined = best.file; file && !seen.has(file); ) {
+    seen.add(file);
+    const run = load(file);
+    if (!run) break;
+    chain.unshift(run);
+    file = run.resumedFrom;
+  }
+  const seats = SEATS.map((role): LiveSeat => {
+    let ran: CallMetric | undefined;
+    for (const run of chain) {
+      const succeeded = !run.failure || (run.answers ?? []).some((answer) => answer.role === role);
+      const metric = run.metrics.find((item) => item.role === role && item.source === "live");
+      if (metric && succeeded) ran = metric;
+    }
+    const final = latest.metrics.find((metric) => metric.role === role);
+    return {
+      role,
+      model: ran?.model ?? final?.model ?? null,
+      durationMs: ran?.durationMs ?? null,
+      costUsd: ran?.costUsd ?? null,
+      quality: latest.quality?.[role] ?? null,
+    };
+  });
+  return {
+    file: best.file,
+    paidAttempts: chain.filter((run) => run.metrics.some((metric) => metric.source === "live")).length,
+    chainCostUsd: best.chainCostUsd,
+    chainDurationMs: best.chainDurationMs,
+    panel: latest.panel,
+    seats,
+  };
+}

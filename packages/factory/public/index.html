@@ -168,6 +168,15 @@
       #tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
       #proposed-links { display: flex; flex-wrap: wrap; gap: 8px; }
       #document a { display: block; margin: 8px 0; color: var(--teal); }
+      #document iframe {
+        display: block;
+        width: 100%;
+        height: 440px;
+        margin: 10px 0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+      }
       #proposed-links a { text-decoration: none; }
       #reset {
         border: 1px solid var(--line);
@@ -354,7 +363,7 @@
         <span class="tile-sub" id="live-sub">npm run live-prd</span>
       </a>
     </section>
-    <p id="how" class="how">Both analysts returned the same document. The two drafts split on the architecture step.</p>
+    <p id="how" class="how" hidden></p>
     <div class="layout">
       <aside class="rail">
         <p class="rail-kicker">Where you are</p>
@@ -462,6 +471,11 @@
         brief: "This is the feature the factory was given. The workbench already calls the fixed function.",
         record: "Recording stores a local result. It does not serve the workbench.",
         matrix: "Each row is one requirement, the case that ran, and the screen it opened.",
+        "live-overview": "A real two-model run on the same brief, shown for comparison. You approve the recorded requirements.",
+        "live-a": "Draft A as the first model wrote it, without seeing draft B.",
+        "live-b": "Draft B as the second model wrote it, without seeing draft A.",
+        "live-synthesis": "Both drafts merged using both critiques. Every PRD gate passed on this document.",
+        product: "The fixed rule, live in the running denial workbench.",
       };
       const ACTION_LABEL = {
         begin: "Start",
@@ -504,6 +518,21 @@
       }
 
       function lineNode(line) {
+        if (line.startsWith("frame:")) {
+          const src = line.slice("frame:".length);
+          let allowed = false;
+          try {
+            allowed = Boolean(view) && new URL(src).origin === new URL(view.workbench).origin;
+          } catch {
+            allowed = false;
+          }
+          if (allowed) {
+            const frame = document.createElement("iframe");
+            frame.src = src;
+            frame.title = "Denial workbench";
+            return frame;
+          }
+        }
         if (line.startsWith("link:")) {
           const rest = line.slice("link:".length);
           const splitAt = rest.indexOf(" ");
@@ -534,7 +563,14 @@
           return ["Answer five questions", "Nothing is selected. The suggested answer is marked on each question. Choose each one, including Nobody in v1 for the override. The answers become assumptions in the requirements.", "Choose the suggested answers, then continue."];
         }
         if (next.state === "prd_gate" || next.state === "prd_draft") {
-          return ["Approve the requirements", "Both analysts returned the same document. Approve locks it. The three screens under the document are marked Proposed.", "Approve the requirements, or send them back."];
+          const live = next.tabs.find((tab) => tab.id === "live-overview");
+          return [
+            "Approve the requirements",
+            live
+              ? "Approve locks the recorded requirements the rest of this run is built on. The " + live.label + " tab shows a real two-model run on the same brief: separate drafts, cross-critiques, and a merge that passed every gate."
+              : "Approve locks these requirements. The three screens under the document are marked Proposed.",
+            "Approve the requirements, or send them back.",
+          ];
         }
         if (next.state === "architecture_gate" || next.state === "architecture_draft") {
           const approveAction = (next.actions || []).find((action) => action.id === "approve");
@@ -565,7 +601,11 @@
             : ["The record is closed", "A priority case failed on the workbench, so the result stays unrecorded.", "The record stays shut until the workbench cases pass."];
         }
         if (next.state === "recorded") {
-          return ["The result is recorded", "This run is closed. The denial workbench is not served from this screen.", "Nothing left to approve."];
+          return [
+            "It works in the product",
+            "The rule is live in the denial workbench below. DEN-01 has no clinical note, so the page names what is missing and the appeal cannot be marked ready.",
+            "Nothing left to approve.",
+          ];
         }
         return ["Working", "The factory is between gates.", "Working"];
       }
@@ -941,6 +981,8 @@
       }
 
       function preferredTab(next) {
+        if (next.state === "recorded" && next.tabs.some((tab) => tab.id === "product")) return "product";
+        if ((next.state === "prd_gate" || next.state === "prd_draft") && next.tabs.some((tab) => tab.id === "live-overview")) return "live-overview";
         if ((next.state === "unit_loop" || next.state === "implementing") && next.tabs.some((tab) => tab.id === "unit")) return "unit";
         if (next.tabs.some((tab) => tab.id === "matrix")) return "matrix";
         if (next.tabs.some((tab) => tab.id === "synthesis")) return "synthesis";
@@ -966,12 +1008,18 @@
         document.getElementById("workbench-link").href = workbench + "/";
         document.getElementById("eligibility-link").href = workbench + "/eligibility";
         const split = next.state === "architecture_gate" || next.state === "architecture_draft";
+        const prd = next.state === "prd_gate" || next.state === "prd_draft";
+        const live = next.tabs.some((tab) => tab.id === "live-overview");
         document.getElementById("how").hidden = next.state === "intake";
         text(
           "how",
           split
             ? "Two drafts are written apart. Each one critiques the other. You approve only the combined result."
-            : "Both analysts returned the same document. The two drafts split on the architecture step.",
+            : prd && live
+              ? "The requirements this run is built on are recorded. Beside them is a real run where two different models wrote and critiqued separate drafts."
+              : next.state === "recorded"
+                ? "The run is closed. What it built is running in the product."
+                : "Each stage replays recorded drafts and critiques. The drafts differ at the architecture step.",
         );
         const words = guide(next);
         text("now-title", words[0]);
