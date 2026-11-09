@@ -28,10 +28,13 @@ export {
   untestableFenceIssues,
   type PanelCall,
   type PanelCritique,
+  type PanelRole,
   type PanelStage,
   type ReviewPanel,
 } from "./panel.ts";
 export { FixturePlayer, playPanel, recordedLines, UnconfiguredModel } from "./provider.ts";
+export { CLAUDE_MODEL, ClaudeModel, type CallRecord, type SeatSpec } from "./claude.ts";
+export { CritiqueSchema, PrdSchema, synthesisSchema } from "./schemas.ts";
 export type { CompletionRequest, ModelProvider } from "./provider.ts";
 export { repoRoot } from "./paths.ts";
 export { findPhi, intakeDecision, intakeNouns } from "./phi.ts";

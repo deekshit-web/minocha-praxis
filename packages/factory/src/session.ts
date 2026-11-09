@@ -120,8 +120,8 @@ export class FactorySession {
     this.banner = null;
     if (action.type === "probe") return this.probe(action.brief);
     if (this.run.state === "blocked" || this.run.state === "recorded") return this.view();
-    if (action.type === "begin") this.begin();
-    else if (action.type === "answers") this.answer(action.choices ?? {});
+    if (action.type === "begin") await this.begin();
+    else if (action.type === "answers") await this.answer(action.choices ?? {});
     else if (action.type === "approve") await this.approve();
     else if (action.type === "changes") this.changes(action.comment ?? "");
     else if (action.type === "accept-suggestion") this.accept();
@@ -171,7 +171,7 @@ export class FactorySession {
     };
   }
 
-  private begin(): void {
+  private async begin(): Promise<void> {
     if (this.run.state !== "intake") {
       this.banner = "Intake already finished.";
       return;
@@ -183,7 +183,7 @@ export class FactorySession {
       return;
     }
     this.run.transition("clarifying", "orchestrator");
-    const questions = playPanel<QuestionSet>(new FixturePlayer(recordedLines(questionPanel())), "questions", FEATURE_B_BRIEF);
+    const questions = await playPanel<QuestionSet>(new FixturePlayer(recordedLines(questionPanel())), "questions", FEATURE_B_BRIEF);
     const issues = [
       ...publish(this.run, "questions", questions.panel, questions.calls),
       ...questionSetIssues(questions.panel.synthesis),
@@ -196,7 +196,7 @@ export class FactorySession {
     this.log.push("Fixture player sent 5 calls. The analysts did not see each other's drafts.");
   }
 
-  private answer(choices: Record<string, string>): void {
+  private async answer(choices: Record<string, string>): Promise<void> {
     if (this.run.state !== "clarifying") {
       this.banner = "Questions are not the open gate.";
       return;
@@ -219,7 +219,7 @@ export class FactorySession {
     });
     this.run.putArtifact("answers", { choices: picked });
     this.run.transition("prd_draft", "orchestrator");
-    const prd = playPanel<Prd>(new FixturePlayer(recordedLines(prdPanel())), "prd", FEATURE_B_BRIEF);
+    const prd = await playPanel<Prd>(new FixturePlayer(recordedLines(prdPanel())), "prd", FEATURE_B_BRIEF);
     const issues = [
       ...publish(this.run, "prd", prd.panel, prd.calls),
       ...prdGateIssues(prd.panel.synthesis, prdIssues(prd.panel.synthesis, groundedCitations(FEATURE_B_BRIEF), RULES)),
@@ -248,7 +248,7 @@ export class FactorySession {
     if (this.run.state === "prd_gate") {
       this.run.approve("prd", "prd", "approve");
       this.run.transition("architecture_draft", "orchestrator");
-      this.openArchitecture();
+      await this.openArchitecture();
       return;
     }
     if (this.run.state === "architecture_gate") {
@@ -258,7 +258,7 @@ export class FactorySession {
         return;
       }
       this.run.approve("architecture", "architecture", "approve");
-      this.openUnit();
+      await this.openUnit();
       return;
     }
     if (this.run.state === "test_gate") {
@@ -420,8 +420,8 @@ export class FactorySession {
     return this.view();
   }
 
-  private openArchitecture(): void {
-    const played = playPanel<Architecture>(new FixturePlayer(recordedLines(architecturePanel())), "architecture", FEATURE_B_BRIEF);
+  private async openArchitecture(): Promise<void> {
+    const played = await playPanel<Architecture>(new FixturePlayer(recordedLines(architecturePanel())), "architecture", FEATURE_B_BRIEF);
     const issues = publish(this.run, "architecture", played.panel, played.calls);
     if (issues.length > 0) {
       this.run.block(issues[0] ?? "architecture");
@@ -432,8 +432,8 @@ export class FactorySession {
     this.log.push("Fixture player sent 5 calls. The analysts did not see each other's drafts.");
   }
 
-  private openUnit(): void {
-    const played = playPanel<ImplementationPlan>(new FixturePlayer(recordedLines(implementationPanel())), "implementation", FEATURE_B_BRIEF);
+  private async openUnit(): Promise<void> {
+    const played = await playPanel<ImplementationPlan>(new FixturePlayer(recordedLines(implementationPanel())), "implementation", FEATURE_B_BRIEF);
     const implementation = played.panel;
     const fence = (this.run.artifacts.get("architecture")?.body as Architecture).fileFence;
     const issues = [
