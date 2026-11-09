@@ -19,6 +19,7 @@
         color-scheme: light;
       }
       * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
       body {
         margin: 0;
         min-height: 100vh;
@@ -54,7 +55,38 @@
         font-weight: 500;
       }
       #subtitle, .quiet { margin: 6px 0 0; color: var(--muted); }
-      .chips { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+      .links { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+      .scoreboard {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        margin: 4px 32px 18px;
+      }
+      .tile {
+        display: block;
+        min-width: 0;
+        padding: 12px 16px 14px;
+        background: var(--paper-2);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        color: inherit;
+        text-decoration: none;
+      }
+      a.tile:hover, a.tile:focus-visible { border-color: var(--teal); }
+      .tile-label { display: block; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--teal-deep); }
+      .tile-value {
+        display: block;
+        margin-top: 4px;
+        font: 30px/1.1 Palatino, "Iowan Old Style", Georgia, serif;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tile-sub { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
+      .tile.good .tile-value { color: var(--moss); }
+      .tile.warn .tile-value { color: var(--clay); }
       a.chip { color: inherit; text-decoration: none; }
       .chip {
         display: inline-flex;
@@ -118,6 +150,7 @@
         color: var(--ink);
       }
       #banner { border-color: #e7c2b8; color: var(--clay); }
+      #questions:empty { display: none; }
       #tab-hint { margin: 0 0 8px; }
       #tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
       #proposed-links { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -211,8 +244,56 @@
       #dock-title { font-weight: 650; }
       #actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
       #comment-label { display: block; max-width: 420px; }
+      .table-wrap { overflow-x: auto; margin-top: 8px; }
+      table.calls tr.stage td { background: #f6efe3; font-weight: 650; cursor: pointer; }
+      table.calls tr.stage:hover td { background: #f1e7d7; }
+      table.calls tr.stage td:first-child { white-space: nowrap; }
+      table.calls tr.seat td:first-child { padding-left: 26px; }
+      .caret { display: inline-block; width: 14px; color: var(--teal-deep); }
+      table.calls { width: 100%; border-collapse: collapse; font-size: 14px; }
+      table.calls th {
+        text-align: left;
+        font-weight: 650;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--line);
+        white-space: nowrap;
+      }
+      table.calls td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      table.calls td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+      table.calls tr:last-child td { border-bottom: 0; }
+      table.calls details summary { cursor: pointer; }
+      table.calls details ul { margin: 6px 0 0; padding-left: 18px; }
+      .badge {
+        display: inline-block;
+        padding: 1px 8px;
+        margin-right: 6px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 650;
+      }
+      .badge.pass { background: #e3f1e7; color: var(--moss); }
+      .badge.issues, .badge.failed { background: #f6e3dd; color: var(--clay); }
+      .run + .run { margin-top: 10px; }
+      .run summary { cursor: pointer; font-weight: 650; }
+      .run > ul { margin: 8px 0 0; padding-left: 18px; color: var(--clay); }
+      #live-refresh {
+        border: 1px solid var(--line);
+        background: var(--paper);
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 4px 12px;
+        font: inherit;
+        font-size: 14px;
+        cursor: pointer;
+      }
       @media (max-width: 980px) {
         header, #dock { flex-direction: column; align-items: flex-start; }
+        .scoreboard { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 4px 16px 16px; }
+        .links { justify-content: flex-start; }
         .layout { grid-template-columns: 1fr; }
         .rail, .side { border: 0; }
         #actions { justify-content: flex-start; }
@@ -226,13 +307,40 @@
         <h1 id="title">Factory</h1>
         <p id="subtitle">A specialist cannot mark a CO-50 denial ready for appeal unless a clinical note and a filing deadline are both present.</p>
       </div>
-      <div class="chips">
-        <div class="chip"><i></i><span id="mode">Recorded run</span></div>
+      <nav class="links" aria-label="Demo links">
+        <span class="chip"><i></i><span id="mode">Recorded run</span></span>
         <a class="chip" id="workbench-link" href="http://127.0.0.1:4173/">Denial workbench</a>
         <a class="chip" id="eligibility-link" href="http://127.0.0.1:4173/eligibility">Eligibility</a>
         <button id="reset" type="button">Reset</button>
-      </div>
+      </nav>
     </header>
+    <section class="scoreboard" aria-label="This run at a glance">
+      <div class="tile">
+        <span class="tile-label">Step</span>
+        <span class="tile-value" id="tile-step">1 of 7</span>
+        <span class="tile-sub" id="tile-step-sub">Start</span>
+      </div>
+      <div class="tile">
+        <span class="tile-label">Run time</span>
+        <span class="tile-value" id="run-clock">—</span>
+        <span class="tile-sub" id="run-clock-sub">Starts when you begin</span>
+      </div>
+      <div class="tile">
+        <span class="tile-label">Model cost</span>
+        <span class="tile-value" id="run-cost">$0.00</span>
+        <span class="tile-sub" id="run-cost-sub">No model calls yet</span>
+      </div>
+      <div class="tile" id="tile-quality">
+        <span class="tile-label">Output checks</span>
+        <span class="tile-value" id="quality-value">—</span>
+        <span class="tile-sub" id="quality-sub">Nothing checked yet</span>
+      </div>
+      <a class="tile" id="tile-live" href="#live-card">
+        <span class="tile-label">Latest live run</span>
+        <span class="tile-value" id="live-value">None yet</span>
+        <span class="tile-sub" id="live-sub">npm run live-prd</span>
+      </a>
+    </section>
     <p id="how" class="how">Both analysts returned the same document. The two drafts split on the architecture step.</p>
     <div class="layout">
       <aside class="rail">
@@ -256,6 +364,17 @@
           <h2>Proposed screens</h2>
           <p class="quiet">Mockups in the workbench layout. Each one is marked Proposed. This is not the running denial workbench.</p>
           <div id="proposed-links"></div>
+        </section>
+        <section class="card">
+          <h2>Model calls</h2>
+          <p class="quiet">Every model call in this run, in order. Recorded calls replay saved answers, so no model runs and nothing is billed. Quality comes from the checks that gate each stage, not from a model grading itself.</p>
+          <p id="calls-empty" class="quiet">No calls yet. Begin intake to start the run.</p>
+          <div class="table-wrap"><table class="calls" id="calls" hidden></table></div>
+        </section>
+        <section class="card" id="live-card">
+          <h2>Live PRD runs</h2>
+          <p class="quiet">PRD panels played on real models with <code>npm run live-prd</code> and saved under runs/live/. Nothing on this page makes a paid call. <button id="live-refresh" type="button">Refresh</button></p>
+          <div id="live-runs"></div>
         </section>
         <p id="status" class="status" hidden></p>
       </main>
@@ -480,6 +599,318 @@
         }
       }
 
+      const SEAT_LABEL = {
+        analystA: "Analyst A",
+        analystB: "Analyst B",
+        critiqueOfA: "Critique of A",
+        critiqueOfB: "Critique of B",
+        synthesizer: "Synthesizer",
+      };
+
+      function formatMs(ms) {
+        if (ms === null || ms === undefined) return "not recorded";
+        if (ms < 1) return "<1 ms";
+        if (ms < 1000) return Math.round(ms) + " ms";
+        const seconds = ms / 1000;
+        if (seconds < 60) return seconds.toFixed(1) + " s";
+        const minutes = Math.floor(seconds / 60);
+        return minutes + " min " + String(Math.round(seconds % 60)).padStart(2, "0") + " s";
+      }
+
+      function formatCost(row) {
+        if (row.source === "recorded") return "$0 (replay)";
+        if (row.source === "resumed") return "$0 (paid in earlier run)";
+        if (row.costUsd === null) return "price unknown";
+        return "$" + row.costUsd.toFixed(row.costUsd >= 1 ? 2 : 3);
+      }
+
+      function formatTotal(rows) {
+        if (rows.some((row) => row.source === "live" && row.costUsd === null)) return "price unknown";
+        return "$" + rows.reduce((sum, row) => sum + (row.costUsd || 0), 0).toFixed(2);
+      }
+
+      function cell(row, content, className) {
+        const td = document.createElement("td");
+        if (className) td.className = className;
+        if (content instanceof Node) td.appendChild(content);
+        else td.textContent = content;
+        row.appendChild(td);
+        return td;
+      }
+
+      function qualityNode(quality) {
+        const wrap = document.createElement("div");
+        if (!quality) {
+          wrap.textContent = "not checked";
+          return wrap;
+        }
+        const badge = document.createElement("span");
+        badge.className = "badge " + quality.verdict;
+        badge.textContent = quality.verdict === "pass" ? "Pass" : "Flagged";
+        if (quality.findings.length === 0) {
+          wrap.append(badge, document.createTextNode(quality.summary));
+          return wrap;
+        }
+        const details = document.createElement("details");
+        const summary = document.createElement("summary");
+        summary.append(badge, document.createTextNode(quality.summary));
+        const list = document.createElement("ul");
+        for (const finding of quality.findings) {
+          const item = document.createElement("li");
+          item.textContent = finding;
+          list.appendChild(item);
+        }
+        details.append(summary, list);
+        wrap.appendChild(details);
+        return wrap;
+      }
+
+      function fillCallTable(table, rows, showStage) {
+        clear(table);
+        const head = document.createElement("tr");
+        for (const label of [...(showStage ? ["Stage"] : []), "Seat", "Answered by", "Time", "Tokens in / out", "Cost", "Quality"]) {
+          const th = document.createElement("th");
+          th.textContent = label;
+          head.appendChild(th);
+        }
+        const thead = document.createElement("thead");
+        thead.appendChild(head);
+        const tbody = document.createElement("tbody");
+        for (const call of rows) {
+          const row = document.createElement("tr");
+          if (showStage) cell(row, call.stage);
+          cell(row, SEAT_LABEL[call.role] || call.role);
+          const answeredBy = call.source === "recorded" ? "Recorded replay" : call.model || "live model";
+          cell(row, call.source === "resumed" ? answeredBy + " (resumed)" : answeredBy);
+          cell(row, formatMs(call.durationMs), "num");
+          const tokens = call.inputTokens === null ? "—" : call.inputTokens.toLocaleString() + " / " + call.outputTokens.toLocaleString();
+          const tokenCell = cell(row, tokens, "num");
+          if (call.cacheReadTokens) tokenCell.title = call.cacheReadTokens.toLocaleString() + " input tokens read from cache";
+          cell(row, formatCost(call), "num");
+          cell(row, qualityNode(call.quality));
+          tbody.appendChild(row);
+        }
+        table.append(thead, tbody);
+      }
+
+      let liveRuns = [];
+      let expandedStages = new Set();
+      let autoStage = null;
+
+      function seatRow(call) {
+        const row = document.createElement("tr");
+        row.className = "seat";
+        cell(row, SEAT_LABEL[call.role] || call.role);
+        const answeredBy = call.source === "recorded" ? "Recorded replay" : call.model || "live model";
+        cell(row, call.source === "resumed" ? answeredBy + " (resumed)" : answeredBy);
+        cell(row, formatMs(call.durationMs), "num");
+        const tokens = call.inputTokens === null ? "—" : call.inputTokens.toLocaleString() + " / " + call.outputTokens.toLocaleString();
+        const tokenCell = cell(row, tokens, "num");
+        if (call.cacheReadTokens) tokenCell.title = call.cacheReadTokens.toLocaleString() + " input tokens read from cache";
+        cell(row, formatCost(call), "num");
+        cell(row, qualityNode(call.quality));
+        return row;
+      }
+
+      function tally(rows) {
+        const flagged = rows.filter((row) => row.quality && row.quality.verdict !== "pass").length;
+        return { pass: rows.length - flagged, flagged };
+      }
+
+      function renderCallGroups(table, calls) {
+        clear(table);
+        const head = document.createElement("tr");
+        for (const label of ["Seat", "Answered by", "Time", "Tokens in / out", "Cost", "Quality"]) {
+          const th = document.createElement("th");
+          th.textContent = label;
+          head.appendChild(th);
+        }
+        const thead = document.createElement("thead");
+        thead.appendChild(head);
+        table.appendChild(thead);
+        const stages = [...new Set(calls.map((call) => call.stage))];
+        const latest = stages[stages.length - 1] || null;
+        if (latest !== autoStage) {
+          expandedStages = new Set(latest ? [latest] : []);
+          autoStage = latest;
+        }
+        for (const stage of stages) {
+          const rows = calls.filter((call) => call.stage === stage);
+          const open = expandedStages.has(stage);
+          const tbody = document.createElement("tbody");
+          const summary = document.createElement("tr");
+          summary.className = "stage";
+          summary.tabIndex = 0;
+          summary.setAttribute("aria-expanded", String(open));
+          const caret = document.createElement("span");
+          caret.className = "caret";
+          caret.textContent = open ? "▾" : "▸";
+          const name = document.createElement("span");
+          name.append(caret, document.createTextNode(stage + " · " + rows.length + " calls"));
+          cell(summary, name);
+          const models = [...new Set(rows.map((row) => (row.source === "recorded" ? "Recorded replay" : row.model || "live model")))];
+          cell(summary, models.join(" + "));
+          const timed = rows.every((row) => row.durationMs !== null);
+          cell(summary, timed ? formatMs(rows.reduce((sum, row) => sum + row.durationMs, 0)) : "not recorded", "num");
+          const counted = rows.filter((row) => row.inputTokens !== null);
+          cell(
+            summary,
+            counted.length ? counted.reduce((sum, row) => sum + row.inputTokens, 0).toLocaleString() + " / " + counted.reduce((sum, row) => sum + row.outputTokens, 0).toLocaleString() : "—",
+            "num",
+          );
+          cell(summary, rows.every((row) => row.source === "recorded") ? "$0 (replay)" : formatTotal(rows), "num");
+          const counts = tally(rows);
+          const badge = document.createElement("span");
+          badge.className = "badge " + (counts.flagged ? "issues" : "pass");
+          badge.textContent = counts.flagged ? counts.flagged + " flagged" : "All pass";
+          const verdict = document.createElement("span");
+          verdict.append(badge, document.createTextNode(counts.pass + " of " + rows.length + " pass"));
+          cell(summary, verdict);
+          const toggle = () => {
+            if (expandedStages.has(stage)) expandedStages.delete(stage);
+            else expandedStages.add(stage);
+            renderCalls(view);
+          };
+          summary.addEventListener("click", toggle);
+          summary.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              toggle();
+            }
+          });
+          tbody.appendChild(summary);
+          if (open) for (const row of rows) tbody.appendChild(seatRow(row));
+          table.appendChild(tbody);
+        }
+      }
+
+      function renderClock() {
+        const timing = view && view.timing;
+        if (!timing || !timing.startedAt) {
+          text("run-clock", "—");
+          text("run-clock-sub", "Starts when you begin");
+          return;
+        }
+        const end = timing.finishedAt || Date.now();
+        text("run-clock", formatMs(end - timing.startedAt));
+        text("run-clock-sub", timing.finishedAt ? "Finished" : "Running, including time at approval gates");
+      }
+
+      function renderScoreboard(next) {
+        const index = STORY.findIndex((step) => step.states.includes(next.state));
+        text("tile-step", next.state === "recorded" ? "Done" : index >= 0 ? index + 1 + " of " + STORY.length : "—");
+        text("tile-step-sub", next.state === "blocked" ? "Stopped by a guardrail" : index >= 0 ? STORY[index].label : "");
+        const calls = next.calls;
+        const live = calls.filter((call) => call.source === "live");
+        text("run-cost", formatTotal(calls));
+        text(
+          "run-cost-sub",
+          calls.length === 0 ? "No model calls yet" : live.length === 0 ? calls.length + " recorded replays · nothing billed" : live.length + " live calls at list prices",
+        );
+        const counts = tally(calls);
+        const quality = document.getElementById("tile-quality");
+        quality.classList.toggle("good", calls.length > 0 && counts.flagged === 0);
+        text("quality-value", calls.length ? counts.pass + " / " + calls.length + " pass" : "—");
+        const flaggedStages = [...new Set(calls.filter((call) => call.quality && call.quality.verdict !== "pass").map((call) => call.stage))];
+        text(
+          "quality-sub",
+          calls.length === 0 ? "Nothing checked yet" : counts.flagged ? counts.flagged + " flagged in " + flaggedStages.join(", ") + ": the panel caught it" : "Every output passed its stage's checks",
+        );
+        renderClock();
+      }
+
+      function renderLiveTile() {
+        const tile = document.getElementById("tile-live");
+        const run = liveRuns[0];
+        tile.classList.toggle("good", Boolean(run && run.verdict === "pass"));
+        tile.classList.toggle("warn", Boolean(run && run.verdict !== "pass"));
+        if (!run) {
+          text("live-value", "None yet");
+          text("live-sub", "Start one with npm run live-prd");
+          return;
+        }
+        text("live-value", run.verdict === "pass" ? "Gates passed" : run.verdict === "failed" ? "Run failed" : "Gates refused");
+        const cost = run.chainCostUsd === null ? "price unknown" : "$" + run.chainCostUsd.toFixed(2);
+        const chained = run.resumedFrom ? " across all attempts" : "";
+        text("live-sub", cost + " · " + formatMs(run.chainDurationMs) + chained);
+      }
+
+      function renderCalls(next) {
+        const table = document.getElementById("calls");
+        table.hidden = next.calls.length === 0;
+        document.getElementById("calls-empty").hidden = next.calls.length > 0;
+        renderCallGroups(table, next.calls);
+        renderScoreboard(next);
+      }
+
+      function renderLiveRuns(runs) {
+        const container = document.getElementById("live-runs");
+        clear(container);
+        if (runs.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "quiet";
+          empty.textContent = "No live runs saved yet.";
+          container.appendChild(empty);
+          return;
+        }
+        runs.forEach((run, index) => {
+          const details = document.createElement("details");
+          details.className = "run";
+          details.open = index === 0;
+          const summary = document.createElement("summary");
+          const badge = document.createElement("span");
+          badge.className = "badge " + run.verdict;
+          badge.textContent = run.verdict === "pass" ? "Gates passed" : run.verdict === "failed" ? "Run failed" : "Gates refused";
+          const when = run.startedAt ? new Date(run.startedAt).toLocaleString() : run.file;
+          const money = (value) => (value === null ? "price unknown" : "$" + value.toFixed(2));
+          const kind = run.kind === "recheck" ? "Re-check, no model calls" : run.kind === "resumed" ? "Resumed" : "Live run";
+          summary.append(badge, document.createTextNode(when + " · " + kind + " · " + money(run.costUsd) + " · " + formatMs(run.durationMs)));
+          details.appendChild(summary);
+          if (run.resumedFrom) {
+            const lineage = document.createElement("p");
+            lineage.className = "quiet";
+            lineage.textContent =
+              (run.kind === "recheck" ? "Replays every answer from " : "Continues ") +
+              run.resumedFrom +
+              ". With every earlier attempt: " +
+              money(run.chainCostUsd) +
+              " and " +
+              formatMs(run.chainDurationMs) +
+              ".";
+            details.appendChild(lineage);
+          }
+          if (run.issues.length > 0) {
+            const list = document.createElement("ul");
+            for (const issue of run.issues) {
+              const item = document.createElement("li");
+              item.textContent = issue;
+              list.appendChild(item);
+            }
+            details.appendChild(list);
+          }
+          const wrap = document.createElement("div");
+          wrap.className = "table-wrap";
+          const table = document.createElement("table");
+          table.className = "calls";
+          fillCallTable(table, run.rows, false);
+          wrap.appendChild(table);
+          details.appendChild(wrap);
+          container.appendChild(details);
+        });
+      }
+
+      async function loadLiveRuns() {
+        try {
+          const response = await fetch("/api/live-runs");
+          if (!response.ok) throw new Error("The live runs could not be read.");
+          liveRuns = await response.json();
+          renderLiveRuns(liveRuns);
+          renderLiveTile();
+        } catch (error) {
+          showStatus(error instanceof Error ? error.message : "The live runs could not be read.");
+        }
+      }
+
       function preferredTab(next) {
         if ((next.state === "unit_loop" || next.state === "implementing") && next.tabs.some((tab) => tab.id === "unit")) return "unit";
         if (next.tabs.some((tab) => tab.id === "matrix")) return "matrix";
@@ -506,6 +937,7 @@
         document.getElementById("workbench-link").href = workbench + "/";
         document.getElementById("eligibility-link").href = workbench + "/eligibility";
         const split = next.state === "architecture_gate" || next.state === "architecture_draft";
+        document.getElementById("how").hidden = next.state === "intake";
         text(
           "how",
           split
@@ -694,6 +1126,7 @@
           actions.appendChild(button);
         }
         if (next.state === "clarifying") refreshAnswers();
+        renderCalls(next);
 
         const log = document.getElementById("log");
         clear(log);
@@ -734,6 +1167,10 @@
           resetButton.disabled = false;
         }
       });
+
+      document.getElementById("live-refresh").addEventListener("click", loadLiveRuns);
+      setInterval(renderClock, 1000);
+      loadLiveRuns();
 
       post("/api/session", {})
         .then(render)

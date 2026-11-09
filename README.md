@@ -10,7 +10,7 @@ The demo walks that feature from intake to a recorded release. It goes through c
 
 Read this before anything else.
 
-**Every model step is recorded.** No language model is called. Each stage replays fixed JSON through `FixturePlayer` (`packages/orchestrator/src/provider.ts`). The live seat, `UnconfiguredModel`, throws `model-not-configured`. In most stages the two "independent" analyst proposals are the same document, and the UI says so. The repair is a fixed patch that removes a bug the demo planted. The clarifying questions only accept the suggested answers, because the recorded PRD was written for them.
+**The factory replays recorded model steps.** It calls no language model. Each stage replays fixed JSON through `FixturePlayer` (`packages/orchestrator/src/provider.ts`). The PRD stage can also run live on Claude through `npm run live-prd` (see below), but the factory itself stays on recordings. In most stages the two "independent" analyst proposals are the same document, and the UI says so. The repair is a fixed patch that removes a bug the demo planted. The clarifying questions only accept the suggested answers, because the recorded PRD was written for them.
 
 **The gates are real code and are tested.** These checks run on every walk and do not trust the recorded content:
 
@@ -43,9 +43,26 @@ npm run harness     # bundle and run every *.test.ts under node:test
 npm run typecheck   # esbuild strips types without checking them, so this is the only type check
 npm run rcm         # denial workbench on http://127.0.0.1:4173
 npm run factory     # factory UI on http://127.0.0.1:4317
+npm run live-prd    # play the PRD panel on Claude and run the PRD gates on the result
 ```
 
 For the full demo, start the workbench first, then the factory. If the workbench runs somewhere else, set `NORTHWIND_WORKBENCH` (for example `http://127.0.0.1:5173`) when starting the factory. In the factory, step through Begin intake → answers → approve PRD → accept suggestion S-1 → approve architecture → apply the repair → approve tests → record. The trace links open the matching workbench pages. Reset clears the factory session, its sandbox and the workbench ready marks.
+
+### The live PRD stage
+
+`npm run live-prd` plays the five PRD seats (two analysts, two critiques, a synthesis) on real models, then runs the PRD gates on what comes back. With `XAI_API_KEY` set, analyst B and its critique of A run on Grok (`grok-4.7`, `orchestrator/src/grok.ts`) and the other three seats on Claude Opus 5 (`orchestrator/src/claude.ts`), so the two drafts come from different models. Without it, every seat runs on Claude. The gates it runs:
+
+- the panel rules (`orchestrator/src/panel.ts`)
+- the PRD checks and grounded citations
+- a PHI scan of every seat's output
+
+Each seat answers in a fixed JSON shape (`orchestrator/src/schemas.ts`), and the shared context sits in one cached block. Refusals fall back to another model on the server, and the run records which model answered each seat.
+
+- It needs Claude API credentials: `ANTHROPIC_API_KEY`, or `ant auth login`. Without them it stops before sending anything. Grok needs `XAI_API_KEY`.
+- Each run makes five paid calls. The command prints each call's model, time, tokens, cost and quality. xAI calls use the cost xAI reports; Claude calls are priced from list prices, and a model without a known price shows as unknown.
+- A failed run saves its finished answers. `npm run live-prd -- --resume runs/live/<file>.json` replays them and pays only for the seats that did not finish.
+- The panel, prompts, timing and gate results are saved under `runs/live/`, and the factory page lists every saved run with its cost, time and verdict. The exit code is 0 when every gate passes, 1 when a gate refuses, and 2 when the run fails.
+- Only the PRD stage runs live. The factory's later stages are scripted around the recorded PRD's ids, so a live PRD is checked here rather than carried into the factory.
 
 Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 
@@ -77,7 +94,7 @@ The packages are npm workspaces. Each library exports only `src/index.ts`, so ot
 
 ## Known gaps
 
-- No live model. Wiring one into `ModelProvider` is the real test of whether the gates hold.
+- Only the PRD stage runs live, and only from the command line. Questions, architecture, implementation and test design still replay recordings.
 - Clarifying answers and change requests do not regenerate documents.
 - Retrieval is still tag matching, not semantic search. A brief that uses a synonym no tag carries ("clinician" for a role) finds nothing for it.
 - The isolation check looks for seat markers in prompts the harness writes itself, so it cannot catch a paraphrased leak.

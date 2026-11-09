@@ -28,11 +28,17 @@ export {
   untestableFenceIssues,
   type PanelCall,
   type PanelCritique,
+  type PanelRole,
   type PanelStage,
   type ReviewPanel,
 } from "./panel.ts";
-export { FixturePlayer, playPanel, recordedLines, UnconfiguredModel } from "./provider.ts";
-export type { CompletionRequest, ModelProvider } from "./provider.ts";
+export { CompletionError, FixturePlayer, PanelCallError, ResumingProvider, playPanel, recordedLines, UnconfiguredModel } from "./provider.ts";
+export { CLAUDE_MODEL, ClaudeModel, type SeatSpec } from "./claude.ts";
+export { GROK_MODEL, GrokModel, SeatRouter } from "./grok.ts";
+export { CritiqueSchema, PrdSchema, synthesisSchema } from "./schemas.ts";
+export type { CallMetric, Completion, CompletionRequest, ModelProvider, SeatAnswer } from "./provider.ts";
+export { callCost, type TokenUsage } from "./pricing.ts";
+export { callRows, seatQuality, type CallRow, type DocumentChecks, type SeatQuality } from "./quality.ts";
 export { repoRoot } from "./paths.ts";
 export { findPhi, intakeDecision, intakeNouns } from "./phi.ts";
 export { Run, TransitionError } from "./run.ts";

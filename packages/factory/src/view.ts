@@ -1,6 +1,7 @@
 import {
   STAGE_METHODS,
   type Architecture,
+  type CallRow,
   type Prd,
   type QuestionSet,
   type ReviewPanel,
@@ -49,6 +50,10 @@ export interface FactoryView {
   p0Green: boolean;
   knowledgeError: string | null;
   proposed: Array<{ id: string; title: string; href: string }> | null;
+  /** Every model call so far, with time, cost, and quality. */
+  calls: CallRow[];
+  /** Epoch milliseconds. The page counts the elapsed time from these. */
+  timing: { startedAt: number | null; finishedAt: number | null };
 }
 
 export const RAIL_LABELS: Record<string, string> = {

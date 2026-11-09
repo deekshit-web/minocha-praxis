@@ -24,8 +24,8 @@ for (const name of ["domain", "knowledge", "orchestrator", "harness", "implement
 const bundled = [];
 for (const file of files) {
   const outfile = join(out, `${bundled.length}.test.mjs`);
-  // The implementer runs esbuild itself, and esbuild cannot be bundled.
-  buildSync({ entryPoints: [file], bundle: true, platform: "node", format: "esm", outfile, external: ["esbuild"] });
+  // esbuild cannot be bundled, and undici is CommonJS that breaks inside an ESM bundle. Node loads both from node_modules.
+  buildSync({ entryPoints: [file], bundle: true, platform: "node", format: "esm", outfile, external: ["esbuild", "undici"] });
   bundled.push(outfile);
 }
 
