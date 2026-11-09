@@ -50,7 +50,7 @@ For the full demo, start the workbench first, then the factory. If the workbench
 
 ### The live PRD stage
 
-`npm run live-prd` plays the five PRD seats (two analysts, two critiques, a synthesis) on Claude Opus 5 through `ClaudeModel` (`packages/orchestrator/src/claude.ts`), then runs the PRD gates on what comes back:
+`npm run live-prd` plays the five PRD seats (two analysts, two critiques, a synthesis) on real models, then runs the PRD gates on what comes back. With `XAI_API_KEY` set, analyst B and its critique of A run on Grok (`grok-4.7`, `orchestrator/src/grok.ts`) and the other three seats on Claude Opus 5 (`orchestrator/src/claude.ts`), so the two drafts come from different models. Without it, every seat runs on Claude. The gates it runs:
 
 - the panel rules (`orchestrator/src/panel.ts`)
 - the PRD checks and grounded citations
@@ -58,9 +58,10 @@ For the full demo, start the workbench first, then the factory. If the workbench
 
 Each seat answers in a fixed JSON shape (`orchestrator/src/schemas.ts`), and the shared context sits in one cached block. Refusals fall back to another model on the server, and the run records which model answered each seat.
 
-- It needs Claude API credentials: `ANTHROPIC_API_KEY`, or `ant auth login`. Without them it stops before sending anything.
-- Each run makes five paid calls. The command prints the token counts and an estimated cost.
-- The panel, prompts and gate results are saved under `runs/live/`. The exit code is 0 when every gate passes, 1 when a gate refuses, and 2 when the run fails.
+- It needs Claude API credentials: `ANTHROPIC_API_KEY`, or `ant auth login`. Without them it stops before sending anything. Grok needs `XAI_API_KEY`.
+- Each run makes five paid calls. The command prints each call's model, time, tokens, cost and quality. xAI calls use the cost xAI reports; Claude calls are priced from list prices, and a model without a known price shows as unknown.
+- A failed run saves its finished answers. `npm run live-prd -- --resume runs/live/<file>.json` replays them and pays only for the seats that did not finish.
+- The panel, prompts, timing and gate results are saved under `runs/live/`, and the factory page lists every saved run with its cost, time and verdict. The exit code is 0 when every gate passes, 1 when a gate refuses, and 2 when the run fails.
 - Only the PRD stage runs live. The factory's later stages are scripted around the recorded PRD's ids, so a live PRD is checked here rather than carried into the factory.
 
 Build output, sandboxes and test bundles go to `runs/`, which git ignores.
