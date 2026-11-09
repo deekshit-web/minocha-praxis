@@ -14,9 +14,12 @@ buildSync({
   platform: "node",
   format: "esm",
   outfile,
+  // undici is CommonJS that breaks inside an ESM bundle. Node loads it from node_modules.
+  external: ["undici"],
 });
 
-const child = spawnSync(process.execPath, [outfile], {
+// Pass flags such as --resume through to the runner.
+const child = spawnSync(process.execPath, [outfile, ...process.argv.slice(2)], {
   stdio: "inherit",
   env: { ...process.env, NORTHWIND_ROOT: root },
 });

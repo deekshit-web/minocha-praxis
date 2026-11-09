@@ -14,8 +14,8 @@ buildSync({
   platform: "node",
   format: "esm",
   outfile,
-  // The implementer runs esbuild itself, and esbuild cannot be bundled.
-  external: ["esbuild"],
+  // esbuild cannot be bundled, and undici is CommonJS that breaks inside an ESM bundle. Node loads both from node_modules.
+  external: ["esbuild", "undici"],
 });
 
 const child = spawnSync(process.execPath, [outfile], {

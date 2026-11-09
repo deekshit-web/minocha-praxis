@@ -8,6 +8,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
     "@northwind/domain": "*",
+    "undici": "^7.30.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {

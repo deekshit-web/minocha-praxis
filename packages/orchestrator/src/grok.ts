@@ -1,3 +1,4 @@
+import { Agent, fetch as undiciFetch } from "undici";
 import * as z from "zod/v4";
 import type { SeatSpec } from "./claude.ts";
 import type { PanelRole } from "./panel.ts";
@@ -7,6 +8,15 @@ import type { TokenUsage } from "./pricing.ts";
 export const GROK_MODEL = "grok-4.7";
 
 const ENDPOINT = "https://api.x.ai/v1/chat/completions";
+
+/**
+ * xAI sends no headers until a non-streamed answer is complete, and Grok can reason past Node's
+ * five-minute header and body timeouts while writing a whole PRD. This agent allows fifteen.
+ */
+const PATIENT = new Agent({ headersTimeout: 15 * 60 * 1000, bodyTimeout: 15 * 60 * 1000 });
+
+const patientFetch = ((input: string, init: RequestInit) =>
+  undiciFetch(input, { ...(init as object), dispatcher: PATIENT })) as unknown as typeof fetch;
 
 /** The parts of an xAI chat-completions response this provider reads. */
 interface GrokResponse {
@@ -31,15 +41,17 @@ export class GrokModel implements ModelProvider {
   private readonly model: string;
   private readonly apiKey: string | undefined;
   private readonly fetch: typeof fetch;
+  private readonly endpoint: string;
 
   constructor(
     private readonly context: string,
     private readonly seats: Partial<Record<PanelRole, SeatSpec>>,
-    options: { apiKey?: string; model?: string; fetch?: typeof fetch } = {},
+    options: { apiKey?: string; model?: string; fetch?: typeof fetch; endpoint?: string } = {},
   ) {
+    this.endpoint = options.endpoint ?? ENDPOINT;
     this.apiKey = options.apiKey ?? process.env.XAI_API_KEY;
     this.model = options.model ?? GROK_MODEL;
-    this.fetch = options.fetch ?? fetch;
+    this.fetch = options.fetch ?? patientFetch;
   }
 
   async complete(request: CompletionRequest): Promise<Completion> {
@@ -51,10 +63,10 @@ export class GrokModel implements ModelProvider {
     const instructions = compiled
       ? seat.instructions
       : `${seat.instructions}\n\nAnswer with one JSON object that matches this JSON Schema, and nothing else:\n${JSON.stringify(schema)}`;
-    const response = await this.fetch(ENDPOINT, {
+    const response = await this.fetch(this.endpoint, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${this.apiKey}` },
-      signal: AbortSignal.timeout(10 * 60 * 1000),
+      signal: AbortSignal.timeout(15 * 60 * 1000),
       body: JSON.stringify({
         model: this.model,
         max_tokens: 16000,
@@ -66,6 +78,11 @@ export class GrokModel implements ModelProvider {
           ? { type: "json_schema", json_schema: { name: `${request.role}_answer`, schema, strict: true } }
           : { type: "json_object" },
       }),
+    }).catch((error: unknown) => {
+      // fetch reports every network failure as "fetch failed"; the cause names the real one.
+      const cause = error instanceof Error && error.cause instanceof Error ? error.cause : error;
+      const code = cause && typeof cause === "object" && "code" in cause ? ` ${String(cause.code)}` : "";
+      throw new Error(`xai-network:${code} ${cause instanceof Error ? cause.message : String(cause)}`.trim(), { cause: error });
     });
     const body = (await response.json().catch(() => ({}))) as GrokResponse;
     if (!response.ok) {

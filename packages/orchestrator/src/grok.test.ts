@@ -98,3 +98,25 @@ test("without a reported cost, Grok is priced from the table, and a long-context
   assert.equal(callCost("grok-4.7", { ...usage, inputTokens: 250_000 }), null);
   assert.equal(callCost("some-other-model", usage), null);
 });
+
+test("the default xAI client waits on a slow server, and a network failure names its cause", async () => {
+  const { createServer } = await import("node:http");
+  const server = createServer((_request, response) => {
+    setTimeout(() => {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify(reply(JSON.stringify(critique))));
+    }, 1500);
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  const port = typeof address === "object" && address ? address.port : 0;
+  try {
+    const slow = new GrokModel("ctx", seats, { apiKey: "xai-test", endpoint: `http://127.0.0.1:${port}/v1/chat/completions` });
+    const answer = await slow.complete({ role: "critiqueOfA", prompt: "p" });
+    assert.deepEqual(JSON.parse(answer.text), critique);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+  const unreachable = new GrokModel("ctx", seats, { apiKey: "xai-test", endpoint: `http://127.0.0.1:${port}/v1/chat/completions` });
+  await assert.rejects(unreachable.complete({ role: "critiqueOfA", prompt: "p" }), /xai-network: ECONNREFUSED/);
+});
