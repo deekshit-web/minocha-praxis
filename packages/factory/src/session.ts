@@ -10,6 +10,7 @@ import {
   alignTestCases,
   applyRecord,
   architectureIssues,
+  callRows,
   executionGate,
   fenceViolations,
   intakeDecision,
@@ -26,9 +27,13 @@ import {
   rejectSuggestion,
   repoRoot,
   reviewPanelIssues,
+  seatQuality,
   traceMatrix,
   untestableFenceIssues,
   type Architecture,
+  type CallMetric,
+  type CallRow,
+  type DocumentChecks,
   type ImplementationPlan,
   type PanelCall,
   type Prd,
@@ -43,6 +48,7 @@ import {
   groundedCitations,
   implementationPanel,
   panelCalls,
+  prdChecks,
   prdPanel,
   questionPanel,
   recordInput,
@@ -104,6 +110,11 @@ export class FactorySession {
   sandboxPath = "";
   repairDiff = "";
   droppedCases: string[] = [];
+  /** Every model call this run made, in order, with its time, cost, and how its output fared. */
+  callLog: CallRow[] = [];
+  /** Wall-clock start and end of the run, for the elapsed time on the page. */
+  startedAt: number | null = null;
+  finishedAt: number | null = null;
   private tree: FeatureBTree | null = null;
   private fingerprints: string[] = [];
 
@@ -126,7 +137,7 @@ export class FactorySession {
     else if (action.type === "changes") this.changes(action.comment ?? "");
     else if (action.type === "accept-suggestion") this.accept();
     else if (action.type === "reject-suggestion") this.reject();
-    else if (action.type === "repair") this.repair();
+    else if (action.type === "repair") await this.repair();
     else if (action.type === "record") this.record();
     return this.view();
   }
@@ -168,6 +179,8 @@ export class FactorySession {
       p0Green: this.p0Green,
       knowledgeError: knowledge.error,
       proposed: this.proposedLinks(),
+      calls: [...this.callLog],
+      timing: { startedAt: this.startedAt, finishedAt: this.finishedAt },
     };
   }
 
@@ -182,8 +195,10 @@ export class FactorySession {
       this.log.push("Intake blocked before a document was written.");
       return;
     }
+    this.startedAt = Date.now();
     this.run.transition("clarifying", "orchestrator");
     const questions = await playPanel<QuestionSet>(new FixturePlayer(recordedLines(questionPanel())), "questions", FEATURE_B_BRIEF);
+    this.recordCalls("Questions", questions, { proposal: questionSetIssues, synthesis: questionSetIssues });
     const issues = [
       ...publish(this.run, "questions", questions.panel, questions.calls),
       ...questionSetIssues(questions.panel.synthesis),
@@ -220,6 +235,7 @@ export class FactorySession {
     this.run.putArtifact("answers", { choices: picked });
     this.run.transition("prd_draft", "orchestrator");
     const prd = await playPanel<Prd>(new FixturePlayer(recordedLines(prdPanel())), "prd", FEATURE_B_BRIEF);
+    this.recordCalls("PRD", prd, prdChecks(FEATURE_B_BRIEF));
     const issues = [
       ...publish(this.run, "prd", prd.panel, prd.calls),
       ...prdGateIssues(prd.panel.synthesis, prdIssues(prd.panel.synthesis, groundedCitations(FEATURE_B_BRIEF), RULES)),
@@ -327,7 +343,7 @@ export class FactorySession {
     this.log.push("Suggestion S-1 rejected. Approve stays closed until you send the architecture back.");
   }
 
-  private repair(): void {
+  private async repair(): Promise<void> {
     if (this.run.state !== "unit_loop" || !this.tree) {
       this.banner = "There is no red unit run to repair.";
       return;
@@ -377,14 +393,16 @@ export class FactorySession {
     this.unitGreen = true;
     this.run.putArtifact("code.review", { method: "review-and-execute", sawDiff: true });
     this.run.transition("test_design", "orchestrator", "AC-CO50-NOTE passed");
-    const tests = testCasePanel();
+    const played = await playPanel<TestCaseSet>(new FixturePlayer(recordedLines(testCasePanel())), "test_design", FEATURE_B_BRIEF);
+    const tests = played.panel;
     const scenarios = (this.run.artifacts.get("prd")?.body as Prd).scenarios.map((item) => item.id);
+    this.recordCalls("Test design", played, { proposal: (set) => alignTestCases(set, scenarios).issues, synthesis: (set) => alignTestCases(set, scenarios).issues });
     const aligned = alignTestCases(tests.synthesis, scenarios);
     const buggy = appealReadyBuggy(sample);
     const oracleCheck = mutationOracleIssues([
       { caseId: "AC-CO50-NOTE", failsOnDefect: buggy.ready === true, passesOnFix: oracle.ready === false },
     ]);
-    const issues = [...publish(this.run, "test_cases", tests), ...aligned.issues, ...oracleCheck];
+    const issues = [...publish(this.run, "test_cases", tests, played.calls), ...aligned.issues, ...oracleCheck];
     if (issues.length > 0) {
       this.run.block(issues[0] ?? "tests");
       return;
@@ -406,6 +424,7 @@ export class FactorySession {
       this.banner = `The record stayed closed: ${decision.reasons.join(", ")}.`;
       return;
     }
+    this.finishedAt = Date.now();
     this.log.push("Result recorded. The workbench build is not served in this slice.");
   }
 
@@ -422,6 +441,11 @@ export class FactorySession {
 
   private async openArchitecture(): Promise<void> {
     const played = await playPanel<Architecture>(new FixturePlayer(recordedLines(architecturePanel())), "architecture", FEATURE_B_BRIEF);
+    const criterionIds = (this.run.artifacts.get("prd")?.body as Prd).acceptanceCriteria.map((item) => item.id);
+    // A pending suggestion waits on a person. It is not a defect in the draft.
+    const architectureCheck = (architecture: Architecture) =>
+      architectureIssues(architecture, criterionIds, groundedCitations(FEATURE_B_BRIEF), RULES).filter((issue) => !issue.startsWith("pending-suggestion:"));
+    this.recordCalls("Architecture", played, { proposal: architectureCheck, synthesis: architectureCheck });
     const issues = publish(this.run, "architecture", played.panel, played.calls);
     if (issues.length > 0) {
       this.run.block(issues[0] ?? "architecture");
@@ -436,6 +460,8 @@ export class FactorySession {
     const played = await playPanel<ImplementationPlan>(new FixturePlayer(recordedLines(implementationPanel())), "implementation", FEATURE_B_BRIEF);
     const implementation = played.panel;
     const fence = (this.run.artifacts.get("architecture")?.body as Architecture).fileFence;
+    const fenceCheck = (plan: ImplementationPlan) => fenceViolations(plan.files, fence).map((hit) => `${hit.reason}:${hit.file}`);
+    this.recordCalls("Implementation plan", played, { proposal: fenceCheck, synthesis: fenceCheck });
     const issues = [
       ...publish(this.run, "implementation", implementation, played.calls),
       ...fenceViolations(implementation.synthesis.files, fence).map((hit) => `${hit.reason}:${hit.file}`),
@@ -511,6 +537,14 @@ export class FactorySession {
         ? `The record stayed closed. ${failed.detail}`
         : "Priority checks passed on the workbench. The result can be recorded. The gate does not serve the workbench.",
     );
+  }
+
+  private recordCalls<T>(
+    stage: string,
+    played: { panel: ReviewPanel<T>; calls: PanelCall[]; metrics: CallMetric[] },
+    checks: DocumentChecks<T>,
+  ): void {
+    this.callLog.push(...callRows(stage, played.metrics, seatQuality(played.panel, played.calls, checks)));
   }
 
   private matrixBlocks(): Block[] {

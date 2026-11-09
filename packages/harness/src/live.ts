@@ -3,6 +3,8 @@ import { loadPack, relevant } from "@northwind/knowledge";
 import {
   CritiqueSchema,
   PrdSchema,
+  callCost,
+  callRows,
   findPhi,
   intakeNouns,
   playPanel,
@@ -10,14 +12,21 @@ import {
   prdIssues,
   repoRoot,
   reviewPanelIssues,
+  seatQuality,
   synthesisSchema,
+  type CallMetric,
+  type CallRow,
+  type DocumentChecks,
   type ModelProvider,
   type PanelCall,
   type PanelRole,
   type Prd,
   type ReviewPanel,
+  type SeatAnswer,
+  type SeatQuality,
   type SeatSpec,
 } from "@northwind/orchestrator";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { FEATURE_B_BRIEF, RULES, groundedCitations, questionPanel } from "./panels.ts";
 
@@ -90,13 +99,28 @@ export function livePrdSeats(): Record<PanelRole, SeatSpec> {
         "The merged PRD goes to approval, so it leaves no open questions.",
       ].join(" "),
       schema: synthesisSchema(PrdSchema),
+      // A PRD nested in the synthesis wrapper is too large for the API to compile into a grammar.
+      compiled: false,
     },
+  };
+}
+
+/** The PRD stage's document checks: structure and citations on each draft, plus the approval gate on the synthesis. */
+export function prdChecks(brief: string): DocumentChecks<Prd> {
+  const grounded = groundedCitations(brief);
+  return {
+    proposal: (prd) => prdIssues(prd, grounded, RULES),
+    synthesis: (prd) => prdGateIssues(prd, prdIssues(prd, grounded, RULES)),
   };
 }
 
 export interface LivePrdResult {
   panel: ReviewPanel<Prd>;
   calls: PanelCall[];
+  metrics: CallMetric[];
+  quality: Record<PanelRole, SeatQuality>;
+  /** Wall-clock time for the whole panel. */
+  durationMs: number;
   /** Every gate finding. Empty means the PRD could go to a person for approval. */
   issues: string[];
 }
@@ -106,11 +130,102 @@ export interface LivePrdResult {
  * plus a PHI scan of everything the seats returned, since a live model can write anything.
  */
 export async function runLivePrd(provider: ModelProvider, brief = FEATURE_B_BRIEF): Promise<LivePrdResult> {
-  const { panel, calls } = await playPanel<Prd>(provider, "prd", brief);
+  const started = performance.now();
+  const { panel, calls, metrics } = await playPanel<Prd>(provider, "prd", brief);
   const issues = [
     ...reviewPanelIssues(panel, calls),
     ...prdGateIssues(panel.synthesis, prdIssues(panel.synthesis, groundedCitations(brief), RULES)),
     ...findPhi(JSON.stringify(panel)).map((finding) => `phi:${finding.kind}:${finding.match}`),
   ];
-  return { panel, calls, issues };
+  const quality = seatQuality(panel, calls, prdChecks(brief));
+  return { panel, calls, metrics, quality, durationMs: performance.now() - started, issues };
+}
+
+/** What `npm run live-prd` writes. A failed run is saved too, since its finished calls were billed. */
+export interface SavedLiveRun {
+  format: 2;
+  model: string;
+  brief: string;
+  startedAt: string;
+  durationMs: number;
+  metrics: CallMetric[];
+  /** Set when the run stopped before the panel finished. */
+  failure?: string;
+  /** The seats that finished before a failure, so `npm run live-prd -- --resume <file>` can continue without paying twice. */
+  answers?: SeatAnswer[];
+  /** The failed run this one continued, when it was resumed. */
+  resumedFrom?: string;
+  issues?: string[];
+  quality?: Record<PanelRole, SeatQuality>;
+  calls?: PanelCall[];
+  panel?: ReviewPanel<Prd>;
+}
+
+/** The first saved shape: token counts per seat, no timing. */
+interface SavedLiveRunV1 {
+  model: string;
+  brief: string;
+  issues: string[];
+  usage: Array<{ role: PanelRole; model: string; inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number }>;
+  calls: PanelCall[];
+  panel: ReviewPanel<Prd>;
+}
+
+export interface LiveRunSummary {
+  file: string;
+  startedAt: string | null;
+  durationMs: number | null;
+  verdict: "pass" | "issues" | "failed";
+  issues: string[];
+  /** Null when any call has no known price. */
+  costUsd: number | null;
+  rows: CallRow[];
+}
+
+function totalCost(rows: CallRow[]): number | null {
+  return rows.every((row) => row.costUsd !== null) ? rows.reduce((sum, row) => sum + (row.costUsd ?? 0), 0) : null;
+}
+
+export function summarizeLiveRun(file: string, saved: SavedLiveRun | SavedLiveRunV1): LiveRunSummary {
+  if ("format" in saved) {
+    const rows = callRows("PRD", saved.metrics, saved.quality ?? null);
+    return {
+      file,
+      startedAt: saved.startedAt,
+      durationMs: saved.durationMs,
+      verdict: saved.failure ? "failed" : (saved.issues ?? []).length === 0 ? "pass" : "issues",
+      issues: saved.failure ? [saved.failure] : (saved.issues ?? []),
+      costUsd: totalCost(rows),
+      rows,
+    };
+  }
+  const metrics = saved.usage.map((usage) => ({
+    role: usage.role,
+    source: "live" as const,
+    model: usage.model,
+    durationMs: null,
+    usage,
+    costUsd: callCost(usage.model, usage),
+  }));
+  const rows = callRows("PRD", metrics, seatQuality(saved.panel, saved.calls, prdChecks(saved.brief)));
+  return { file, startedAt: null, durationMs: null, verdict: saved.issues.length === 0 ? "pass" : "issues", issues: saved.issues, costUsd: totalCost(rows), rows };
+}
+
+/** Every saved live PRD run, newest first. A file that cannot be read is skipped, not fatal. */
+export function readLiveRuns(dir = join(repoRoot(), "runs/live")): LiveRunSummary[] {
+  let names: string[];
+  try {
+    names = readdirSync(dir).filter((name) => /^prd-.*\.json$/.test(name));
+  } catch {
+    return [];
+  }
+  const runs: LiveRunSummary[] = [];
+  for (const name of names.sort().reverse()) {
+    try {
+      runs.push(summarizeLiveRun(name, JSON.parse(readFileSync(join(dir, name), "utf8")) as SavedLiveRun | SavedLiveRunV1));
+    } catch {
+      continue;
+    }
+  }
+  return runs;
 }

@@ -3,6 +3,7 @@ import { rm } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
+import { readLiveRuns } from "@northwind/harness";
 import { repoRoot } from "@northwind/orchestrator";
 import { foreignRequest, renderProposedScreen, type ProposedScreenId } from "@northwind/rcm";
 import { DEFAULT_WORKBENCH, FactorySession, type FactoryAct } from "./session.ts";
@@ -124,6 +125,10 @@ async function handle(
     const proposed = url.pathname.match(/^\/proposed\/(SCR-[123])$/);
     if (req.method === "GET" && proposed) {
       send(res, 200, renderProposedScreen(proposed[1] as ProposedScreenId), "text/html; charset=utf-8");
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/api/live-runs") {
+      send(res, 200, readLiveRuns());
       return;
     }
     if (req.method === "POST" && url.pathname === "/api/session") {
