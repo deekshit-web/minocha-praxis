@@ -5,6 +5,8 @@
   "title": "Ship a loan pre-qualification check",
   "summary": "Tell an applicant in seconds whether they are likely to qualify, using only fair, explainable factors.",
   "deliverable": "A tested pre-qualification step in the loan app",
+  "project": "Personal loans app",
+  "requester": "Credit risk lead",
   "brief": "Before a full application, tell personal-loan applicants whether they are likely to qualify, and why, using the bank's debt-to-income rule.",
   "questions": "Q1. What is the debt-to-income limit?\nQ2. Is income gross or net?\nQ3. Which other factors may be used?\nQ4. What does a declined applicant see?",
   "answers": "Q1. Total monthly debt, including the new loan's payment, at most 43% of income.\nQ2. Gross monthly income.\nQ3. Debt-to-income and a credit score of at least 640. Nothing else in v1.\nQ4. The specific reason, in plain words, and that this is not a final decision.",

@@ -5,6 +5,8 @@
   "title": "Ship delay notifications for shipments",
   "summary": "Tell customers when their delivery will miss its promised time, before they have to ask.",
   "deliverable": "A tested notification in the shipment tracker",
+  "project": "Shipment tracker",
+  "requester": "Customer experience lead",
   "brief": "Notify the customer when the carrier's latest estimate means a delivery will arrive more than 2 hours after the promised time.",
   "questions": "Q1. What counts as late: any delay, or a margin?\nQ2. Which estimate do we trust?\nQ3. How many notifications per shipment?\nQ4. Which time zone does the customer see?",
   "answers": "Q1. More than 2 hours after the promised time.\nQ2. The carrier's latest ETA, which arrives in UTC.\nQ3. One notification per shipment, plus one more if the new estimate slips by a further 2 hours.\nQ4. The delivery address's local time.",

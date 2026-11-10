@@ -28,6 +28,9 @@ const SpecSchema = z.object({
   title: Text,
   summary: Text,
   deliverable: Text,
+  /** Where the work lands and who asked for it, shown in the run header and log. */
+  project: Text,
+  requester: Text,
   brief: Text,
   /** Build: the clarifying questions a model asks, and the answers a person gives. */
   questions: Text.optional(),
@@ -95,6 +98,8 @@ export interface Workflow {
   title: string;
   summary: string;
   deliverable: string;
+  project: string;
+  requester: string;
   brief: string;
   output: string;
   phases: string[];
@@ -228,6 +233,8 @@ export function expand(spec: WorkflowSpec): Workflow {
     title: spec.title,
     summary: spec.summary,
     deliverable: spec.deliverable,
+    project: spec.project,
+    requester: spec.requester,
     brief: spec.brief,
     output: spec.kind === "build" ? buildOutput(spec) : spec.output,
     phases,
