@@ -1,0 +1,28 @@
+{
+  "id": "fmcg-build",
+  "domain": "fmcg",
+  "kind": "build",
+  "title": "Ship a stock-out alert for distributors",
+  "summary": "Warn the sales team before a distributor runs out of a fast-moving product.",
+  "deliverable": "A tested alert in the distributor portal",
+  "brief": "Alert the area sales manager when a distributor is likely to run out of a product within a week, so a replenishment order can be raised in time.",
+  "questions": "Q1. How is 'likely to run out' measured?\nQ2. Which sales figure is the basis?\nQ3. Who gets the alert, and how often?\nQ4. Should seasonal products be treated differently?",
+  "answers": "Q1. Days of cover: stock on hand divided by average daily sales.\nQ2. The last 4 weeks of distributor sell-out, averaged per day.\nQ3. The area sales manager, once per distributor per product per day at most.\nQ4. Not in v1; flag it as a proposal.",
+  "draftA": "REQ-1 Days of cover = stock on hand ÷ average weekly sales over the last 4 weeks.\nREQ-2 Alert when days of cover is below 7.\nREQ-3 Send at most one alert per distributor and product per day.\nAC-1 DIST-12 holds 840 units of SKU-4471 and sells 420 a week: cover is 2 days, so the manager is alerted.",
+  "draftB": "REQ-1 Average daily sales = 4-week sell-out ÷ 28.\nREQ-2 Days of cover = stock on hand ÷ average daily sales; alert below 7 days.\nREQ-3 One alert per distributor, product and day, to the area sales manager.\nOpen: Proposed: seasonal products use a separate threshold. Needs sign-off.\nAC-1 DIST-12, 840 units, 60 a day: 14 days of cover, no alert.",
+  "reviewOfA": "D-A1 · P0 · Units error\n  REQ-1 divides stock by weekly sales but calls the result days. 840 ÷ 420 = 2 is weeks of cover; in days it is 840 ÷ (420 ÷ 7) = 14. As written, almost every product would alert, and AC-1 expects an alert that should not happen.\nD-A2 · P1 · Seasonal products\n  The answer said to flag seasonality as a proposal; Draft A does not mention it.",
+  "reviewOfB": "D-B1 · P1 · Short history\n  New products with less than 4 weeks of sales have no defined average.\nStrengths: correct units, the agreed alert limit, and seasonality flagged rather than decided.",
+  "synthesis": "Kept from B: daily-sales arithmetic, the seasonal proposal flagged for sign-off.\nKept from A: the alert limit wording.\nFixed D-A1: cover = stock ÷ (4-week sell-out ÷ 28); AC-1 now expects 14 days and no alert, and AC-2 tests 300 units at 60 a day (5 days, alert).\nFixed D-B1: products with under 4 weeks of history use the weeks they have, and are marked 'new'.\nDefects resolved: 3 of 3.",
+  "checks": [
+    { "name": "Units are consistent", "detail": "Stock in units, sales in units per day, cover in days." },
+    { "name": "Worked examples recomputed", "detail": "840 ÷ 60 = 14 days; 300 ÷ 60 = 5 days." },
+    { "name": "Alert limits match the answers", "detail": "Below 7 days; at most once per distributor, product and day." },
+    { "name": "Unagreed choices are flagged", "detail": "The seasonal threshold is listed as a proposal needing sign-off." }
+  ],
+  "approval": "Approved by the national sales operations manager.",
+  "code": "src/stock/daysOfCover.ts\n  daysOfCover(stock, sellOut4Weeks, weeksOfHistory) -> days\nsrc/stock/stockOutAlert.ts\n  raises an alert below 7 days, deduplicated per distributor, product and day",
+  "testsRed": "✓ 840 units at 60 a day is 14 days, no alert\n✓ 300 units at 60 a day is 5 days, alert\n✗ sends one alert per day\n  expected 1 alert, received 2\n  (the dedupe key omitted the product)\n1 failing, 5 passing",
+  "fix": "Added the product id to the alert's dedupe key (distributor, product, date).",
+  "testsGreen": "✓ 840 units at 60 a day is 14 days, no alert\n✓ 300 units at 60 a day is 5 days, alert\n✓ sends one alert per day\n✓ two products at one distributor alert separately\n✓ a new product uses the weeks it has\n✓ zero sales never divides by zero\n6 passing",
+  "release": "✓ Requirements approved, hash unchanged\n✓ Tests green\n✓ Replay on last month's sell-out: 37 alerts, against 412 with the weekly-units bug\nReleased to the portal."
+}

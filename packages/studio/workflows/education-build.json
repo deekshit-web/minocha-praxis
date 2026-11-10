@@ -1,0 +1,28 @@
+{
+  "id": "education-build",
+  "domain": "education",
+  "kind": "build",
+  "title": "Ship an early-warning flag for at-risk students",
+  "summary": "Flag students whose attendance and grades suggest they need support, so a counsellor can reach out early.",
+  "deliverable": "A tested feature in the school information system",
+  "brief": "Flag students at risk of falling behind, using attendance and recent grades, so their counsellor can follow up within a week.",
+  "questions": "Q1. Which signals count: attendance, grades, or both?\nQ2. What thresholds trigger the flag?\nQ3. Who can see the flag?\nQ4. Does the flag clear on its own?",
+  "answers": "Q1. Both.\nQ2. Attendance below 90% over the last 20 school days, or two or more failing grades in the current term.\nQ3. The student's counsellor and the head of year only.\nQ4. It clears when neither condition has held for 10 school days.",
+  "draftA": "REQ-1 Flag a student when attendance over the last 20 school days is below 90%, or when they have two or more failing grades this term.\nREQ-2 The flag appears as an amber dot beside the student's name on the class roster, so teachers notice it at a glance.\nREQ-3 The counsellor gets a weekly list of newly flagged students.\nAC-2 STU-104 attended 17 of 20 days (85%): flagged.",
+  "draftB": "REQ-1 The flag uses attendance (below 90% over 20 school days) or 2+ failing term grades.\nREQ-2 Only the student's counsellor and the head of year can see the flag; it never appears on rosters, class lists or anything a student or other parents can view.\nREQ-3 The flag clears after 10 school days with neither condition.\nAC-5 STU-207 attended 18 of 20 days (90%): not flagged, because the rule is below 90%.",
+  "reviewOfA": "D-A1 · P0 · Privacy\n  REQ-2 shows the flag on the class roster. Rosters are projected in class and printed for substitutes, so classmates would see who is at risk. The agreed answer limits the flag to the counsellor and head of year; student records also carry legal privacy duties.\nD-A2 · P1 · Missing rule\n  Draft A never says when the flag clears.",
+  "reviewOfB": "D-B1 · P1 · Untested boundary\n  AC-5 tests exactly 90%, good, but nothing tests two failing grades at the boundary.\nStrengths: visibility is limited exactly as agreed, and the clearing rule is testable.",
+  "synthesis": "Kept from B: visibility limited to the counsellor and head of year; the clearing rule.\nKept from A: the weekly counsellor list.\nFixed D-A1: removed the roster dot entirely; the flag lives only in the counsellor's view.\nFixed D-A2 and D-B1: clearing rule added; a criterion now checks exactly two failing grades.\nDefects resolved: 3 of 3.",
+  "checks": [
+    { "name": "Visibility matches the agreed roles", "detail": "Only the counsellor and head of year can read the flag." },
+    { "name": "Thresholds match the answers", "detail": "Below 90% over 20 days, or 2+ failing grades." },
+    { "name": "Every rule has a test", "detail": "Boundaries at 90% and at two failing grades are both tested." },
+    { "name": "No student personal data", "detail": "Only synthetic STU- ids appear." }
+  ],
+  "approval": "Approved by the head of year and the school's data protection lead.",
+  "code": "src/support/riskFlag.ts\n  riskFlag(student, today) -> { flagged, reasons[] }\nsrc/support/counsellorView.ts shows flagged students to the assigned counsellor only.\nWeekly digest job lists students flagged since last week.",
+  "testsRed": "✓ flags 17 of 20 days (85%)\n✗ does not flag exactly 90%\n  expected flagged: false, received: true\n  (comparison used <= 90 instead of < 90)\n✓ flags two failing grades\n1 failing, 6 passing",
+  "fix": "Changed the attendance comparison from <= 0.90 to < 0.90, matching 'below 90%'.",
+  "testsGreen": "✓ flags 17 of 20 days (85%)\n✓ does not flag exactly 90%\n✓ flags two failing grades\n✓ does not flag one failing grade\n✓ clears after 10 school days\n✓ hidden from teachers and rosters\n✓ visible to the counsellor and head of year\n7 passing",
+  "release": "✓ Requirements approved, hash unchanged\n✓ Tests green\n✓ Access check: the flag is unreadable from teacher and student accounts\n✓ No student personal data in fixtures or logs\nReleased."
+}

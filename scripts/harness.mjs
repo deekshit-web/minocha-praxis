@@ -17,7 +17,7 @@ function walk(dir) {
     else if (entry.name.endsWith(".test.ts")) files.push(full);
   }
 }
-for (const name of ["domain", "knowledge", "orchestrator", "harness", "implementer", "rcm", "factory"]) {
+for (const name of ["domain", "knowledge", "orchestrator", "harness", "implementer", "rcm", "factory", "studio"]) {
   walk(join(root, "packages", name, "src"));
 }
 

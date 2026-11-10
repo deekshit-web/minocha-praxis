@@ -1,0 +1,23 @@
+{
+  "id": "healthcare-document",
+  "domain": "healthcare",
+  "kind": "document",
+  "title": "Draft a denial appeal letter",
+  "summary": "Turn a CO-50 denial and its supporting record into a payer-ready appeal letter.",
+  "deliverable": "An appeal letter ready to send",
+  "brief": "Draft an appeal for CLM-221 (PAT-221), denied CO-50 for an MRI of the lumbar spine. The clinical note DOC-318 documents six weeks of failed conservative therapy. Payer: Northwind Health.",
+  "sources": "Northwind Health policy LS-14: lumbar MRI is covered after 6 weeks of documented conservative therapy, or sooner with red-flag symptoms.\nCARC CO-50: appeal with the coverage policy and a clinical-note reference; do not change the diagnosis code.\nClaim CLM-221: date of service 2026-08-20, filing deadline 2026-11-18.\nDOC-318: physical therapy 2026-07-01 to 2026-08-14, NSAIDs, no improvement.",
+  "draftA": "Re: Appeal of CLM-221, denied CO-50\nWe request reconsideration. Policy LS-14 covers lumbar MRI after 6 weeks of conservative therapy. DOC-318 records physical therapy from 2026-07-01 to 2026-08-14, more than 6 weeks, plus NSAIDs, without improvement. We also ask the payer to accept a revised diagnosis code that better reflects severity.",
+  "draftB": "Re: Request for reconsideration, CLM-221 (CO-50)\nThe service met policy LS-14. The enclosed note DOC-318 documents physical therapy from 2026-07-01 to 2026-08-14 and a course of NSAIDs without relief, satisfying the 6-week conservative-therapy requirement. We ask that the denial be reversed. Enclosures: DOC-318, policy LS-14 excerpt.",
+  "reviewOfA": "D-A1 · P0 · Forbidden action\n  Draft A asks the payer to accept a revised diagnosis code. The CO-50 rule says to appeal with the coverage policy and the note, and never to change the diagnosis code in this product. This could read as upcoding.\nD-A2 · P1 · Missing enclosures\n  The letter cites DOC-318 but does not list it as enclosed.",
+  "reviewOfB": "D-B1 · P1 · Deadline not stated\n  The letter should state it is filed before the 2026-11-18 deadline.\nStrengths: cites the exact policy clause and the dates that satisfy it; lists enclosures.",
+  "synthesis": "Kept from B: the structure, policy citation and enclosure list.\nKept from A: the explicit '6 weeks' arithmetic (2026-07-01 to 2026-08-14 is just over 6 weeks).\nFixed D-A1: removed the diagnosis-code request entirely.\nFixed D-B1: states timely filing before 2026-11-18.\nDefects resolved: 3 of 3.",
+  "checks": [
+    { "name": "Only allowed payer action", "detail": "Appeal with the coverage policy and the clinical note; no diagnosis-code change." },
+    { "name": "Dates consistent", "detail": "Therapy dates, date of service and filing deadline agree with the claim." },
+    { "name": "Every claim cites a source", "detail": "Policy LS-14 and DOC-318 back each statement." },
+    { "name": "No patient data", "detail": "Only synthetic PAT-, CLM- and DOC- ids appear." }
+  ],
+  "approval": "Approved by the denial specialist, who signs as the submitter.",
+  "deliver": "Letter and enclosures packaged for Northwind Health, logged against CLM-221, appeal state set to appeal-ready."
+}

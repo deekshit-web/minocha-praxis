@@ -1,0 +1,28 @@
+{
+  "id": "healthcare-build",
+  "domain": "healthcare",
+  "kind": "build",
+  "title": "Ship a CO-50 appeal-readiness gate",
+  "summary": "Stop specialists from marking a medical-necessity appeal ready until the clinical note and filing deadline are both present.",
+  "deliverable": "A tested feature in the denial workbench",
+  "brief": "On CO-50 medical-necessity denials, the specialist must not mark the appeal packet ready unless a clinical-note reference and a filing-deadline date are both present.",
+  "questions": "Q1. Does the gate apply to CO-50 only, or to every denial class?\nQ2. Can anyone override the gate?\nQ3. What counts as a clinical-note reference: an id, or an uploaded note?\nQ4. Which date is the filing deadline?\nQ5. What should the specialist see when blocked?",
+  "answers": "Q1. CO-50 only.\nQ2. Nobody in v1.\nQ3. A non-empty DOC-### id.\nQ4. Date of service plus 90 days (Northwind Health timely filing).\nQ5. The button names exactly what is missing.",
+  "draftA": "REQ-1 A CO-50 line can be marked appeal-ready only when a DOC-### reference and a filing deadline are both present.\nREQ-2 The deadline is the date of service plus 90 days.\nREQ-3 The workqueue shows a risk band: urgent within 14 days, soon within 45.\nAC-13 Date of service 2026-08-20, demo clock 2026-11-17: the deadline is 2026-11-28 and the band reads urgent.\nREQ-4 When blocked, the ready button names the missing items.",
+  "draftB": "REQ-1 The readiness gate applies to CO-50 lines only; CO-16, CO-197, CO-4, PR-1 and OA-23 keep their current paths.\nREQ-2 Ready requires a DOC-### clinical-note reference and a filing deadline; a blank deadline fails the gate.\nREQ-3 No override control exists for any role.\nAC-4 A CO-50 line with DOC-318 and a deadline becomes appeal-ready; with either missing it stays denied and the button says 'missing: clinical-note reference'.",
+  "reviewOfA": "D-A1 · P0 · Date arithmetic\n  AC-13 says the deadline is 2026-11-28, but 2026-08-20 plus 90 days is 2026-11-18. With the demo clock at 2026-11-17 that is 1 day out, so the expected band is still urgent, but the deadline value is wrong and a correct implementation would fail this criterion.\nD-A2 · P1 · Missing scope\n  Draft A never says which denial codes the gate does not apply to.",
+  "reviewOfB": "D-B1 · P1 · Untested message\n  AC-4 checks the clinical-note message but not the filing-deadline message.\nStrengths: scope is explicit, the no-override rule is stated, and a blank deadline fails the gate.",
+  "synthesis": "Kept from B: the explicit CO-50-only scope and the no-override rule.\nKept from A: the risk bands in the workqueue.\nFixed D-A1: AC-13 now reads deadline 2026-11-18, 1 day remaining, band urgent.\nFixed D-A2 and D-B1: out-of-scope codes listed; a criterion now checks each missing-item message.\nDefects resolved: 3 of 3.",
+  "checks": [
+    { "name": "Citations are real", "detail": "Every cited source is a knowledge-pack file retrieval found." },
+    { "name": "Payer actions match the CARC table", "detail": "CO-50: appeal with the coverage policy and a clinical-note reference." },
+    { "name": "Every must-pass criterion has a scenario", "detail": "6 of 6 P0 criteria are exercised." },
+    { "name": "No patient data", "detail": "Only synthetic PAT-, CLM- and DOC- ids appear." }
+  ],
+  "approval": "Approved by the PFS lead. The approval is locked to this document's hash: if it changes, it must be approved again.",
+  "code": "packages/domain/src/appealReady.ts\n  appealReady(line) returns { ready, missing[] }\n  CO-50 only; missing lists 'clinical-note reference' and 'filing deadline'.\nThe denial detail button calls appealReady() and shows 'Mark appeal ready - missing: …' while blocked.",
+  "testsRed": "✗ AC-1 blocks ready when the clinical-note reference is missing\n  expected ready: false, received: true\n  (a CO-50 shortcut skipped the note check)\n✓ AC-2 blocks ready when the filing deadline is missing\n✓ AC-3 allows ready when both are present\n1 failing, 5 passing",
+  "fix": "Removed the CO-50 shortcut that returned ready when only the deadline was present. One branch deleted; no other change.",
+  "testsGreen": "✓ AC-1 blocks ready when the clinical-note reference is missing\n✓ AC-2 blocks ready when the filing deadline is missing\n✓ AC-3 allows ready when both are present\n✓ AC-4 leaves CO-16 unchanged\n✓ AC-5 refuses an appeal on PR-1\n✓ AC-6 names the missing items\n6 passing",
+  "release": "✓ Requirements, architecture and tests approved; hashes still match\n✓ Unit tests green\n✓ 5 priority cases pass against the running workbench\n✓ No patient data or secrets in anything the run produced\nReleased."
+}
