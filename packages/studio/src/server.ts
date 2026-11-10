@@ -5,6 +5,9 @@ import { createServer, type Server, type ServerResponse } from "node:http";
 import { join } from "node:path";
 import { catalog, expand, loadSpecs } from "./workflows.ts";
 
+/** A summary of a real, metered run of the requirements panel, so viewers can see the replays are not invented. */
+const EVIDENCE = "packages/studio/evidence/live-prd-2026-11-09.json";
+
 function send(res: ServerResponse, status: number, body: unknown, type = "application/json; charset=utf-8"): void {
   res.writeHead(status, { "content-type": type, "cache-control": "no-store", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer" });
   res.end(typeof body === "string" ? body : JSON.stringify(body));
@@ -29,6 +32,16 @@ export function createStudioServer(options: StudioOptions = {}): Server {
     try {
       if (req.method === "GET" && url.pathname === "/") {
         send(res, 200, readFileSync(join(repoRoot(), "packages/studio/public/index.html"), "utf8"), "text/html; charset=utf-8");
+        return;
+      }
+      if (req.method === "GET" && url.pathname === "/api/evidence") {
+        const body = readFileSync(join(repoRoot(), EVIDENCE), "utf8");
+        if (url.searchParams.has("download")) {
+          res.writeHead(200, { "content-type": "application/json; charset=utf-8", "content-disposition": 'attachment; filename="kodiflex-live-run-2026-11-09.json"', "x-content-type-options": "nosniff" });
+          res.end(body);
+          return;
+        }
+        send(res, 200, body);
         return;
       }
       if (req.method === "GET" && url.pathname === "/api/catalog") {

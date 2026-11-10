@@ -14,15 +14,30 @@
   "reviewOfB": "D-B1 · P1 · Short history\n  New products with less than 4 weeks of sales have no defined average.\nStrengths: correct units, the agreed alert limit, and seasonality flagged rather than decided.",
   "synthesis": "Kept from B: daily-sales arithmetic, the seasonal proposal flagged for sign-off.\nKept from A: the alert limit wording.\nFixed D-A1: cover = stock ÷ (4-week sell-out ÷ 28); AC-1 now expects 14 days and no alert, and AC-2 tests 300 units at 60 a day (5 days, alert).\nFixed D-B1: products with under 4 weeks of history use the weeks they have, and are marked 'new'.\nDefects resolved: 3 of 3.",
   "checks": [
-    { "name": "Units are consistent", "detail": "Stock in units, sales in units per day, cover in days." },
-    { "name": "Worked examples recomputed", "detail": "840 ÷ 60 = 14 days; 300 ÷ 60 = 5 days." },
-    { "name": "Alert limits match the answers", "detail": "Below 7 days; at most once per distributor, product and day." },
-    { "name": "Unagreed choices are flagged", "detail": "The seasonal threshold is listed as a proposal needing sign-off." }
+    {
+      "name": "Units are consistent",
+      "detail": "Stock in units, sales in units per day, cover in days."
+    },
+    {
+      "name": "Worked examples recomputed",
+      "detail": "840 ÷ 60 = 14 days; 300 ÷ 60 = 5 days."
+    },
+    {
+      "name": "Alert limits match the answers",
+      "detail": "Below 7 days; at most once per distributor, product and day."
+    },
+    {
+      "name": "Unagreed choices are flagged",
+      "detail": "The seasonal threshold is listed as a proposal needing sign-off."
+    }
   ],
   "approval": "Approved by the national sales operations manager.",
+  "testCases": "TC-1 · AC-1 · 840 units, 1,680 sold in 4 weeks (60 a day) → 14 days of cover, no alert\nTC-2 · AC-2 · 300 units, 1,680 sold in 4 weeks → 5 days of cover, alert\nTC-3 · REQ-4 · the same distributor and product checked twice in one day → one alert\nTC-4 · REQ-4 · two products below 7 days at one distributor → two alerts\nTC-5 · REQ-3 · 2 weeks of history, 840 sold (60 a day) → 14 days, marked new\nTC-6 · edge · no sales in 4 weeks → no division by zero, no alert",
+  "testScript": "import assert from \"node:assert/strict\";\nimport test from \"node:test\";\nimport { daysOfCover } from \"../src/stock/daysOfCover.ts\";\nimport { createAlerter } from \"../src/stock/stockOutAlert.ts\";\n\nconst check = (alerter, over = {}) =>\n  alerter.check({ distributor: \"DIST-27\", sku: \"SKU-4471\", stock: 300, sellOut: 1680, weeks: 4, date: \"2026-11-10\", ...over });\n\ntest(\"840 units at 60 a day is 14 days, no alert\", () => {\n  assert.equal(daysOfCover(840, 1680, 4), 14);\n  assert.equal(check(createAlerter(), { stock: 840 }), null);\n});\ntest(\"300 units at 60 a day is 5 days, alert\", () => {\n  assert.equal(daysOfCover(300, 1680, 4), 5);\n  assert.ok(check(createAlerter()));\n});\ntest(\"sends one alert per day\", () => {\n  const alerter = createAlerter();\n  assert.ok(check(alerter));\n  assert.equal(check(alerter), null);\n});\ntest(\"two products at one distributor alert separately\", () => {\n  const alerter = createAlerter();\n  assert.ok(check(alerter));\n  assert.ok(check(alerter, { sku: \"SKU-4472\" }));\n});\ntest(\"a new product uses the weeks it has\", () => {\n  assert.equal(daysOfCover(840, 840, 2), 14);\n});\ntest(\"zero sales never divides by zero\", () => {\n  assert.equal(daysOfCover(300, 0, 4), Infinity);\n  assert.equal(check(createAlerter(), { sellOut: 0 }), null);\n});",
   "code": "src/stock/daysOfCover.ts\n  daysOfCover(stock, sellOut4Weeks, weeksOfHistory) -> days\nsrc/stock/stockOutAlert.ts\n  raises an alert below 7 days, deduplicated per distributor, product and day",
-  "testsRed": "✓ 840 units at 60 a day is 14 days, no alert\n✓ 300 units at 60 a day is 5 days, alert\n✗ sends one alert per day\n  expected 1 alert, received 2\n  (the dedupe key omitted the product)\n1 failing, 5 passing",
+  "testsRed": "✓ 840 units at 60 a day is 14 days, no alert\n✓ 300 units at 60 a day is 5 days, alert\n✓ sends one alert per day\n✗ two products at one distributor alert separately\n  expected 2 alerts, received 1\n  (the dedupe key omitted the product)\n1 failing, 5 passing",
   "fix": "Added the product id to the alert's dedupe key (distributor, product, date).",
   "testsGreen": "✓ 840 units at 60 a day is 14 days, no alert\n✓ 300 units at 60 a day is 5 days, alert\n✓ sends one alert per day\n✓ two products at one distributor alert separately\n✓ a new product uses the weeks it has\n✓ zero sales never divides by zero\n6 passing",
-  "release": "✓ Requirements approved, hash unchanged\n✓ Tests green\n✓ Replay on last month's sell-out: 37 alerts, against 412 with the weekly-units bug\nReleased to the portal."
+  "release": "✓ Requirements approved, hash unchanged\n✓ Tests green\n✓ Replay on last month's sell-out: 37 alerts, against 412 with the weekly-units bug\nReleased to the portal.",
+  "output": "## Approved requirements\n- REQ-1 Average daily sales = the distributor's 4-week sell-out ÷ 28.\n- REQ-2 Days of cover = stock on hand ÷ average daily sales. Alert when it is below 7 days.\n- REQ-3 Products with under 4 weeks of history use the weeks they have, and are marked \"new\".\n- REQ-4 At most one alert per distributor, product and day, sent to the area sales manager.\n- Proposed, needs sign-off: seasonal products use a separate threshold.\n- AC-1 DIST-12 holds 840 units of SKU-4471 and sells 60 a day: 14 days of cover, no alert.\n- AC-2 300 units at 60 a day: 5 days of cover, alert.\n## What the area sales manager now gets\n- \"Stock-out risk · SKU-4471 at DIST-27: 300 units, about 5 days of cover at 60 a day. Raise a replenishment order.\"\n- One alert per distributor, product and day, never a flood.\n## Evidence\n- 6 tests passing, including \"zero sales never divides by zero\".\n- Replayed on last month's sell-out: 37 alerts. The weekly-units bug the review caught would have sent 412."
 }

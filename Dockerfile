@@ -14,5 +14,6 @@ COPY --from=build /app/node_modules/undici ./node_modules/undici
 COPY --from=build /app/runs/studio/server.mjs ./runs/studio/server.mjs
 COPY --from=build /app/packages/studio/public ./packages/studio/public
 COPY --from=build /app/packages/studio/workflows ./packages/studio/workflows
+COPY --from=build /app/packages/studio/evidence ./packages/studio/evidence
 USER node
 CMD ["node", "runs/studio/server.mjs"]
