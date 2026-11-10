@@ -1,0 +1,10 @@
+{
+  "name": "@northwind/studio",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@northwind/orchestrator": "*",
+    "@northwind/rcm": "*",
+    "zod": "^4.6.7"
+  }
+}

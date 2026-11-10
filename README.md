@@ -44,6 +44,7 @@ npm run typecheck   # esbuild strips types without checking them, so this is the
 npm run rcm         # denial workbench on http://127.0.0.1:4173
 npm run factory     # factory UI on http://127.0.0.1:4317
 npm run live-prd    # play the PRD panel on Claude and run the PRD gates on the result
+npm run studio      # zero-token workflow studio on http://127.0.0.1:4320
 ```
 
 For the full demo, start the workbench first, then the factory. If the workbench runs somewhere else, set `NORTHWIND_WORKBENCH` (for example `http://127.0.0.1:5173`) when starting the factory. In the factory, step through Begin intake → answers → approve PRD → accept suggestion S-1 → approve architecture → apply the repair → approve tests → record. The trace links open the matching workbench pages. Reset clears the factory session, its sandbox and the workbench ready marks.
@@ -66,6 +67,12 @@ Each seat answers in a fixed JSON shape (`orchestrator/src/schemas.ts`), and the
 
 Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 
+### The workflow studio
+
+`npm run studio` serves a demo for passers-by that costs nothing to run. Pick a domain (healthcare, education, FMCG, financial services, logistics) and a workflow: a feature build (requirements, then code, a failing test, a fix and a release gate) or a document or decision. Each run shows the same pipeline as the live panel: two drafts from Claude and Grok that cannot see each other, crossed reviews in which one catches a serious defect, a merge, plain code checks, and a pause for a person to approve. Every output is written in advance and no model is called. The page shows what each call would cost and how long it would take live, priced from the same table as the live runs, and a "Tokens spent" tile that stays at 0. Link straight to a workflow with `#<id>`, for example `http://127.0.0.1:4320/#fmcg-document`.
+
+To add a workflow, drop a JSON file in `packages/studio/workflows/`; `workflows.ts` validates it and expands it into steps, and the tests check that every domain has both kinds and that each run has its caught-it moment.
+
 ## Layout
 
 | Package | Role |
@@ -76,6 +83,7 @@ Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 | `packages/orchestrator` | Run state, gates, panel rules, scanners, fence and trace matrix |
 | `packages/implementer` | The fenced sandbox tree that seeds, patches and tests `appealReady` |
 | `packages/harness` | The recorded panels and a headless walk of Feature B used by the tests |
+| `packages/studio` | The zero-token workflow studio: workflow specs in `workflows/`, their expansion into steps in `workflows.ts`, and its server and page |
 | `packages/factory` | The HTTP server and single-page UI that drive a run step by step. `session.ts` runs the stages; `view.ts` turns run state into what the page shows |
 
 The packages are npm workspaces. Each library exports only `src/index.ts`, so other packages import it by name (`import { Run } from "@northwind/orchestrator"`) and cannot reach its other files. `npm install` links them into `node_modules/@northwind/`.
@@ -83,7 +91,7 @@ The packages are npm workspaces. Each library exports only `src/index.ts`, so ot
 - To use something from another package, export it from that package's `index.ts` and add the package to the importer's `dependencies` (or `devDependencies` when only tests use it).
 - Imports inside a package stay relative.
 - `harness/src/boundaries.test.ts` fails on a relative import into another package and on an `@northwind/*` import the package does not declare.
-- `factory` is the app. Nothing imports it, so it has no exports.
+- `factory` and `studio` are apps. Nothing imports them, so they have no exports.
 
 ## Conventions
 

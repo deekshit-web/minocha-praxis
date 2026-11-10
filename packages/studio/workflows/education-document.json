@@ -1,0 +1,23 @@
+{
+  "id": "education-document",
+  "domain": "education",
+  "kind": "document",
+  "title": "Create a lesson plan and quiz for a standard",
+  "summary": "Build a 45-minute grade 7 lesson on unit rates, with a short quiz and answer key.",
+  "deliverable": "A lesson plan, quiz and answer key",
+  "brief": "Create a 45-minute grade 7 lesson on unit rates with fractions (standard 7.RP.A.1), plus a 5-question quiz with an answer key.",
+  "sources": "Standard 7.RP.A.1: compute unit rates associated with ratios of fractions, including ratios of lengths, areas and other quantities measured in like or different units.\nDepartment guide: lessons follow warm-up, worked example, guided practice, independent practice, exit quiz.\nClass profile: 28 students; 4 need reading support, so word problems use short sentences.",
+  "draftA": "Warm-up (5 min): simplify 3/4 ÷ 1/2.\nWorked example (10 min): a walker covers 3/4 mile in 1/2 hour. Unit rate = (3/4) ÷ (1/2) = 3/2 = 1.5 miles per hour.\nGuided practice (10 min), independent practice (15 min), exit quiz (5 min).\nQuiz Q3: Paint covers 2/3 of a wall with 1/4 gallon. How many walls per gallon? Answer key: 2/3 × 1/4 = 1/6 wall per gallon.",
+  "draftB": "Warm-up (5 min): what does 'per' mean? Three everyday rates.\nWorked example (10 min): 1/2 cup of sugar for 1/3 batch: (1/2) ÷ (1/3) = 3/2 cups per batch.\nGuided practice in pairs (10 min); independent practice with short sentences (15 min); exit quiz (5 min).\nQuiz Q2: A snail moves 1/8 metre in 1/4 minute. Speed? Answer key: (1/8) ÷ (1/4) = 1/2 metre per minute.",
+  "reviewOfA": "D-A1 · P0 · Wrong answer key\n  Quiz Q3 asks for walls per gallon, so the rate is (2/3) ÷ (1/4) = 8/3, about 2.67 walls per gallon. The key multiplies instead of dividing and gives 1/6, so it would mark correct students wrong.\nD-A2 · P1 · Reading support\n  Two word problems run past 30 words; the class profile asks for short sentences.",
+  "reviewOfB": "D-B1 · P1 · Thin warm-up\n  The warm-up does not practise dividing fractions, which the worked example needs.\nStrengths: every answer in the key is correct; word problems are short.",
+  "synthesis": "Kept from A: the walking example and the fraction-division warm-up.\nKept from B: pair work, short-sentence problems and the snail question.\nFixed D-A1: Q3 key is now (2/3) ÷ (1/4) = 8/3 ≈ 2.67 walls per gallon, with the working shown.\nFixed D-A2 and D-B1: long problems shortened; warm-up practises dividing fractions.\nDefects resolved: 3 of 3.",
+  "checks": [
+    { "name": "Every answer recomputed", "detail": "All 5 quiz answers checked by exact fraction arithmetic." },
+    { "name": "Matches the standard", "detail": "Every activity computes a unit rate from a ratio of fractions." },
+    { "name": "Timing adds up", "detail": "5 + 10 + 10 + 15 + 5 = 45 minutes." },
+    { "name": "Reading level", "detail": "No word problem longer than 25 words." }
+  ],
+  "approval": "Approved by the maths department lead.",
+  "deliver": "Lesson plan, quiz and answer key published to the grade 7 maths shared folder, tagged 7.RP.A.1."
+}

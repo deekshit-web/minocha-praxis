@@ -1,0 +1,23 @@
+{
+  "id": "logistics-document",
+  "domain": "logistics",
+  "kind": "document",
+  "title": "Decide a damaged-shipment claim",
+  "summary": "Work out what to claim from the carrier for a damaged shipment, and what to refund the customer.",
+  "deliverable": "A claim decision with amounts and reasons",
+  "brief": "Shipment SHP-9031 (18 kg of glassware, invoice value 1,200) arrived damaged. Decide what to claim from the carrier and what to refund the customer.",
+  "sources": "Carrier contract C-7: liability limited to 25 per kg unless declared value cover was bought; claims within 30 days of delivery.\nShipment SHP-9031: 18 kg, no declared value cover, delivered 2026-11-03; damage photos on file.\nCustomer policy R-4: refund the invoice value for damage on arrival; recover from the carrier what the contract allows.",
+  "draftA": "Claim from carrier: 1,200, the full invoice value of the glassware.\nRefund to customer: 1,200 under R-4.\nNet cost to the company: 0.\nFile the claim with the damage photos.",
+  "draftB": "Refund to customer: 1,200 under R-4.\nClaim from carrier: 18 kg × 25 = 450, the contract limit, since no declared value cover was bought.\nNet cost to the company: 750.\nFile within 30 days of 2026-11-03, that is by 2026-12-03, with the damage photos.",
+  "reviewOfA": "D-A1 · P0 · Ignores the liability cap\n  Contract C-7 limits carrier liability to 25 per kg without declared value cover: 18 × 25 = 450. Claiming 1,200 will be rejected, and the plan wrongly shows a net cost of 0.\nD-A2 · P1 · No deadline\n  The 30-day claim window is not mentioned.",
+  "reviewOfB": "D-B1 · P1 · Process gap\n  Recommend buying declared value cover for future glassware shipments.\nStrengths: correct cap arithmetic and the exact filing deadline.",
+  "synthesis": "Kept from B: refund 1,200, claim 450, net cost 750, file by 2026-12-03.\nFixed D-A1 and D-A2: the claim is capped by C-7, and the deadline is stated.\nAdded from D-B1, as a proposal needing sign-off: buy declared value cover for fragile shipments over 500.\nDefects resolved: 3 of 3.",
+  "checks": [
+    { "name": "Contract limits applied", "detail": "18 kg × 25 per kg = 450; no declared value cover on file." },
+    { "name": "Amounts reconcile", "detail": "Refund 1,200 - recovery 450 = net cost 750." },
+    { "name": "Deadline computed", "detail": "Delivered 2026-11-03 + 30 days = 2026-12-03." },
+    { "name": "Unagreed choices are flagged", "detail": "The cover recommendation is a proposal, not a decision." }
+  ],
+  "approval": "Approved by the claims supervisor.",
+  "deliver": "Customer refunded 1,200; carrier claim for 450 filed with photos on 2026-11-10; proposal sent to the logistics manager."
+}

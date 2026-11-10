@@ -1,0 +1,23 @@
+{
+  "id": "finance-document",
+  "domain": "finance",
+  "kind": "document",
+  "title": "Review a KYC file",
+  "summary": "Check a new customer's identity file against policy and recommend approve, request more, or refuse.",
+  "deliverable": "A KYC decision with reasons",
+  "brief": "Review the onboarding file for customer CUST-3381 and recommend whether to approve the account, ask for more documents, or refuse. Review date: 2026-11-10.",
+  "sources": "KYC policy K-2: a valid, unexpired photo ID is required; proof of address must be dated within 3 months of review.\nFile CUST-3381: passport ID-778, expiry 2026-09-30; utility bill dated 2026-06-02; sanctions screening: no match.\nRisk rating: standard.",
+  "draftA": "Identity: passport ID-778 on file, name matches the application.\nAddress: utility bill on file.\nScreening: no sanctions match.\nRecommendation: approve; standard risk.",
+  "draftB": "Identity: passport ID-778, name matches.\nAddress: utility bill dated 2026-06-02 is older than 3 months at the 2026-11-10 review (cut-off 2026-08-10), so it does not meet K-2.\nScreening: no sanctions match.\nRecommendation: ask for a recent proof of address before approving.",
+  "reviewOfA": "D-A1 · P0 · Expired identity document\n  Passport ID-778 expired on 2026-09-30, before the 2026-11-10 review. K-2 requires an unexpired ID, so the file cannot be approved.\nD-A2 · P0 · Stale address proof\n  The utility bill is dated 2026-06-02, more than 3 months before review.",
+  "reviewOfB": "D-B1 · P0 · Missed the expired passport\n  Draft B checks the address date but not the passport's expiry (2026-09-30).\nStrengths: applies the 3-month address rule with the exact cut-off date.",
+  "synthesis": "Kept from B: the address finding with its cut-off date.\nFixed D-A1 and D-B1: the passport expired on 2026-09-30; a valid ID is required.\nFixed D-A2: a recent proof of address is required.\nRecommendation: request more documents (a valid photo ID and a proof of address dated after 2026-08-10). Do not approve yet.\nDefects resolved: 3 of 3.",
+  "checks": [
+    { "name": "Every date checked against the review date", "detail": "ID expiry and address date compared with 2026-11-10." },
+    { "name": "Every policy rule applied", "detail": "K-2 identity and address rules both evaluated." },
+    { "name": "Decision follows from findings", "detail": "Two failed requirements lead to 'request more', not 'approve'." },
+    { "name": "No personal data in the record", "detail": "Only synthetic CUST- and ID- references." }
+  ],
+  "approval": "Approved by the onboarding analyst; a second reviewer is not required for a 'request more' outcome.",
+  "deliver": "Request sent to the customer for a valid photo ID and a recent proof of address; the account stays pending with a 30-day follow-up."
+}

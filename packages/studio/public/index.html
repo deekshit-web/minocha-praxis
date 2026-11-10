@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Workflow studio</title>
+    <style>
+      :root {
+        --paper: #f3ecdf;
+        --paper-2: #fffaf3;
+        --ink: #1c1915;
+        --muted: #5e564c;
+        --line: #e3d5c3;
+        --teal: #0e6b66;
+        --teal-deep: #084743;
+        --moss: #2a6840;
+        --clay: #8d3d2c;
+        --sky: #eef7f5;
+        color-scheme: light;
+      }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(180deg, rgba(14, 107, 102, 0.06), transparent 200px), var(--paper);
+        color: var(--ink);
+        font: 16px/1.45 ui-sans-serif, system-ui, sans-serif;
+      }
+      .wrap { padding: 22px 28px 48px; max-width: 1880px; margin: 0 auto; }
+      header { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+      .eyebrow, h2, .label { margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--teal-deep); }
+      h1 { margin: 4px 0 0; font: 36px/1.1 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; }
+      .lede { margin: 6px 0 0; color: var(--muted); max-width: 900px; }
+      .sim {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: var(--teal);
+        color: #f7fffe;
+        font-weight: 650;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+      .sim i { width: 8px; height: 8px; border-radius: 50%; background: #9be0c4; display: block; }
+      .card { background: var(--paper-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+      .domains { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 12px; }
+      .domains button {
+        border: 1px solid var(--line);
+        background: var(--paper-2);
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 9px 16px;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .domains button[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: #f7fffe; }
+      .domain-blurb { margin: 0 0 10px; color: var(--muted); }
+      .workflows { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+      .workflow {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        text-align: left;
+        border: 1px solid var(--line);
+        background: var(--paper-2);
+        border-radius: 12px;
+        padding: 14px 16px;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+      }
+      .workflow:hover, .workflow[aria-pressed="true"] { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(14, 107, 102, 0.14); }
+      .workflow h3 { margin: 6px 0 4px; font: 21px/1.2 Palatino, Georgia, serif; font-weight: 500; }
+      .workflow p { margin: 0 0 6px; color: var(--muted); }
+      .kind { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 650; background: #e3f1e7; color: var(--moss); }
+      .kind.document { background: #f1ecf7; color: #4e3a77; }
+      .meta { font-size: 13px; color: var(--muted); }
+      #run { margin-top: 18px; }
+      .scoreboard { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+      .tile { background: var(--paper-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; min-width: 0; }
+      .tile .value { display: block; margin-top: 4px; font: 30px/1.1 Palatino, Georgia, serif; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .tile .sub { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
+      .tile.zero .value { color: var(--moss); }
+      .tile.turn { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(14, 107, 102, 0.16); }
+      .tile.turn .sub { color: var(--teal-deep); font-weight: 650; }
+      .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .controls button, .controls select {
+        border: 1px solid var(--line);
+        background: var(--paper-2);
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 8px 14px;
+        font: inherit;
+        cursor: pointer;
+      }
+      .controls button.primary, #approve { background: var(--teal); border-color: var(--teal); color: #f7fffe; font-weight: 650; }
+      .phases { display: flex; gap: 6px; margin-left: auto; }
+      .phases button[aria-selected="true"] { background: var(--teal-deep); border-color: var(--teal-deep); color: #f7fffe; }
+      .caption {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        justify-content: space-between;
+        margin: 12px 0;
+        padding: 10px 14px;
+        border-left: 4px solid var(--teal);
+        background: var(--sky);
+        font-size: 19px;
+        min-height: 54px;
+      }
+      #approve { border: 0; border-radius: 999px; padding: 10px 20px; font: inherit; font-weight: 650; cursor: pointer; white-space: nowrap; }
+      .pipe-scroll { overflow-x: auto; }
+      .pipe { position: relative; display: grid; grid-template-rows: auto 26px auto; column-gap: 34px; padding: 6px 2px; min-width: 980px; }
+      .pipe svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+      .pipe path { fill: none; stroke: var(--line); stroke-width: 2; }
+      .pipe path.lit { stroke: var(--teal); }
+      .node {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 9px 11px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper);
+        color: var(--muted);
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
+        min-width: 0;
+      }
+      .node.mid { grid-row: 1 / 4; align-self: center; }
+      .node .k { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+      .node .n { font-weight: 650; font-size: 15px; }
+      .node .m { font-size: 13px; font-variant-numeric: tabular-nums; }
+      .node .s { font-size: 12px; font-weight: 650; }
+      .node.done { background: var(--paper-2); color: var(--ink); border-color: #b9cfc6; }
+      .node.done .s { color: var(--moss); }
+      .node.flagged { background: var(--paper-2); color: var(--ink); border-color: #e2b3a6; }
+      .node.flagged .s { color: var(--clay); }
+      .node.running { background: var(--sky); color: var(--ink); border-color: var(--teal); animation: pulse 1.2s ease-in-out infinite; }
+      .node.running .s, .node.waiting .s { color: var(--teal-deep); }
+      .node.waiting { background: var(--sky); color: var(--ink); border-color: var(--teal); }
+      .node.selected { outline: 2px solid var(--teal-deep); outline-offset: 2px; }
+      @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(14, 107, 102, 0.28); } 50% { box-shadow: 0 0 0 7px rgba(14, 107, 102, 0); } }
+      @media (prefers-reduced-motion: reduce) { .node.running { animation: none; } }
+      .wall { grid-row: 2; align-self: center; border-top: 2px dashed var(--clay); position: relative; z-index: 1; }
+      .wall span { position: absolute; left: 50%; top: -10px; transform: translateX(-50%); padding: 0 6px; background: var(--paper); color: var(--clay); font-size: 11px; font-weight: 650; white-space: nowrap; }
+      .detail { margin-top: 14px; }
+      .detail h3 { margin: 0 0 2px; font: 20px/1.2 Palatino, Georgia, serif; font-weight: 500; }
+      .badge { display: inline-block; padding: 2px 9px; margin-right: 6px; border-radius: 999px; font-size: 12px; font-weight: 650; background: #e9e1d4; color: var(--muted); }
+      .badge.llm { background: var(--sky); color: var(--teal-deep); }
+      .detail .label { margin: 12px 0 3px; }
+      .detail pre { margin: 0; max-height: 320px; overflow: auto; white-space: pre-wrap; font: 15px/1.55 ui-sans-serif, system-ui, sans-serif; }
+      .cursor { display: inline-block; width: 8px; height: 1em; margin-left: 2px; background: var(--teal); vertical-align: text-bottom; animation: blink 1s steps(2) infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+      footer { margin-top: 22px; color: var(--muted); font-size: 14px; max-width: 1000px; }
+      @media (max-width: 980px) {
+        .wrap { padding: 16px 16px 40px; }
+        .scoreboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .phases { margin-left: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <p class="eyebrow">Agentic workflow studio</p>
+          <h1 id="title">Pick a domain and a workflow</h1>
+          <p id="lede" class="lede">Each workflow shows two different AI models drafting separately, reviewing each other's work, and a person approving the result. This page replays prepared runs: no model is called and nothing is billed.</p>
+        </div>
+        <span class="sim" title="Every output on this page was written in advance. Times and costs show what a live run would take."><i></i>Simulated · no model is called · $0</span>
+      </header>
+
+      <nav class="domains" id="domains" aria-label="Domains"></nav>
+      <p id="domain-blurb" class="domain-blurb"></p>
+      <div class="workflows" id="workflows"></div>
+
+      <section id="run" hidden>
+        <div class="scoreboard">
+          <div class="tile" id="tile-step"><span class="label">Step</span><span class="value" id="step-value">-</span><span class="sub" id="step-sub"></span></div>
+          <div class="tile"><span class="label">Model time if live</span><span class="value" id="time-value">0 s</span><span class="sub" id="time-sub"></span></div>
+          <div class="tile"><span class="label">Would cost if live</span><span class="value" id="cost-value">$0.00</span><span class="sub" id="cost-sub"></span></div>
+          <div class="tile"><span class="label">Checks</span><span class="value" id="checks-value">-</span><span class="sub" id="checks-sub">Not run yet</span></div>
+          <div class="tile zero"><span class="label">Tokens spent</span><span class="value">0</span><span class="sub">Replayed run: no model is called</span></div>
+        </div>
+
+        <div class="controls">
+          <button type="button" id="play" class="primary">▶ Play</button>
+          <button type="button" id="next">Next step ▸</button>
+          <select id="speed" aria-label="Replay speed">
+            <option value="10">10×</option>
+            <option value="30" selected>30×</option>
+            <option value="60">60×</option>
+          </select>
+          <button type="button" id="restart">Restart</button>
+          <div class="phases" id="phases" role="tablist"></div>
+        </div>
+
+        <div class="caption"><span id="caption">Press Play, or step through with Next step.</span><button type="button" id="approve" hidden>Approve</button></div>
+
+        <div class="card">
+          <div class="pipe-scroll">
+            <div class="pipe" id="pipe"><svg id="lines" aria-hidden="true"></svg></div>
+          </div>
+        </div>
+        <div class="card detail" id="detail" hidden></div>
+      </section>
+
+      <footer>
+        How to read this page: every output was written in advance to show how the workflow behaves; no model is called and nothing is billed. Model times and costs are estimates of a live run, from the same price table the live runs use. The live, metered version of this pipeline exists for the healthcare requirements step and is run on request.
+      </footer>
+    </div>
+
+    <script>
+      const MODEL_LABEL = { "claude-opus-5": "Claude Opus 5", "grok-4.7": "Grok 4.7" };
+      const KIND_BADGE = { llm: "Simulated model call", tool: "Tool", check: "Code check · no model", human: "Person", input: "Input" };
+      const MIN_DISPLAY_MS = 1400;
+
+      let domains = [];
+      let domainId = null;
+      let flow = null;
+      let phase = 0;
+      let selected = null;
+      const play = { index: 0, progress: 0, playing: false, speed: 30, last: 0, frame: 0, drawn: 0, approved: new Set() };
+
+      const byId = (id) => document.getElementById(id);
+      function text(id, value) { byId(id).textContent = value ?? ""; }
+      function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+      function money(value) { return "$" + (value || 0).toFixed(2); }
+      function duration(seconds) {
+        if (seconds < 60) return Math.round(seconds) + " s";
+        const minutes = Math.floor(seconds / 60);
+        return minutes + " min " + String(Math.round(seconds % 60)).padStart(2, "0") + " s";
+      }
+      function modelLabel(id) { return MODEL_LABEL[id] || id; }
+
+      function renderDomains() {
+        const nav = byId("domains");
+        clear(nav);
+        for (const domain of domains) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = domain.name;
+          button.setAttribute("aria-pressed", String(domain.id === domainId));
+          button.addEventListener("click", () => chooseDomain(domain.id));
+          nav.appendChild(button);
+        }
+        const domain = domains.find((item) => item.id === domainId);
+        text("domain-blurb", domain ? domain.blurb : "");
+        const list = byId("workflows");
+        clear(list);
+        for (const workflow of domain ? domain.workflows : []) {
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = "workflow";
+          card.setAttribute("aria-pressed", String(flow && flow.id === workflow.id));
+          const kind = document.createElement("span");
+          kind.className = "kind " + workflow.kind;
+          kind.textContent = workflow.kind === "build" ? "Build a feature" : "Produce a document or decision";
+          const title = document.createElement("h3");
+          title.textContent = workflow.title;
+          const summary = document.createElement("p");
+          summary.textContent = workflow.summary;
+          const meta = document.createElement("span");
+          meta.className = "meta";
+          meta.textContent = workflow.calls + " model calls · would cost about " + money(workflow.estimatedCostUsd) + " and take " + duration(workflow.estimatedSeconds) + " live · free here";
+          card.append(kind, title, summary, meta);
+          card.addEventListener("click", () => chooseWorkflow(workflow.id));
+          list.appendChild(card);
+        }
+      }
+
+      function chooseDomain(id) {
+        domainId = id;
+        renderDomains();
+      }
+
+      async function chooseWorkflow(id) {
+        stop();
+        const response = await fetch("/api/workflows/" + encodeURIComponent(id));
+        if (!response.ok) return;
+        flow = await response.json();
+        domainId = flow.domain;
+        play.index = 0;
+        play.progress = 0;
+        play.approved = new Set();
+        phase = 0;
+        selected = null;
+        history.replaceState(null, "", "#" + flow.id);
+        text("title", flow.title);
+        text("lede", flow.brief);
+        byId("run").hidden = false;
+        renderDomains();
+        buildPipe();
+        render();
+        byId("run").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function stateOf(step, index) {
+        if (index < play.index) return step.verdict === "flagged" ? "flagged" : "done";
+        if (index > play.index) return "idle";
+        if (step.kind === "human" && !play.approved.has(step.id)) return play.progress > 0 || play.playing ? "waiting" : "idle";
+        return play.progress > 0 ? "running" : "idle";
+      }
+
+      function buildPipe() {
+        const pipe = byId("pipe");
+        for (const node of [...pipe.querySelectorAll(".node, .wall")]) node.remove();
+        const steps = flow.steps.filter((step) => step.phase === phase);
+        const cols = Math.max(...steps.map((step) => step.col)) + 1;
+        pipe.style.gridTemplateColumns = "repeat(" + cols + ", minmax(118px, 1fr))";
+        for (const step of steps) {
+          const node = document.createElement("button");
+          node.type = "button";
+          node.className = "node" + (step.row === 1 ? " mid" : "");
+          node.dataset.step = step.id;
+          node.style.gridColumn = String(step.col + 1);
+          if (step.row !== 1) node.style.gridRow = String(step.row + 1);
+          node.addEventListener("click", () => {
+            selected = selected === step.id ? null : step.id;
+            stop();
+            render();
+          });
+          pipe.appendChild(node);
+        }
+        if (phase === 0) {
+          const wall = document.createElement("div");
+          wall.className = "wall";
+          wall.style.gridColumn = String(flow.wallCol + 1);
+          const label = document.createElement("span");
+          label.textContent = "cannot see each other";
+          wall.appendChild(label);
+          pipe.appendChild(wall);
+        }
+        const tabs = byId("phases");
+        clear(tabs);
+        if (flow.phases.length > 1) {
+          flow.phases.forEach((name, index) => {
+            const tab = document.createElement("button");
+            tab.type = "button";
+            tab.setAttribute("role", "tab");
+            tab.setAttribute("aria-selected", String(index === phase));
+            tab.textContent = index + 1 + " " + name;
+            tab.addEventListener("click", () => {
+              phase = index;
+              buildPipe();
+              render();
+            });
+            tabs.appendChild(tab);
+          });
+        }
+      }
+
+      function nodeText(step, state) {
+        const kicker = step.title;
+        const name = step.kind === "llm" ? modelLabel(step.actor) : step.actor;
+        let meta = "";
+        if (step.kind === "llm") {
+          const share = state === "running" ? play.progress : 1;
+          meta = state === "idle" ? "simulated call" : duration(step.seconds * share) + " · " + money((step.estimatedCostUsd || 0) * share);
+        } else if (step.kind === "human") meta = state === "waiting" ? "waiting for you" : state === "idle" ? "" : "approved";
+        const label = { idle: "", running: step.kind === "llm" ? "thinking…" : "working…", waiting: "your turn", done: "done", flagged: "flagged" }[state];
+        const flaggedLabel = step.id.startsWith("reviewOf") ? "caught a serious defect" : step.id === "testsRed" ? "1 test failing" : "flagged";
+        return [kicker, name, meta, state === "flagged" ? flaggedLabel : label];
+      }
+
+      function render() {
+        if (!flow) return;
+        const current = flow.steps[play.index];
+        if (current && current.phase !== phase && (play.playing || play.progress > 0)) {
+          phase = current.phase;
+          buildPipe();
+        }
+        flow.steps.forEach((step, index) => {
+          const node = document.querySelector('#pipe [data-step="' + step.id + '"]');
+          if (!node) return;
+          const state = stateOf(step, index);
+          node.className = "node" + (step.row === 1 ? " mid" : "") + (state !== "idle" ? " " + state : "") + (selected === step.id ? " selected" : "");
+          clear(node);
+          nodeText(step, state).forEach((value, part) => {
+            if (!value) return;
+            const span = document.createElement("span");
+            span.className = ["k", "n", "m", "s"][part];
+            span.textContent = value;
+            node.appendChild(span);
+          });
+        });
+        drawLines();
+        renderScoreboard();
+        renderCaption();
+        renderDetail();
+        byId("play").textContent = play.playing ? "❚❚ Pause" : play.index >= flow.steps.length ? "▶ Replay" : play.index > 0 || play.progress > 0 ? "▶ Resume" : "▶ Play";
+      }
+
+      function renderScoreboard() {
+        const total = flow.steps.length;
+        const finished = play.index >= total;
+        const current = flow.steps[Math.min(play.index, total - 1)];
+        const waiting = !finished && current.kind === "human" && !play.approved.has(current.id) && (play.playing || play.progress > 0);
+        byId("tile-step").classList.toggle("turn", waiting);
+        text("step-value", finished ? "Done" : play.index + 1 + " of " + total);
+        text("step-sub", finished ? "Every step complete" : waiting ? "Your turn: approve to continue" : current.title);
+        let seconds = 0;
+        let cost = 0;
+        flow.steps.forEach((step, index) => {
+          const share = index < play.index ? 1 : index === play.index ? play.progress : 0;
+          seconds += step.seconds * share;
+          cost += (step.estimatedCostUsd || 0) * share;
+        });
+        text("time-value", duration(seconds));
+        text("time-sub", "of " + duration(flow.estimatedSeconds) + " for the whole run");
+        text("cost-value", money(cost));
+        text("cost-sub", "of about " + money(flow.estimatedCostUsd) + " · this page spends $0");
+        const checks = flow.steps.filter((step) => step.kind === "check");
+        const run = checks.filter((step) => flow.steps.indexOf(step) < play.index);
+        text("checks-value", run.length ? run.length + " / " + checks.length + " passed" : "-");
+        text("checks-sub", run.length ? "Plain code checks, no model" : "Not run yet");
+      }
+
+      function renderCaption() {
+        const total = flow.steps.length;
+        const approve = byId("approve");
+        if (play.index >= total) {
+          text("caption", "Done. Two models drafted and reviewed, code checks passed, and a person approved: " + flow.deliverable.toLowerCase() + ".");
+          approve.hidden = true;
+          return;
+        }
+        const step = flow.steps[play.index];
+        const waiting = step.kind === "human" && !play.approved.has(step.id) && (play.playing || play.progress > 0);
+        approve.hidden = !waiting;
+        text("caption", play.progress === 0 && !play.playing && play.index === 0 ? "Press Play, or step through with Next step." : step.caption);
+      }
+
+      function renderDetail() {
+        const detail = byId("detail");
+        const id = selected || (flow.steps[play.index] && (play.playing || play.progress > 0) ? flow.steps[play.index].id : null);
+        clear(detail);
+        detail.hidden = !id;
+        if (!id) return;
+        const index = flow.steps.findIndex((step) => step.id === id);
+        const step = flow.steps[index];
+        const state = stateOf(step, index);
+        const heading = document.createElement("h3");
+        const badge = document.createElement("span");
+        badge.className = "badge" + (step.kind === "llm" ? " llm" : "");
+        badge.textContent = KIND_BADGE[step.kind];
+        heading.append(badge, document.createTextNode(step.title + (step.kind === "llm" ? " · " + modelLabel(step.actor) : "")));
+        const meta = document.createElement("p");
+        meta.className = "meta";
+        meta.textContent =
+          step.kind === "llm"
+            ? "Not called. A live run would take about " + duration(step.seconds) + " and cost about " + money(step.estimatedCostUsd) + " (" + step.tokens.input.toLocaleString() + " tokens in, " + step.tokens.output.toLocaleString() + " out)."
+            : step.caption;
+        detail.append(heading, meta);
+        const section = (label, body, share) => {
+          const title = document.createElement("p");
+          title.className = "label";
+          title.textContent = label;
+          const pre = document.createElement("pre");
+          if (share !== undefined && share < 1) {
+            pre.textContent = body.slice(0, Math.floor(body.length * share));
+            const cursor = document.createElement("span");
+            cursor.className = "cursor";
+            pre.appendChild(cursor);
+          } else pre.textContent = body;
+          detail.append(title, pre);
+          return pre;
+        };
+        section("Given", step.given);
+        if (state === "idle") section(step.kind === "human" ? "Outcome" : "Produced", "Not reached yet.");
+        else if (state === "waiting") section("Waiting", "Approve to continue.");
+        else {
+          const pre = section(step.kind === "human" ? "Outcome" : "Produced", step.output, state === "running" ? play.progress : undefined);
+          if (state === "running") pre.scrollTop = pre.scrollHeight;
+        }
+      }
+
+      function drawLines() {
+        const pipe = byId("pipe");
+        const svg = byId("lines");
+        clear(svg);
+        const box = pipe.getBoundingClientRect();
+        for (const step of flow.steps.filter((item) => item.phase === phase)) {
+          const target = pipe.querySelector('[data-step="' + step.id + '"]');
+          for (const from of step.after) {
+            const source = pipe.querySelector('[data-step="' + from + '"]');
+            if (!source || !target) continue;
+            const a = source.getBoundingClientRect();
+            const b = target.getBoundingClientRect();
+            const x1 = a.right - box.left;
+            const y1 = a.top + a.height / 2 - box.top;
+            const x2 = b.left - box.left;
+            const y2 = b.top + b.height / 2 - box.top;
+            const bend = (x2 - x1) / 2;
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", "M" + x1 + " " + y1 + " C" + (x1 + bend) + " " + y1 + " " + (x2 - bend) + " " + y2 + " " + x2 + " " + y2);
+            if (source.classList.contains("done") || source.classList.contains("flagged")) path.setAttribute("class", "lit");
+            svg.appendChild(path);
+          }
+        }
+      }
+
+      /** How long a step takes on screen: its live time at the chosen speed, never too short to follow. */
+      function displayMs(step) {
+        return Math.max(MIN_DISPLAY_MS, (step.seconds * 1000) / play.speed);
+      }
+
+      function advance() {
+        play.index += 1;
+        play.progress = 0;
+        if (play.index >= flow.steps.length) stop();
+      }
+
+      function tick(now) {
+        if (!play.playing) return;
+        const step = flow.steps[play.index];
+        const waiting = step.kind === "human" && !play.approved.has(step.id);
+        if (!waiting) {
+          play.progress = Math.min(1, play.progress + (now - play.last) / displayMs(step));
+          if (play.progress >= 1) advance();
+        } else if (play.progress === 0) play.progress = 0.001;
+        play.last = now;
+        if (now - play.drawn > 60) {
+          play.drawn = now;
+          render();
+        }
+        if (play.playing) play.frame = requestAnimationFrame(tick);
+        else render();
+      }
+
+      function start() {
+        if (play.index >= flow.steps.length) {
+          play.index = 0;
+          play.progress = 0;
+          play.approved = new Set();
+        }
+        play.playing = true;
+        play.last = performance.now();
+        selected = null;
+        play.frame = requestAnimationFrame(tick);
+        render();
+      }
+
+      function stop() {
+        play.playing = false;
+        cancelAnimationFrame(play.frame);
+      }
+
+      byId("play").addEventListener("click", () => {
+        if (!flow) return;
+        if (play.playing) stop();
+        else start();
+        render();
+      });
+      byId("next").addEventListener("click", () => {
+        if (!flow || play.index >= flow.steps.length) return;
+        stop();
+        const step = flow.steps[play.index];
+        if (step.kind === "human") play.approved.add(step.id);
+        selected = null;
+        advance();
+        if (play.index < flow.steps.length) play.progress = 0.001;
+        render();
+      });
+      byId("approve").addEventListener("click", () => {
+        const step = flow.steps[play.index];
+        if (!step) return;
+        play.approved.add(step.id);
+        if (!play.playing) {
+          advance();
+          if (play.index < flow.steps.length) play.progress = 0.001;
+        }
+        render();
+      });
+      byId("restart").addEventListener("click", () => {
+        if (!flow) return;
+        stop();
+        play.index = 0;
+        play.progress = 0;
+        play.approved = new Set();
+        phase = 0;
+        selected = null;
+        buildPipe();
+        render();
+      });
+      byId("speed").addEventListener("change", (event) => {
+        play.speed = Number(event.target.value) || 30;
+      });
+      window.addEventListener("resize", () => flow && drawLines());
+      // A shared link such as #education-document opens that workflow, even on a page that is already open.
+      window.addEventListener("hashchange", () => {
+        const wanted = location.hash.slice(1);
+        if (wanted && (!flow || flow.id !== wanted) && domains.some((domain) => domain.workflows.some((workflow) => workflow.id === wanted))) chooseWorkflow(wanted);
+      });
+
+      fetch("/api/catalog")
+        .then((response) => response.json())
+        .then((catalog) => {
+          domains = catalog;
+          const wanted = location.hash.slice(1);
+          const match = domains.find((domain) => domain.workflows.some((workflow) => workflow.id === wanted));
+          domainId = match ? match.id : domains[0] && domains[0].id;
+          renderDomains();
+          if (match) chooseWorkflow(wanted);
+        });
+    </script>
+  </body>
+</html>
