@@ -10,12 +10,13 @@ test("both base PRDs pass every code gate", () => {
 
 test("every planted defect slips past every code gate, so only a reviewer can catch it", () => {
   const cases = plantedCases();
-  assert.equal(cases.filter((item) => item.kind === "seeded").length, 12);
+  assert.equal(cases.filter((item) => item.kind === "seeded").length, 18);
   assert.equal(cases.filter((item) => item.kind === "clean").length, 4);
   for (const planted of cases) {
     const draft = plantDraft(planted);
     assert.deepEqual(codeGateIssues(draft), [], `${planted.id} is caught by a code gate`);
     const changed = JSON.stringify(draft) !== JSON.stringify(basePrd(planted.base));
+    if (planted.kind === "clean") assert.equal(planted.base, "recorded", `${planted.id}: clean controls use the hand-checked base`);
     assert.equal(changed, planted.edits.length > 0, `${planted.id} edits did not change the draft`);
   }
 });

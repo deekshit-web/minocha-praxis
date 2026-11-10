@@ -204,7 +204,7 @@ function reviseSeat(): SeatSpec {
       "You are revising draft A. The message holds draft A and one review of it.",
       "Fix every defect the review raised that is real, and resolve every P0. Keep everything that was right.",
       "In the rationale, say what you kept and what you changed, list every defect id as resolved or unresolved, and write one finding per quality attribute.",
-      "The revised PRD goes to approval, so it leaves no open questions.",
+      "Anything the decisions did not settle stays under openQuestions as a flagged proposal or open question for the approver; never state it as agreed.",
     ].join(" "),
     schema: synthesisSchema(PrdSchema),
     compiled: false,
@@ -290,7 +290,7 @@ async function checklistScore(brief: EvalBrief, prd: Prd, models: EvalModels, ca
  * 0.5 for a tie or both bad, 0 for a loss, averaged over the jury.
  */
 async function pairwiseScore(brief: EvalBrief, candidate: Prd, reference: Prd, models: EvalModels, calls: EvalCall[], random: () => number) {
-  const system = `${JUDGE_RULES} You compare two requirements documents written for the same brief. Prefer the one that is correct, consistent with the decisions, and testable.`;
+  const system = `${JUDGE_RULES} You compare two requirements documents written for the same brief. Prefer the one that is correct, consistent with the decisions, and testable. A choice the decisions did not make must be flagged under open questions as a proposal needing sign-off: prefer a flagged proposal to an unflagged invention, and do not reward settling things for completeness alone.`;
   const verdicts = await Promise.all(
     [models.judgeClaude, models.judgeGrok].map(async (juror) => {
       const candidateFirst = random() < 0.5;

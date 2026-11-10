@@ -62,5 +62,6 @@
     "evals/prd-panel/part-b.json",
     "evals/prd-panel/bases/live-synthesis.json",
     "evals/prd-panel/bases/recorded.json"
-  ]
+  ],
+  "harness_sha": "7466c33c7580346a1d826aca72fb783e2ebc68522c0fa5771f290727cb41235b"
 }

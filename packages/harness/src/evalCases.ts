@@ -6,7 +6,7 @@ import { FEATURE_B_BRIEF, RULES, groundedCitations } from "./panels.ts";
 /** One edit to a base PRD: replace text inside one field of one item, or append an item to a section. */
 export type DraftEdit =
   | { section: keyof Prd; id: string; field: string; find: string; replace: string }
-  | { section: keyof Prd; append: Record<string, unknown> };
+  | { section: keyof Prd; append: unknown };
 
 export interface PlantedCase {
   id: string;
@@ -50,7 +50,7 @@ export function basePrd(base: PlantedCase["base"]): Prd {
  * drifts from the base fails loudly instead of silently planting nothing.
  */
 export function plantDraft(planted: PlantedCase): Prd {
-  const draft = structuredClone(basePrd(planted.base)) as unknown as Record<string, Array<Record<string, unknown>>>;
+  const draft = structuredClone(basePrd(planted.base)) as unknown as Record<string, unknown[]>;
   for (const edit of planted.edits) {
     const items = draft[edit.section];
     if (!Array.isArray(items)) throw new Error(`${planted.id}: ${edit.section} is not a list`);
@@ -58,7 +58,7 @@ export function plantDraft(planted: PlantedCase): Prd {
       items.push(structuredClone(edit.append));
       continue;
     }
-    const item = items.find((entry) => entry.id === edit.id || entry.answerId === edit.id);
+    const item = (items as Array<Record<string, unknown>>).find((entry) => entry.id === edit.id || entry.answerId === edit.id);
     if (!item) throw new Error(`${planted.id}: no ${edit.section} item ${edit.id}`);
     const text = item[edit.field];
     if (typeof text !== "string") throw new Error(`${planted.id}: ${edit.id}.${edit.field} is not text`);

@@ -108,14 +108,17 @@ test("a refusal or a truncated answer stops the panel with the seat and the reas
   await assert.rejects(runLivePrd(truncated), /model-truncated:analystA/);
 });
 
-test("the gates judge a live PRD: an ungrounded citation, an open question, and leaked PHI are refused", async () => {
+test("the gates judge a live PRD: an ungrounded citation, an unflagged open question, and leaked PHI are refused", async () => {
   const lines = recordedLines(prdPanel());
   const wrapped = JSON.parse(lines[4] ?? "{}") as { synthesis: Prd; rationale: unknown };
   wrapped.synthesis.citations = [...wrapped.synthesis.citations, "pack/glossary.md"];
-  wrapped.synthesis.openQuestions = [{ id: "OQ-1", text: "Who owns the override?" }];
+  wrapped.synthesis.openQuestions = [
+    { id: "OQ-1", text: "Who owns the override?" },
+    { id: "OQ-2", text: "Proposed: the PFS lead owns overrides. Needs sign-off." },
+  ];
   wrapped.synthesis.problem = `${wrapped.synthesis.problem} Call 415-555-0134 for help.`;
   const result = await runLivePrd(new FixturePlayer([...lines.slice(0, 4), JSON.stringify(wrapped)]));
-  assert.deepEqual(result.issues, ["missing-citation:pack/glossary.md", "open-questions", "phi:phone:415-555-0134"]);
+  assert.deepEqual(result.issues, ["missing-citation:pack/glossary.md", "open-question-unflagged:OQ-1", "phi:phone:415-555-0134"]);
 });
 
 test("the synthesizer answers in plain JSON checked against its schema, since its compiled grammar is too large", async () => {

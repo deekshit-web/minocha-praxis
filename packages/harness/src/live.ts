@@ -70,7 +70,7 @@ export function prdContext(brief: string, decisions: Decision[] = featureBDecisi
       "- Every P0 criterion is exercised by at least one scenario. A scenario names the role acting, the starting state, the steps, and the expected result.",
       "- Propose three screens, each tied to the scenarios it serves.",
       "- Use only synthetic identifiers shaped PAT-###, CLM-###, and DOC-###. Never write a real name, SSN, MRN, phone number, email address, or date of birth.",
-      "- List anything still undecided under openQuestions.",
+      "- When the decisions above do not settle something, you may propose an answer, but list it under openQuestions as \"Proposed: <answer>. Needs sign-off.\" and never state it elsewhere as agreed. Anything you cannot propose goes under openQuestions as \"Open: <question>\".",
     ].join("\n"),
   ].join("\n\n");
 }
@@ -108,7 +108,7 @@ export function livePrdSeats(): Record<PanelRole, SeatSpec> {
         "In the rationale, say what you kept from A and from B, and what you rejected and why.",
         "List every defect id raised in either critique as resolved or unresolved. Resolve every P0.",
         "Write one finding per quality attribute saying how the merged PRD meets it.",
-        "The merged PRD goes to approval, so it leaves no open questions.",
+        "Anything the decisions did not settle stays under openQuestions as a flagged proposal or open question for the approver; never state it as agreed.",
       ].join(" "),
       schema: synthesisSchema(PrdSchema),
       // A PRD nested in the synthesis wrapper is too large for the API to compile into a grammar.
