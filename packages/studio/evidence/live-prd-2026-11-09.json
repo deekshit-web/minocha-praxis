@@ -1,0 +1,152 @@
+{
+  "note": "Summary of a real, metered run of the requirements panel on 2026-11-09, taken from the saved run records. The brief and all ids are synthetic; no patient data.",
+  "date": "2026-11-09",
+  "brief": "On CO-50 medical-necessity denials, the specialist must not mark the appeal packet ready unless a clinical-note reference and a filing-deadline date are both present.",
+  "models": [
+    "claude-opus-5",
+    "grok-4.7"
+  ],
+  "calls": [
+    {
+      "role": "analystA",
+      "model": "claude-opus-5",
+      "seconds": 125,
+      "costUsd": 0.298,
+      "inputTokens": 4482,
+      "outputTokens": 10809,
+      "run": "prd-2026-11-09T04-21-55.500Z.json"
+    },
+    {
+      "role": "analystB",
+      "model": "grok-4.7",
+      "seconds": 500,
+      "costUsd": 0.062,
+      "inputTokens": 3790,
+      "outputTokens": 9342,
+      "run": "prd-2026-11-09T04-31-23.242Z.json"
+    },
+    {
+      "role": "critiqueOfA",
+      "model": "grok-4.7",
+      "seconds": 259,
+      "costUsd": 0.024,
+      "inputTokens": 9421,
+      "outputTokens": 1127,
+      "run": "prd-2026-11-09T04-31-23.242Z.json"
+    },
+    {
+      "role": "critiqueOfB",
+      "model": "claude-opus-5",
+      "seconds": 94,
+      "costUsd": 0.266,
+      "inputTokens": 17515,
+      "outputTokens": 6957,
+      "run": "prd-2026-11-09T04-31-23.242Z.json"
+    },
+    {
+      "role": "synthesizer",
+      "model": "claude-opus-5",
+      "seconds": 174,
+      "costUsd": 0.557,
+      "inputTokens": 30655,
+      "outputTokens": 16000,
+      "run": "prd-2026-11-09T04-31-23.242Z.json",
+      "note": "Stopped at the 16,000-token output limit and was retried with a higher limit. Charged, not used."
+    },
+    {
+      "role": "synthesizer",
+      "model": "claude-opus-5",
+      "seconds": 319,
+      "costUsd": 0.873,
+      "inputTokens": 30655,
+      "outputTokens": 29304,
+      "run": "prd-2026-11-09T04-49-50.616Z.json"
+    }
+  ],
+  "totals": {
+    "modelSeconds": 1297,
+    "costUsd": 1.52,
+    "costIncludingRetryUsd": 2.08,
+    "calls": 5
+  },
+  "quality": {
+    "analystA": {
+      "verdict": "issues",
+      "summary": "2 P0 · 2 P1 from critique · 1/3 attributes met"
+    },
+    "analystB": {
+      "verdict": "issues",
+      "summary": "1 P0 · 4 P1 from critique · 2/3 attributes met"
+    },
+    "critiqueOfA": {
+      "verdict": "pass",
+      "summary": "3/3 attributes covered · 4 defects raised"
+    },
+    "critiqueOfB": {
+      "verdict": "pass",
+      "summary": "3/3 attributes covered · 5 defects raised"
+    },
+    "synthesizer": {
+      "verdict": "pass",
+      "summary": "All gates pass · 3/3 attributes met · 9/9 defects resolved"
+    }
+  },
+  "reviews": {
+    "grokReviewingClaude": [
+      {
+        "id": "D-A1",
+        "severity": "P0",
+        "point": "AC-11 and SCN-3 require risk band 'urgent' for filing deadline 2026-12-04 against the demo clock of 17 November 2026, and justify it as within 14 days. That interval is 17 days. pack/payer-northwind.md sets urgent to within 14 days and soon to within 45 days, so the observable band is 'soon'. A P0 then-clause that is false would fail a correct implementation."
+      },
+      {
+        "id": "D-A2",
+        "severity": "P0",
+        "point": "OQ-1 reopens whether a present date of service and a remit with no deadline should auto-compute date of service plus 90 days and satisfy the gate. Q-4, the assumptions entry, inScope, REQ-5, and AC-11 already fix the deadline as date of service plus 90 days and fail only a blank deadline. The same gate input cannot be both required and undecided, so the filing-deadline half of the gate is not stably testable."
+      },
+      {
+        "id": "D-A3",
+        "severity": "P1",
+        "point": "REQ-6 says CO-4 and OA-23 keep their current paths, but no acceptance criterion asserts CO-4's next action 'Correct the modifier and resubmit. Do not invent a modifier in this product.' or OA-23's next action 'Confirm the prior payer adjudication. Do not work this as a denial.' AC-13 and AC-14 cover only CO-16, CO-197, and PR-1."
+      },
+      {
+        "id": "D-A4",
+        "severity": "P1",
+        "point": "AC-17's then-clause (detail and workqueue must not restate the field checks locally) cannot be checked by an observer; it needs source inspection. SCN-4 lists P0 AC-2 but uses CLM-120 rather than CLM-108 and never observes the empty clinical-note reference before overwriting it, so AC-2 is not exercised. SCR-3 lists SCN-9, which is a pre-document scanner step and does not use that screen."
+      }
+    ],
+    "claudeReviewingGrok": [
+      {
+        "id": "D-B1",
+        "severity": "P0",
+        "point": "SCN-5 says the disabled control \"names filing deadline as missing\" for CLM-225, whose deadline field is populated with 2026-12-01. REQ-6 states the control \"names only items that are actually missing.\" The two statements contradict each other, so an implementer cannot tell whether a present-but-mismatched date should be reported as missing or as mismatched, and AC-13 does not fix the wording. Define a distinct phrase (for example, filing deadline does not match date of service plus 90 days) or drop the mismatch branch."
+      },
+      {
+        "id": "D-B2",
+        "severity": "P1",
+        "point": "REQ-5 and AC-13 add a gate condition the question round did not grant. Q-4 says the deadline is date of service plus 90 days and that a blank deadline fails; it does not say a populated date that differs must fail. pack/payer-northwind.md states the shown deadline is that date or blank, so the mismatch case is outside the fixture. Making equality a release-blocking P0 condition can hold a packet that has a usable deadline. OQ-1 flags the question but the requirement already decided it."
+      },
+      {
+        "id": "D-B3",
+        "severity": "P1",
+        "point": "REQ-8 bundles four distinct rules (CARC meaning and next-action display for five codes, no medical-necessity or diagnosis decision, no invented modifier, no write-off, unmapped handling) and carries six criteria including AC-29 on write-off. Splitting the display rule from the prohibited-action rule would keep each criterion traceable to one statement."
+      },
+      {
+        "id": "D-B4",
+        "severity": "P1",
+        "point": "SCN-13 (front desk) and SCN-14 (coder) start with \"Open the denial workbench available to this role\" and are both attached to SCR-1, the denial workqueue. pack/roles.md says front desk does not work denials, so the starting state is unclear about what screen these roles can reach at all. Name the concrete entry point or state that the route is absent, otherwise the expected result is not checkable."
+      },
+      {
+        "id": "D-B5",
+        "severity": "P1",
+        "point": "AC-17 asks a reviewer to inspect \"how missing items are determined\" and confirm there is no \"second copy of the presence checks.\" That is a code-review step, not something a product observer can check from the running demo. Phrase it as an artifact review with a named owner, or pair it with a behavioural check (same phrases from rule and button, already in AC-16)."
+      }
+    ]
+  },
+  "highlight": {
+    "by": "grok-4.7",
+    "of": "claude-opus-5",
+    "id": "D-A1",
+    "severity": "P0",
+    "point": "AC-11 and SCN-3 require risk band 'urgent' for filing deadline 2026-12-04 against the demo clock of 17 November 2026, and justify it as within 14 days. That interval is 17 days. pack/payer-northwind.md sets urgent to within 14 days and soon to within 45 days, so the observable band is 'soon'. A P0 then-clause that is false would fail a correct implementation."
+  }
+}

@@ -71,7 +71,9 @@ Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 
 `npm run studio` serves Kodiflex Foundry, a demo for passers-by that costs nothing to run. Pick a domain (healthcare, education, FMCG, financial services, logistics) and a workflow: a feature build (requirements, then code, a failing test, a fix and a release gate) or a document or decision. Each run shows the same pipeline as the live panel: two drafts from Claude and Grok that cannot see each other, crossed reviews in which one catches a serious defect, a merge, plain code checks, and a pause for a person to approve. Every output is written in advance and no model is called. The page shows what each call would cost and how long it would take live, priced from the same table as the live runs, and a "Tokens spent" tile that stays at 0. Link straight to a workflow with `#<id>`, for example `http://127.0.0.1:4320/#fmcg-document`.
 
-To add a workflow, drop a JSON file in `packages/studio/workflows/`; `workflows.ts` validates it and expands it into steps, and the tests check that every domain has both kinds and that each run has its caught-it moment.
+Builds add a second wall: Grok writes the test cases and the test script from the approved requirements, Claude writes the code without seeing them, and the test runner runs one against the other. Above the workflows, a proof panel summarises a real, metered run of the requirements panel (`packages/studio/evidence/`), with its per-call costs and a defect Grok caught in Claude's draft, and offers the record for download.
+
+To add a workflow, drop a JSON file in `packages/studio/workflows/`; `workflows.ts` validates it and expands it into steps, and the tests check that every domain has both kinds, that each run has its caught-it moment, and that a build's generated test cases, test script and test run agree. Each workflow ends with its finished output: the document, or for a build the approved requirements, what shipped and the generated tests.
 
 ## Layout
 

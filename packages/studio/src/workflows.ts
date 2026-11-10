@@ -42,7 +42,12 @@ const SpecSchema = z.object({
   synthesis: Text,
   checks: z.array(z.object({ name: Text, detail: Text })).min(3),
   approval: Text,
-  /** Build: the code, the failing test run, the fix, the passing run, and the release gate. */
+  /**
+   * Build: test cases and the test script, written by a different model from the code and without seeing it,
+   * then the code, the failing test run, the fix, the passing run, and the release gate.
+   */
+  testCases: Text.optional(),
+  testScript: Text.optional(),
   code: Text.optional(),
   testsRed: Text.optional(),
   fix: Text.optional(),
@@ -50,6 +55,11 @@ const SpecSchema = z.object({
   release: Text.optional(),
   /** Document: how the approved result goes out. */
   deliver: Text.optional(),
+  /**
+   * The finished deliverable a viewer can read: the approved requirements and what shipped, or the document itself.
+   * Lines starting "## " are headings and "- " are bullets.
+   */
+  output: Text,
 });
 
 export type WorkflowSpec = z.infer<typeof SpecSchema>;
@@ -86,9 +96,10 @@ export interface Workflow {
   summary: string;
   deliverable: string;
   brief: string;
+  output: string;
   phases: string[];
-  /** The column whose two drafts are walled off from each other. */
-  wallCol: number;
+  /** Where two steps are walled off from each other: the two drafts, and in a build the tests and the code. */
+  walls: Array<{ phase: number; col: number; span: number; label: string }>;
   steps: Step[];
   estimatedCostUsd: number;
   estimatedSeconds: number;
@@ -105,6 +116,8 @@ const SIZE = {
   reviewClaude: { input: 25_000, output: 7_000, seconds: 94 },
   reviewGrok: { input: 25_000, output: 1_200, seconds: 259 },
   merge: { input: 45_000, output: 25_000, seconds: 320 },
+  testCases: { input: 12_000, output: 2_500, seconds: 95 },
+  testScript: { input: 14_000, output: 5_000, seconds: 160 },
   code: { input: 20_000, output: 6_000, seconds: 180 },
   fix: { input: 12_000, output: 1_500, seconds: 60 },
 };
@@ -148,28 +161,55 @@ function panel(spec: WorkflowSpec, startCol: number, inputs: string[]): Step[] {
   ];
 }
 
+function spread(key: string): number {
+  let hash = 2166136261;
+  for (const char of key) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0;
+  return 0.75 + (hash % 1000) / 1000 * 0.55;
+}
+
+function resize(item: Step, factor: number): Step {
+  const tokens = { input: Math.round((item.tokens?.input ?? 0) * (0.9 + factor / 10)), output: Math.round((item.tokens?.output ?? 0) * factor) };
+  return {
+    ...item,
+    tokens,
+    seconds: Math.round(item.seconds * factor),
+    estimatedCostUsd: callCost(item.actor, { inputTokens: tokens.input, outputTokens: tokens.output, cacheReadTokens: 0, cacheWriteTokens: 0 }),
+  };
+}
+
+/** A build hands over its tests too: the generated cases, the script, and the run that passed. */
+function buildOutput(spec: WorkflowSpec): string {
+  const cases = (spec.testCases ?? "").split("\n").map((line) => `- ${line}`).join("\n");
+  return `${spec.output}\n## Generated test cases\n${cases}\n## Generated test script\n\`\`\`\n${spec.testScript ?? ""}\n\`\`\`\n## Test run\n\`\`\`\n${spec.testsGreen ?? ""}\n\`\`\``;
+}
+
 export function expand(spec: WorkflowSpec): Workflow {
   const brief = step({ id: "brief", kind: "input", phase: 0, col: 0, row: 1, title: "The brief", actor: "Requester", caption: "Everything starts from one short brief.", given: "What the requester asked for.", output: spec.brief, after: [], seconds: 0 });
   let steps: Step[];
   let phases: string[];
-  let wallCol: number;
+  let walls: Workflow["walls"];
   if (spec.kind === "build") {
     phases = ["Requirements", "Build and verify"];
-    wallCol = 3;
+    walls = [
+      { phase: 0, col: 3, span: 1, label: "cannot see each other" },
+      { phase: 1, col: 0, span: 2, label: "tests and code written apart" },
+    ];
     steps = [
       brief,
       llm({ id: "clarify", phase: 0, col: 1, row: 1, title: "Questions", caption: "Claude asks the few questions whose answers change what gets built.", given: "The brief.", output: spec.questions ?? "", after: ["brief"] }, CLAUDE, SIZE.clarify),
       step({ id: "answers", kind: "human", phase: 0, col: 2, row: 1, title: "Your answers", actor: "Requester", caption: "The requester answers. Their answers become the agreed assumptions.", given: "The questions.", output: spec.answers ?? "", after: ["clarify"], seconds: 0 }),
       ...panel(spec, 3, ["answers"]),
-      llm({ id: "code", phase: 1, col: 0, row: 1, title: "Write code", caption: "Claude writes the change inside the approved file fence.", given: "The approved requirements.", output: spec.code ?? "", after: ["approve"] }, CLAUDE, SIZE.code),
-      step({ id: "testsRed", kind: "tool", phase: 1, col: 1, row: 1, title: "Run tests", actor: "Test runner", caption: "The tests run, and one fails. That is the point: a test that cannot fail proves nothing.", given: "The change and the acceptance tests.", output: spec.testsRed ?? "", after: ["code"], seconds: 20, verdict: "flagged" }),
-      llm({ id: "fix", phase: 1, col: 2, row: 1, title: "Fix", caption: "Claude reads the failing test and makes one targeted fix.", given: "The failing test output and the code.", output: spec.fix ?? "", after: ["testsRed"] }, CLAUDE, SIZE.fix),
-      step({ id: "testsGreen", kind: "tool", phase: 1, col: 3, row: 1, title: "Tests again", actor: "Test runner", caption: "The same tests run again and pass.", given: "The fixed code.", output: spec.testsGreen ?? "", after: ["fix"], seconds: 20, verdict: "pass" }),
-      step({ id: "release", kind: "check", phase: 1, col: 4, row: 1, title: "Release gate", actor: "No model", caption: "The release gate re-checks approvals, tests and data rules before anything ships.", given: "Approvals, test results and scans.", output: spec.release ?? "", after: ["testsGreen"], seconds: 2, verdict: "pass" }),
+      llm({ id: "testCases", phase: 1, col: 0, row: 0, title: "Test cases", caption: "Grok turns every acceptance criterion into test cases, with exact inputs and expected results.", given: "The approved requirements only. Not the code, which does not exist yet.", output: spec.testCases ?? "", after: ["approve"] }, GROK, SIZE.testCases),
+      llm({ id: "testScript", phase: 1, col: 1, row: 0, title: "Test script", caption: "Grok writes the test cases as a runnable test script.", given: "The test cases and the code's public interface. Not its implementation.", output: spec.testScript ?? "", after: ["testCases"] }, GROK, SIZE.testScript),
+      llm({ id: "code", phase: 1, col: 0, row: 2, title: "Write code", caption: "Claude writes the change inside the approved file fence. It never sees the tests, so it cannot write code that only satisfies them.", given: "The approved requirements. Not the tests.", output: spec.code ?? "", after: ["approve"] }, CLAUDE, SIZE.code),
+      step({ id: "testsRed", kind: "tool", phase: 1, col: 2, row: 1, title: "Run tests", actor: "Test runner", caption: "The generated test script runs against the new code, and one test fails. That is the point: a test that cannot fail proves nothing.", given: "Grok's test script and Claude's code.", output: spec.testsRed ?? "", after: ["testScript", "code"], seconds: 20, verdict: "flagged" }),
+      llm({ id: "fix", phase: 1, col: 3, row: 1, title: "Fix", caption: "Claude reads the failing test and makes one targeted fix.", given: "The failing test output and the code.", output: spec.fix ?? "", after: ["testsRed"] }, CLAUDE, SIZE.fix),
+      step({ id: "testsGreen", kind: "tool", phase: 1, col: 4, row: 1, title: "Tests again", actor: "Test runner", caption: "The same tests run again and pass.", given: "The fixed code.", output: spec.testsGreen ?? "", after: ["fix"], seconds: 20, verdict: "pass" }),
+      step({ id: "release", kind: "check", phase: 1, col: 5, row: 1, title: "Release gate", actor: "No model", caption: "The release gate re-checks approvals, tests and data rules before anything ships.", given: "Approvals, test results and scans.", output: spec.release ?? "", after: ["testsGreen"], seconds: 2, verdict: "pass" }),
     ];
   } else {
     phases = ["Draft, review and approve"];
-    wallCol = 2;
+    walls = [{ phase: 0, col: 2, span: 1, label: "cannot see each other" }];
     steps = [
       brief,
       step({ id: "sources", kind: "tool", phase: 0, col: 1, row: 1, title: "Knowledge lookup", actor: "Retrieval", caption: "The relevant policies and records are looked up, so the drafts work from facts.", given: "The brief.", output: spec.sources ?? "", after: ["brief"], seconds: 2 }),
@@ -177,6 +217,9 @@ export function expand(spec: WorkflowSpec): Workflow {
       step({ id: "deliver", kind: "tool", phase: 0, col: 7, row: 1, title: "Deliver", actor: "Workflow", caption: "The approved result goes out, with a record of who approved what.", given: "The approved result.", output: spec.deliver ?? "", after: ["approve"], seconds: 2 }),
     ];
   }
+  // Real calls vary in size from one task to the next. Scale each call by a factor fixed per workflow and step
+  // (0.75 to 1.3), so estimates differ between workflows but never change between page loads.
+  steps = steps.map((item) => (item.kind === "llm" ? resize(item, spread(`${spec.id}:${item.id}`)) : item));
   const models = steps.filter((item) => item.kind === "llm");
   return {
     id: spec.id,
@@ -186,8 +229,9 @@ export function expand(spec: WorkflowSpec): Workflow {
     summary: spec.summary,
     deliverable: spec.deliverable,
     brief: spec.brief,
+    output: spec.kind === "build" ? buildOutput(spec) : spec.output,
     phases,
-    wallCol,
+    walls,
     steps,
     estimatedCostUsd: models.reduce((total, item) => total + (item.estimatedCostUsd ?? 0), 0),
     estimatedSeconds: steps.reduce((total, item) => total + item.seconds, 0),
@@ -197,7 +241,7 @@ export function expand(spec: WorkflowSpec): Workflow {
 /** Problems that would make a workflow wrong or unsafe to show. Empty means it can be demoed. */
 export function workflowIssues(spec: WorkflowSpec): string[] {
   const issues: string[] = [];
-  const need = spec.kind === "build" ? (["questions", "answers", "code", "testsRed", "fix", "testsGreen", "release"] as const) : (["sources", "deliver"] as const);
+  const need = spec.kind === "build" ? (["questions", "answers", "testCases", "testScript", "code", "testsRed", "fix", "testsGreen", "release"] as const) : (["sources", "deliver"] as const);
   for (const field of need) if (!spec[field]) issues.push(`missing:${field}`);
   const flow = expand(spec);
   const ids = new Set(flow.steps.map((item) => item.id));

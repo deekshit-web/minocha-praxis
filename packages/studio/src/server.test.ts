@@ -14,6 +14,10 @@ test("the studio serves its catalog and each simulated workflow, and refuses oth
     const workflow = (await (await fetch(`${origin}/api/workflows/${first}`)).json()) as { steps: unknown[] };
     assert.ok(workflow.steps.length > 8);
     assert.equal((await fetch(`${origin}/api/workflows/nope`)).status, 404);
+    const evidence = (await (await fetch(`${origin}/api/evidence`)).json()) as { totals: { calls: number }; highlight: { severity: string } };
+    assert.equal(evidence.totals.calls, 5);
+    assert.equal(evidence.highlight.severity, "P0");
+    assert.match((await fetch(`${origin}/api/evidence?download=1`)).headers.get("content-disposition") ?? "", /attachment/);
     const page = await (await fetch(`${origin}/`)).text();
     assert.match(page, /no model is called/i);
     assert.equal((await fetch(`${origin}/api/catalog`, { method: "POST", headers: { origin: "https://evil.example" } })).status, 403);

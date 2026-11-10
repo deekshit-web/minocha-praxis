@@ -13,11 +13,24 @@
   "reviewOfB": "D-B1 · P1 · Deadline not stated\n  The letter should state it is filed before the 2026-11-18 deadline.\nStrengths: cites the exact policy clause and the dates that satisfy it; lists enclosures.",
   "synthesis": "Kept from B: the structure, policy citation and enclosure list.\nKept from A: the explicit '6 weeks' arithmetic (2026-07-01 to 2026-08-14 is just over 6 weeks).\nFixed D-A1: removed the diagnosis-code request entirely.\nFixed D-B1: states timely filing before 2026-11-18.\nDefects resolved: 3 of 3.",
   "checks": [
-    { "name": "Only allowed payer action", "detail": "Appeal with the coverage policy and the clinical note; no diagnosis-code change." },
-    { "name": "Dates consistent", "detail": "Therapy dates, date of service and filing deadline agree with the claim." },
-    { "name": "Every claim cites a source", "detail": "Policy LS-14 and DOC-318 back each statement." },
-    { "name": "No patient data", "detail": "Only synthetic PAT-, CLM- and DOC- ids appear." }
+    {
+      "name": "Only allowed payer action",
+      "detail": "Appeal with the coverage policy and the clinical note; no diagnosis-code change."
+    },
+    {
+      "name": "Dates consistent",
+      "detail": "Therapy dates, date of service and filing deadline agree with the claim."
+    },
+    {
+      "name": "Every claim cites a source",
+      "detail": "Policy LS-14 and DOC-318 back each statement."
+    },
+    {
+      "name": "No patient data",
+      "detail": "Only synthetic PAT-, CLM- and DOC- ids appear."
+    }
   ],
   "approval": "Approved by the denial specialist, who signs as the submitter.",
-  "deliver": "Letter and enclosures packaged for Northwind Health, logged against CLM-221, appeal state set to appeal-ready."
+  "deliver": "Letter and enclosures packaged for Northwind Health, logged against CLM-221, appeal state set to appeal-ready.",
+  "output": "## Letter\nTo: Northwind Health, Appeals\nRe: Request for reconsideration, claim CLM-221, denial code CO-50\nPatient reference: PAT-221 · Date of service: 2026-08-20\n\nWe ask Northwind Health to reverse the CO-50 denial of the lumbar spine MRI on claim CLM-221.\n\nPolicy LS-14 covers lumbar MRI after 6 weeks of documented conservative therapy. The enclosed clinical note DOC-318 records physical therapy from 2026-07-01 to 2026-08-14, just over 6 weeks, and a course of NSAIDs, without improvement. The service met the policy when it was performed.\n\nThis appeal is filed within the timely-filing window, which closes on 2026-11-18.\n\nEnclosures:\n- DOC-318, clinical note\n- Policy LS-14, excerpt\n\nSubmitted by: the denial specialist\n## What changed from the drafts\n- The request to revise the diagnosis code is gone: CO-50 appeals never change the code.\n- The enclosures are listed and the filing deadline is stated."
 }

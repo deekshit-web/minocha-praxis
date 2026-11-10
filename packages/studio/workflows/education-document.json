@@ -13,11 +13,24 @@
   "reviewOfB": "D-B1 · P1 · Thin warm-up\n  The warm-up does not practise dividing fractions, which the worked example needs.\nStrengths: every answer in the key is correct; word problems are short.",
   "synthesis": "Kept from A: the walking example and the fraction-division warm-up.\nKept from B: pair work, short-sentence problems and the snail question.\nFixed D-A1: Q3 key is now (2/3) ÷ (1/4) = 8/3 ≈ 2.67 walls per gallon, with the working shown.\nFixed D-A2 and D-B1: long problems shortened; warm-up practises dividing fractions.\nDefects resolved: 3 of 3.",
   "checks": [
-    { "name": "Every answer recomputed", "detail": "All 5 quiz answers checked by exact fraction arithmetic." },
-    { "name": "Matches the standard", "detail": "Every activity computes a unit rate from a ratio of fractions." },
-    { "name": "Timing adds up", "detail": "5 + 10 + 10 + 15 + 5 = 45 minutes." },
-    { "name": "Reading level", "detail": "No word problem longer than 25 words." }
+    {
+      "name": "Every answer recomputed",
+      "detail": "All 5 quiz answers checked by exact fraction arithmetic."
+    },
+    {
+      "name": "Matches the standard",
+      "detail": "Every activity computes a unit rate from a ratio of fractions."
+    },
+    {
+      "name": "Timing adds up",
+      "detail": "5 + 10 + 10 + 15 + 5 = 45 minutes."
+    },
+    {
+      "name": "Reading level",
+      "detail": "No word problem longer than 25 words."
+    }
   ],
   "approval": "Approved by the maths department lead.",
-  "deliver": "Lesson plan, quiz and answer key published to the grade 7 maths shared folder, tagged 7.RP.A.1."
+  "deliver": "Lesson plan, quiz and answer key published to the grade 7 maths shared folder, tagged 7.RP.A.1.",
+  "output": "## Lesson: unit rates with fractions\nGrade 7 · 45 minutes · standard 7.RP.A.1 · 28 students\n\n- Warm-up (5 min): divide 3/4 ÷ 1/2 and 1/2 ÷ 1/3. Both are 3/2.\n- Worked example (10 min): a walker covers 3/4 mile in 1/2 hour. Unit rate = (3/4) ÷ (1/2) = 3/2 = 1.5 miles per hour.\n- Guided practice in pairs (10 min): 1/2 cup of sugar makes 1/3 of a batch. Sugar per batch = (1/2) ÷ (1/3) = 3/2 cups.\n- Independent practice (15 min): short-sentence problems. Example: a tap fills 3/5 of a bucket in 1/2 minute. How many buckets per minute? (6/5)\n- Exit quiz (5 min): the five questions below.\n## Quiz\n1. A walker goes 1/2 mile in 1/4 hour. How many miles per hour?\n2. A snail moves 1/8 metre in 1/4 minute. How many metres per minute?\n3. Paint covers 2/3 of a wall with 1/4 gallon. How many walls per gallon?\n4. A recipe uses 3/4 cup of flour for 1/2 batch. How many cups per batch?\n5. A machine fills 5/6 of a box in 2/3 minute. How many boxes per minute?\n## Answer key\n1. (1/2) ÷ (1/4) = 2 miles per hour\n2. (1/8) ÷ (1/4) = 1/2 metre per minute\n3. (2/3) ÷ (1/4) = 8/3, about 2.67 walls per gallon\n4. (3/4) ÷ (1/2) = 3/2 = 1.5 cups per batch\n5. (5/6) ÷ (2/3) = 5/4 = 1.25 boxes per minute"
 }

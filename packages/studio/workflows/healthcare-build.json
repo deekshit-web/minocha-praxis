@@ -14,15 +14,30 @@
   "reviewOfB": "D-B1 · P1 · Untested message\n  AC-4 checks the clinical-note message but not the filing-deadline message.\nStrengths: scope is explicit, the no-override rule is stated, and a blank deadline fails the gate.",
   "synthesis": "Kept from B: the explicit CO-50-only scope and the no-override rule.\nKept from A: the risk bands in the workqueue.\nFixed D-A1: AC-13 now reads deadline 2026-11-18, 1 day remaining, band urgent.\nFixed D-A2 and D-B1: out-of-scope codes listed; a criterion now checks each missing-item message.\nDefects resolved: 3 of 3.",
   "checks": [
-    { "name": "Citations are real", "detail": "Every cited source is a knowledge-pack file retrieval found." },
-    { "name": "Payer actions match the CARC table", "detail": "CO-50: appeal with the coverage policy and a clinical-note reference." },
-    { "name": "Every must-pass criterion has a scenario", "detail": "6 of 6 P0 criteria are exercised." },
-    { "name": "No patient data", "detail": "Only synthetic PAT-, CLM- and DOC- ids appear." }
+    {
+      "name": "Citations are real",
+      "detail": "Every cited source is a knowledge-pack file retrieval found."
+    },
+    {
+      "name": "Payer actions match the CARC table",
+      "detail": "CO-50: appeal with the coverage policy and a clinical-note reference."
+    },
+    {
+      "name": "Every must-pass criterion has a scenario",
+      "detail": "6 of 6 P0 criteria are exercised."
+    },
+    {
+      "name": "No patient data",
+      "detail": "Only synthetic PAT-, CLM- and DOC- ids appear."
+    }
   ],
   "approval": "Approved by the PFS lead. The approval is locked to this document's hash: if it changes, it must be approved again.",
+  "testCases": "TC-1 · AC-1 · CO-50 line with a deadline but no clinical note → not ready; missing: clinical-note reference\nTC-2 · AC-2 · CO-50 line with DOC-318 but no deadline → not ready; missing: filing deadline\nTC-3 · AC-3 · CO-50 line with DOC-318 and deadline 2026-11-18 → ready\nTC-4 · REQ-1 · CO-16 line with no clinical note → the gate adds nothing; current path unchanged\nTC-5 · REQ-1 · PR-1 line → no appeal is offered\nTC-6 · REQ-6 · CO-50 line with neither item → both items named, in order",
+  "testScript": "import assert from \"node:assert/strict\";\nimport test from \"node:test\";\nimport { appealReady } from \"../src/appealReady.ts\";\n\nconst line = (over = {}) => ({ carc: \"CO-50\", noteRef: \"DOC-318\", filingDeadline: \"2026-11-18\", ...over });\n\ntest(\"AC-1 blocks ready when the clinical-note reference is missing\", () => {\n  assert.deepEqual(appealReady(line({ noteRef: \"\" })), { ready: false, missing: [\"clinical-note reference\"] });\n});\ntest(\"AC-2 blocks ready when the filing deadline is missing\", () => {\n  assert.deepEqual(appealReady(line({ filingDeadline: \"\" })), { ready: false, missing: [\"filing deadline\"] });\n});\ntest(\"AC-3 allows ready when both are present\", () => {\n  assert.deepEqual(appealReady(line()), { ready: true, missing: [] });\n});\ntest(\"AC-4 leaves CO-16 unchanged\", () => {\n  assert.deepEqual(appealReady(line({ carc: \"CO-16\", noteRef: \"\" })).missing, []);\n});\ntest(\"AC-5 refuses an appeal on PR-1\", () => {\n  assert.equal(appealReady(line({ carc: \"PR-1\" })).ready, false);\n});\ntest(\"AC-6 names the missing items\", () => {\n  const result = appealReady(line({ noteRef: \"\", filingDeadline: \"\" }));\n  assert.deepEqual(result.missing, [\"clinical-note reference\", \"filing deadline\"]);\n});",
   "code": "packages/domain/src/appealReady.ts\n  appealReady(line) returns { ready, missing[] }\n  CO-50 only; missing lists 'clinical-note reference' and 'filing deadline'.\nThe denial detail button calls appealReady() and shows 'Mark appeal ready - missing: …' while blocked.",
   "testsRed": "✗ AC-1 blocks ready when the clinical-note reference is missing\n  expected ready: false, received: true\n  (a CO-50 shortcut skipped the note check)\n✓ AC-2 blocks ready when the filing deadline is missing\n✓ AC-3 allows ready when both are present\n1 failing, 5 passing",
   "fix": "Removed the CO-50 shortcut that returned ready when only the deadline was present. One branch deleted; no other change.",
   "testsGreen": "✓ AC-1 blocks ready when the clinical-note reference is missing\n✓ AC-2 blocks ready when the filing deadline is missing\n✓ AC-3 allows ready when both are present\n✓ AC-4 leaves CO-16 unchanged\n✓ AC-5 refuses an appeal on PR-1\n✓ AC-6 names the missing items\n6 passing",
-  "release": "✓ Requirements, architecture and tests approved; hashes still match\n✓ Unit tests green\n✓ 5 priority cases pass against the running workbench\n✓ No patient data or secrets in anything the run produced\nReleased."
+  "release": "✓ Requirements, architecture and tests approved; hashes still match\n✓ Unit tests green\n✓ 5 priority cases pass against the running workbench\n✓ No patient data or secrets in anything the run produced\nReleased.",
+  "output": "## Approved requirements\n- REQ-1 The readiness gate applies to CO-50 denials only. CO-16, CO-197, CO-4, PR-1 and OA-23 keep their current paths.\n- REQ-2 A CO-50 line can be marked appeal-ready only when it has a DOC-### clinical-note reference and a filing deadline. A blank deadline fails the gate.\n- REQ-3 The filing deadline is the date of service plus 90 days (Northwind Health timely filing).\n- REQ-4 The workqueue shows a risk band: urgent within 14 days of the deadline, soon within 45.\n- REQ-5 No role can override the gate.\n- REQ-6 While blocked, the ready button names exactly what is missing.\n- AC-4 A CO-50 line with DOC-318 and a deadline becomes appeal-ready. Without the note it stays denied and the button reads \"Mark appeal ready - missing: clinical-note reference\".\n- AC-13 Date of service 2026-08-20, clock 2026-11-17: deadline 2026-11-18, 1 day remaining, band urgent.\n## What the specialist now sees\n- On a CO-50 denial with no clinical note, the button reads \"Mark appeal ready - missing: clinical-note reference\" and stays disabled.\n- With both items present the button is enabled, and the line moves to appeal-ready.\n- Other denial codes look and behave exactly as before.\n## Evidence\n- 6 tests passing, after one failing test was fixed.\n- 5 priority cases pass against the running workbench.\n- No patient data or secrets in anything the run produced."
 }

@@ -6,18 +6,31 @@
   "summary": "Plan a four-week launch promotion for a new shampoo that stays within the margin floor.",
   "deliverable": "A promotion plan ready for trade approval",
   "brief": "Plan a 4-week launch promotion for new shampoo SKU-5502 in modern trade. Target: 12,000 units sold. Keep within the company's 35% gross-margin floor.",
-  "sources": "SKU-5502: list price 6.00, unit cost 3.30.\nPricing policy PP-3: no promotion may take gross margin below 35%.\nClaims policy CL-1: no 'clinically proven' or medical claims without a filed study.\nLast launch (SKU-4410): 2-for-1 bundles beat straight discounts on trial by 18%.",
+  "sources": "SKU-5502: list price 6.00, unit cost 3.30. 50 ml travel size: unit cost 0.25.\nPricing policy PP-3: no promotion may take gross margin below 35%.\nClaims policy CL-1: no 'clinically proven' or medical claims without a filed study.\nLast launch (SKU-4410): 2-for-1 bundles beat straight discounts on trial by 18%.",
   "draftA": "Mechanic: 30% off for 4 weeks, promo price 4.20.\nIn-store: end-cap displays in the top 40 stores.\nMessage: 'Clinically proven to reduce hair fall.'\nForecast: 12,000 units at 4.20.",
   "draftB": "Mechanic: 15% off, promo price 5.10 (gross margin 35.3%), plus a free 50 ml travel size with every purchase in week 1.\nIn-store: shelf talkers in all stores, end-caps in the top 40.\nMessage: 'Gentle daily care, new formula.'\nForecast: 12,000 units at 5.10, gross profit 21,600.",
   "reviewOfA": "D-A1 · P0 · Breaks the margin floor\n  At 4.20 the gross margin is (4.20 - 3.30) ÷ 4.20 = 21.4%, below the 35% floor in PP-3. The deepest allowed discount is about 15.4% (price 5.08).\nD-A2 · P0 · Unsupported claim\n  'Clinically proven' needs a filed study under CL-1; none exists.",
-  "reviewOfB": "D-B1 · P1 · Gift cost not counted\n  The free travel size has a cost that should be included in the margin check for week 1.\nStrengths: stays above the floor, and the message makes no medical claim.",
-  "synthesis": "Kept from B: 15% off at 5.10 and the 'gentle daily care' message.\nKept from A: end-cap displays in the top 40 stores.\nFixed D-A1 and D-A2: no 30% discount and no clinical claim.\nFixed D-B1: the travel size moves to a 2-for-1 bundle in weeks 3-4 (the mechanic that drove trial last launch), and its cost is in the margin check.\nDefects resolved: 3 of 3.",
+  "reviewOfB": "D-B1 · P1 · Gift cost not counted\n  The free travel size costs 0.25. With the 15% discount, week 1 margin is (5.10 - 3.30 - 0.25) ÷ 5.10 = 30.4%, below the floor.\nStrengths: stays above the floor, and the message makes no medical claim.",
+  "synthesis": "Kept from B: 15% off at 5.10 and the 'gentle daily care' message.\nKept from A: end-cap displays in the top 40 stores.\nFixed D-A1 and D-A2: no 30% discount and no clinical claim.\nFixed D-B1: with its 0.25 cost, the travel size takes week 1 to (5.10 - 3.30 - 0.25) ÷ 5.10 = 30.4%, below the floor. Week 1 now runs at list price with the gift (40.8%), and the 15% discount runs in weeks 2-4 (35.3%).\nDefects resolved: 3 of 3.",
   "checks": [
-    { "name": "Margin floor holds", "detail": "Every mechanic keeps gross margin at or above 35%, gifts included." },
-    { "name": "Prices recomputed", "detail": "5.10 = 6.00 less 15%; margin (5.10 - 3.30) ÷ 5.10 = 35.3%." },
-    { "name": "Claims are allowed", "detail": "No medical or 'clinically proven' wording." },
-    { "name": "Forecast adds up", "detail": "12,000 units × 1.80 margin per unit = 21,600 gross profit." }
+    {
+      "name": "Margin floor holds",
+      "detail": "Week 1: (6.00 - 3.30 - 0.25) ÷ 6.00 = 40.8%. Weeks 2-4: (5.10 - 3.30) ÷ 5.10 = 35.3%."
+    },
+    {
+      "name": "Prices recomputed",
+      "detail": "5.10 = 6.00 less 15%; the discount and the gift together would be 30.4%, so they never run in the same week."
+    },
+    {
+      "name": "Claims are allowed",
+      "detail": "No medical or 'clinically proven' wording."
+    },
+    {
+      "name": "Forecast adds up",
+      "detail": "3,000 × 2.45 + 9,000 × 1.80 = 7,350 + 16,200 = 23,550 gross profit."
+    }
   ],
   "approval": "Approved by the brand manager and the trade finance controller.",
-  "deliver": "Plan sent to the key account team with store lists, the price file and the approved artwork brief."
+  "deliver": "Plan sent to the key account team with store lists, the price file and the approved artwork brief.",
+  "output": "## Promotion plan: SKU-5502 launch, 4 weeks, modern trade\n- Week 1: list price 6.00 with a free 50 ml travel size. Gross margin (6.00 - 3.30 - 0.25) ÷ 6.00 = 40.8%.\n- Weeks 2-4: 15% off, promo price 5.10. Gross margin (5.10 - 3.30) ÷ 5.10 = 35.3%.\n- In store: end-cap displays in the top 40 stores, shelf talkers in all stores.\n- Message: \"Gentle daily care, new formula.\" No medical or \"clinically proven\" claims (policy CL-1).\n## Forecast\n- 12,000 units, assumed even at 3,000 a week.\n- Gross profit: 3,000 × 2.45 + 9,000 × 1.80 = 7,350 + 16,200 = 23,550.\n- Every week stays at or above the 35% margin floor (policy PP-3).\n## Rejected options\n- 30% off (4.20): margin 21.4%, below the floor.\n- 15% off and the gift together: margin (5.10 - 3.30 - 0.25) ÷ 5.10 = 30.4%, below the floor."
 }

@@ -13,11 +13,24 @@
   "reviewOfB": "D-B1 · P1 · Process gap\n  Recommend buying declared value cover for future glassware shipments.\nStrengths: correct cap arithmetic and the exact filing deadline.",
   "synthesis": "Kept from B: refund 1,200, claim 450, net cost 750, file by 2026-12-03.\nFixed D-A1 and D-A2: the claim is capped by C-7, and the deadline is stated.\nAdded from D-B1, as a proposal needing sign-off: buy declared value cover for fragile shipments over 500.\nDefects resolved: 3 of 3.",
   "checks": [
-    { "name": "Contract limits applied", "detail": "18 kg × 25 per kg = 450; no declared value cover on file." },
-    { "name": "Amounts reconcile", "detail": "Refund 1,200 - recovery 450 = net cost 750." },
-    { "name": "Deadline computed", "detail": "Delivered 2026-11-03 + 30 days = 2026-12-03." },
-    { "name": "Unagreed choices are flagged", "detail": "The cover recommendation is a proposal, not a decision." }
+    {
+      "name": "Contract limits applied",
+      "detail": "18 kg × 25 per kg = 450; no declared value cover on file."
+    },
+    {
+      "name": "Amounts reconcile",
+      "detail": "Refund 1,200 - recovery 450 = net cost 750."
+    },
+    {
+      "name": "Deadline computed",
+      "detail": "Delivered 2026-11-03 + 30 days = 2026-12-03."
+    },
+    {
+      "name": "Unagreed choices are flagged",
+      "detail": "The cover recommendation is a proposal, not a decision."
+    }
   ],
   "approval": "Approved by the claims supervisor.",
-  "deliver": "Customer refunded 1,200; carrier claim for 450 filed with photos on 2026-11-10; proposal sent to the logistics manager."
+  "deliver": "Customer refunded 1,200; carrier claim for 450 filed with photos on 2026-11-10; proposal sent to the logistics manager.",
+  "output": "## Decision\n- Refund the customer 1,200, the invoice value (policy R-4).\n- Claim 450 from the carrier: 18 kg × 25 per kg, the contract C-7 limit without declared value cover.\n- Net cost to the company: 1,200 - 450 = 750.\n## Carrier claim\n- Deadline: 2026-12-03 (delivered 2026-11-03, plus 30 days).\n- Filed on 2026-11-10 with the damage photos.\n## Proposal, needs sign-off\n- Buy declared value cover for fragile shipments over 500 in value, so a loss like this one is recovered in full."
 }

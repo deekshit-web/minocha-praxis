@@ -153,6 +153,27 @@
       .wall { grid-row: 2; align-self: center; border-top: 2px dashed var(--clay); position: relative; z-index: 1; }
       .wall span { position: absolute; left: 50%; top: -10px; transform: translateX(-50%); padding: 0 6px; background: var(--paper); color: var(--clay); font-size: 11px; font-weight: 650; white-space: nowrap; }
       .detail { margin-top: 14px; }
+      .proof { margin: 0 0 16px; border-color: #c9ddd9; }
+      .proof .row { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; justify-content: space-between; }
+      .proof h2 { margin: 2px 0 6px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
+      .proof p { margin: 4px 0; }
+      .proof blockquote { margin: 10px 0; padding: 8px 14px; border-left: 3px solid var(--clay); background: #fbf3ee; font-size: 14px; }
+      .proof blockquote .who { display: block; margin-bottom: 4px; font-size: 12px; font-weight: 650; color: var(--clay); letter-spacing: 0.04em; text-transform: uppercase; }
+      .proof ul.why { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 2px; padding: 0; list-style: none; }
+      .proof ul.why li { padding: 3px 10px; border-radius: 999px; background: var(--sky); color: var(--teal-deep); font-size: 13px; font-weight: 600; }
+      .proof details { margin-top: 8px; font-size: 14px; }
+      .proof table { width: 100%; border-collapse: collapse; margin-top: 6px; font-variant-numeric: tabular-nums; }
+      .proof th, .proof td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+      .proof a { color: var(--teal-deep); font-weight: 600; }
+      .output .doc pre { margin: 8px 0; padding: 10px 12px; overflow-x: auto; background: #f6f2ea; border-radius: 6px; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+      .output { margin-top: 14px; border-color: var(--teal); box-shadow: 0 1px 0 var(--line); }
+      .output h2 { margin: 2px 0 4px; font: 26px/1.2 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
+      .output .meta { margin: 0 0 6px; color: var(--muted); }
+      .output .doc { max-width: 1080px; padding: 6px 22px 14px; margin-top: 10px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+      .output .doc h4 { margin: 18px 0 6px; font: 600 13px/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--teal-deep); }
+      .output .doc p { margin: 6px 0; }
+      .output .doc ul, .output .doc ol { margin: 6px 0; padding-left: 22px; }
+      .output .doc li { margin: 4px 0; }
       .detail h3 { margin: 0 0 2px; font: 20px/1.2 Palatino, Georgia, serif; font-weight: 500; }
       .badge { display: inline-block; padding: 2px 9px; margin-right: 6px; border-radius: 999px; font-size: 12px; font-weight: 650; background: #e9e1d4; color: var(--muted); }
       .badge.llm { background: var(--sky); color: var(--teal-deep); }
@@ -174,10 +195,12 @@
         <div>
           <p class="eyebrow">Kodiflex Foundry · agentic workflows</p>
           <h1 id="title">Pick a domain and a workflow</h1>
-          <p id="lede" class="lede">Each workflow shows two different AI models drafting separately, reviewing each other's work, and a person approving the result. This page replays prepared runs: no model is called and nothing is billed.</p>
+          <p id="lede" class="lede">Each workflow shows two different AI models drafting separately, reviewing each other's work, and a person approving the result. This page replays prepared runs, so no model is called and nothing is billed. The run below it is real.</p>
         </div>
         <span class="sim" title="Every output on this page was written in advance. Times and costs show what a live run would take."><i></i>Simulated · no model is called · $0</span>
       </header>
+
+      <section class="card proof" id="proof" hidden></section>
 
       <nav class="domains" id="domains" aria-label="Domains"></nav>
       <p id="domain-blurb" class="domain-blurb"></p>
@@ -201,6 +224,7 @@
             <option value="60">60×</option>
           </select>
           <button type="button" id="restart">Restart</button>
+          <button type="button" id="see-output">See the output ▾</button>
           <div class="phases" id="phases" role="tablist"></div>
         </div>
 
@@ -212,6 +236,7 @@
           </div>
         </div>
         <div class="card detail" id="detail" hidden></div>
+        <div class="card output" id="output" hidden></div>
       </section>
 
       <footer>
@@ -229,6 +254,9 @@
       let flow = null;
       let phase = 0;
       let selected = null;
+      // The finished deliverable shows when the run ends, or earlier if a viewer asks for it.
+      let outputShown = false;
+      let scrollToOutput = false;
       const play = { index: 0, progress: 0, playing: false, speed: 30, last: 0, frame: 0, drawn: 0, approved: new Set() };
 
       const byId = (id) => document.getElementById(id);
@@ -294,6 +322,7 @@
         play.approved = new Set();
         phase = 0;
         selected = null;
+        outputShown = false;
         history.replaceState(null, "", "#" + flow.id);
         text("title", flow.title);
         text("lede", flow.brief);
@@ -331,12 +360,12 @@
           });
           pipe.appendChild(node);
         }
-        if (phase === 0) {
+        for (const item of flow.walls.filter((wall) => wall.phase === phase)) {
           const wall = document.createElement("div");
           wall.className = "wall";
-          wall.style.gridColumn = String(flow.wallCol + 1);
+          wall.style.gridColumn = item.col + 1 + " / span " + item.span;
           const label = document.createElement("span");
-          label.textContent = "cannot see each other";
+          label.textContent = item.label;
           wall.appendChild(label);
           pipe.appendChild(wall);
         }
@@ -397,6 +426,7 @@
         renderScoreboard();
         renderCaption();
         renderDetail();
+        renderOutput();
         byId("play").textContent = play.playing ? "❚❚ Pause" : play.index >= flow.steps.length ? "▶ Replay" : play.index > 0 || play.progress > 0 ? "▶ Resume" : "▶ Play";
       }
 
@@ -429,7 +459,7 @@
         const total = flow.steps.length;
         const approve = byId("approve");
         if (play.index >= total) {
-          text("caption", "Done. Two models drafted and reviewed, code checks passed, and a person approved: " + flow.deliverable.toLowerCase() + ".");
+          text("caption", "Done. Two models drafted and reviewed, code checks passed, and a person approved: " + flow.deliverable.toLowerCase() + ". The output is below.");
           approve.hidden = true;
           return;
         }
@@ -437,6 +467,27 @@
         const waiting = step.kind === "human" && !play.approved.has(step.id) && (play.playing || play.progress > 0);
         approve.hidden = !waiting;
         text("caption", play.progress === 0 && !play.playing && play.index === 0 ? "Press Play, or step through with Next step." : step.caption);
+      }
+
+      // A live model pauses before its first token, then streams in uneven bursts. Replay the same shape.
+      const FIRST_TOKEN = 0.1;
+      const bursts = {};
+      function streamed(step, progress) {
+        if (step.kind !== "llm") return progress;
+        if (progress < FIRST_TOKEN) return 0;
+        if (!bursts[step.id]) {
+          let seed = [...step.id].reduce((total, char) => (total * 31 + char.charCodeAt(0)) % 2147483647, 7);
+          const weights = Array.from({ length: 40 }, () => {
+            seed = (seed * 16807) % 2147483647;
+            return 0.25 + (seed / 2147483647) * 1.5;
+          });
+          const sum = weights.reduce((total, weight) => total + weight, 0);
+          let running = 0;
+          bursts[step.id] = weights.map((weight) => (running += weight / sum));
+        }
+        const curve = bursts[step.id];
+        const at = (progress - FIRST_TOKEN) / (1 - FIRST_TOKEN);
+        return at >= 1 ? 1 : curve[Math.floor(at * curve.length)];
       }
 
       function renderDetail() {
@@ -455,8 +506,13 @@
         heading.append(badge, document.createTextNode(step.title + (step.kind === "llm" ? " · " + modelLabel(step.actor) : "")));
         const meta = document.createElement("p");
         meta.className = "meta";
+        const share = state === "running" ? streamed(step, play.progress) : null;
         meta.textContent =
-          step.kind === "llm"
+          step.kind === "llm" && share !== null
+            ? share === 0
+              ? "Request sent to " + modelLabel(step.actor) + " (simulated). Waiting for the first token… " + step.tokens.input.toLocaleString() + " tokens in."
+              : "Streaming (simulated): " + Math.round(step.tokens.output * share).toLocaleString() + " of about " + step.tokens.output.toLocaleString() + " output tokens · " + duration(step.seconds * play.progress) + " of about " + duration(step.seconds) + "."
+            : step.kind === "llm"
             ? "Not called. A live run would take about " + duration(step.seconds) + " and cost about " + money(step.estimatedCostUsd) + " (" + step.tokens.input.toLocaleString() + " tokens in, " + step.tokens.output.toLocaleString() + " out)."
             : step.caption;
         detail.append(heading, meta);
@@ -478,8 +534,71 @@
         if (state === "idle") section(step.kind === "human" ? "Outcome" : "Produced", "Not reached yet.");
         else if (state === "waiting") section("Waiting", "Approve to continue.");
         else {
-          const pre = section(step.kind === "human" ? "Outcome" : "Produced", step.output, state === "running" ? play.progress : undefined);
+          const pre = section(step.kind === "human" ? "Outcome" : "Produced", step.output, state === "running" ? share : undefined);
           if (state === "running") pre.scrollTop = pre.scrollHeight;
+        }
+      }
+
+      function renderOutput() {
+        const card = byId("output");
+        const finished = play.index >= flow.steps.length;
+        byId("see-output").hidden = finished || outputShown;
+        card.hidden = !(finished || outputShown);
+        if (card.hidden) return;
+        if (card.dataset.flow !== flow.id) {
+          card.dataset.flow = flow.id;
+          clear(card);
+          const eyebrow = document.createElement("p");
+          eyebrow.className = "eyebrow";
+          eyebrow.textContent = "The output";
+          const title = document.createElement("h2");
+          title.textContent = flow.deliverable;
+          const meta = document.createElement("p");
+          meta.className = "meta";
+          meta.textContent = "What this run hands over, after both reviews, the code checks and a person's approval. Like every step on this page, it was written in advance; no model produced it just now.";
+          const doc = document.createElement("div");
+          doc.className = "doc";
+          let list = null;
+          let code = null;
+          for (const line of flow.output.split("\n")) {
+            if (line.startsWith("```")) {
+              if (code) code = null;
+              else {
+                code = document.createElement("pre");
+                doc.appendChild(code);
+              }
+              list = null;
+              continue;
+            }
+            if (code) {
+              code.textContent += (code.textContent ? "\n" : "") + line;
+              continue;
+            }
+            const bullet = line.match(/^- (.*)$/);
+            const numbered = line.match(/^\d+\. (.*)$/);
+            if (bullet || numbered) {
+              const tag = bullet ? "UL" : "OL";
+              if (!list || list.tagName !== tag) {
+                list = document.createElement(tag);
+                doc.appendChild(list);
+              }
+              const item = document.createElement("li");
+              item.textContent = (bullet || numbered)[1];
+              list.appendChild(item);
+              continue;
+            }
+            list = null;
+            if (!line.trim()) continue;
+            const heading = line.startsWith("## ");
+            const node = document.createElement(heading ? "h4" : "p");
+            node.textContent = heading ? line.slice(3) : line;
+            doc.appendChild(node);
+          }
+          card.append(eyebrow, title, meta, doc);
+        }
+        if (scrollToOutput) {
+          scrollToOutput = false;
+          card.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       }
 
@@ -516,7 +635,10 @@
       function advance() {
         play.index += 1;
         play.progress = 0;
-        if (play.index >= flow.steps.length) stop();
+        if (play.index >= flow.steps.length) {
+          stop();
+          if (!outputShown) scrollToOutput = true;
+        }
       }
 
       function tick(now) {
@@ -588,7 +710,14 @@
         play.approved = new Set();
         phase = 0;
         selected = null;
+        outputShown = false;
         buildPipe();
+        render();
+      });
+      byId("see-output").addEventListener("click", () => {
+        if (!flow) return;
+        outputShown = true;
+        scrollToOutput = true;
         render();
       });
       byId("speed").addEventListener("change", (event) => {
@@ -600,6 +729,53 @@
         const wanted = location.hash.slice(1);
         if (wanted && (!flow || flow.id !== wanted) && domains.some((domain) => domain.workflows.some((workflow) => workflow.id === wanted))) chooseWorkflow(wanted);
       });
+
+      function renderProof(run) {
+        const card = byId("proof");
+        clear(card);
+        const add = (tag, value, className) => {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (value !== undefined) node.textContent = value;
+          return node;
+        };
+        const row = add("div", undefined, "row");
+        const left = add("div");
+        left.append(add("p", "Proof · a real, metered run", "eyebrow"), add("h2", "This pipeline has run for real, on both models, with the meter on."));
+        const download = add("a", "Download the run record (JSON)");
+        download.href = "/api/evidence?download=1";
+        row.append(left, download);
+        const total = run.totals;
+        const grok = run.reviews.grokReviewingClaude.length;
+        const claude = run.reviews.claudeReviewingGrok.length;
+        const summary = add(
+          "p",
+          "On " + new Date(run.date + "T12:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + " the requirements panel ran live on Claude Opus 5 and Grok 4.7: " + total.calls + " model calls, " + duration(total.modelSeconds) + " of model time, " + money(total.costUsd) + " (" + money(total.costIncludingRetryUsd) + " including one call that hit its output limit and was retried). Grok found " + grok + " defects in Claude's draft and Claude found " + claude + " in Grok's. The merge resolved all " + (grok + claude) + ", and every code gate passed.",
+        );
+        const quote = add("blockquote");
+        quote.append(add("span", "Grok 4.7, reviewing Claude's draft · " + run.highlight.severity, "who"), document.createTextNode(run.highlight.point));
+        const why = add("ul", undefined, "why");
+        ["Two vendors' models, not one", "Drafts written apart", "Each reviews the other", "Checks run as code, not AI", "Tests written apart from the code", "Nothing ships without a person"].forEach((item) => why.appendChild(add("li", item)));
+        const details = add("details");
+        details.appendChild(add("summary", "Every call in that run"));
+        const table = add("table");
+        const head = add("tr");
+        ["Seat", "Model", "Time", "Tokens in", "Tokens out", "Cost"].forEach((item) => head.appendChild(add("th", item)));
+        table.appendChild(head);
+        for (const call of run.calls) {
+          const tr = add("tr");
+          [call.role + (call.note ? " (retried)" : ""), modelLabel(call.model), duration(call.seconds), call.inputTokens.toLocaleString(), call.outputTokens.toLocaleString(), money(call.costUsd)].forEach((item) => tr.appendChild(add("td", item)));
+          table.appendChild(tr);
+        }
+        details.appendChild(table);
+        card.append(row, summary, quote, why, details);
+        card.hidden = false;
+      }
+
+      fetch("/api/evidence")
+        .then((response) => (response.ok ? response.json() : null))
+        .then((run) => run && renderProof(run))
+        .catch(() => {});
 
       fetch("/api/catalog")
         .then((response) => response.json())

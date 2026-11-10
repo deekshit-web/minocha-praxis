@@ -14,15 +14,30 @@
   "reviewOfB": "D-B1 · P1 · Untested boundary\n  AC-5 tests exactly 90%, good, but nothing tests two failing grades at the boundary.\nStrengths: visibility is limited exactly as agreed, and the clearing rule is testable.",
   "synthesis": "Kept from B: visibility limited to the counsellor and head of year; the clearing rule.\nKept from A: the weekly counsellor list.\nFixed D-A1: removed the roster dot entirely; the flag lives only in the counsellor's view.\nFixed D-A2 and D-B1: clearing rule added; a criterion now checks exactly two failing grades.\nDefects resolved: 3 of 3.",
   "checks": [
-    { "name": "Visibility matches the agreed roles", "detail": "Only the counsellor and head of year can read the flag." },
-    { "name": "Thresholds match the answers", "detail": "Below 90% over 20 days, or 2+ failing grades." },
-    { "name": "Every rule has a test", "detail": "Boundaries at 90% and at two failing grades are both tested." },
-    { "name": "No student personal data", "detail": "Only synthetic STU- ids appear." }
+    {
+      "name": "Visibility matches the agreed roles",
+      "detail": "Only the counsellor and head of year can read the flag."
+    },
+    {
+      "name": "Thresholds match the answers",
+      "detail": "Below 90% over 20 days, or 2+ failing grades."
+    },
+    {
+      "name": "Every rule has a test",
+      "detail": "Boundaries at 90% and at two failing grades are both tested."
+    },
+    {
+      "name": "No student personal data",
+      "detail": "Only synthetic STU- ids appear."
+    }
   ],
   "approval": "Approved by the head of year and the school's data protection lead.",
+  "testCases": "TC-1 · AC-2 · present 17 of the last 20 school days (85%) → flagged, reason: attendance\nTC-2 · AC-5 · present 18 of 20 (exactly 90%) → not flagged\nTC-3 · AC-6 · two failing grades this term → flagged, reason: grades\nTC-4 · AC-6 · one failing grade → not flagged\nTC-5 · REQ-3 · neither condition for 10 school days → flag clears\nTC-6 · REQ-2 · teacher opens the class roster → no flag anywhere on it\nTC-7 · REQ-2 · counsellor and head of year → flag visible with its reasons",
+  "testScript": "import assert from \"node:assert/strict\";\nimport test from \"node:test\";\nimport { riskFlag } from \"../src/support/riskFlag.ts\";\nimport { canSeeFlag, rosterFor } from \"../src/support/counsellorView.ts\";\n\nconst student = (over = {}) => ({ id: \"STU-104\", present: 20, schoolDays: 20, failingGrades: 0, clearDays: 0, ...over });\n\ntest(\"flags 17 of 20 days (85%)\", () => {\n  assert.deepEqual(riskFlag(student({ present: 17 })), { flagged: true, reasons: [\"attendance\"] });\n});\ntest(\"does not flag exactly 90%\", () => {\n  assert.equal(riskFlag(student({ present: 18 })).flagged, false);\n});\ntest(\"flags two failing grades\", () => {\n  assert.deepEqual(riskFlag(student({ failingGrades: 2 })).reasons, [\"grades\"]);\n});\ntest(\"does not flag one failing grade\", () => {\n  assert.equal(riskFlag(student({ failingGrades: 1 })).flagged, false);\n});\ntest(\"clears after 10 school days\", () => {\n  assert.equal(riskFlag(student({ present: 17, clearDays: 10 })).flagged, false);\n});\ntest(\"hidden from teachers and rosters\", () => {\n  assert.equal(canSeeFlag(\"teacher\", \"STU-104\"), false);\n  assert.ok(rosterFor(\"7B\").every((row) => !(\"flag\" in row)));\n});\ntest(\"visible to the counsellor and head of year\", () => {\n  assert.equal(canSeeFlag(\"counsellor\", \"STU-104\"), true);\n  assert.equal(canSeeFlag(\"head-of-year\", \"STU-104\"), true);\n});",
   "code": "src/support/riskFlag.ts\n  riskFlag(student, today) -> { flagged, reasons[] }\nsrc/support/counsellorView.ts shows flagged students to the assigned counsellor only.\nWeekly digest job lists students flagged since last week.",
   "testsRed": "✓ flags 17 of 20 days (85%)\n✗ does not flag exactly 90%\n  expected flagged: false, received: true\n  (comparison used <= 90 instead of < 90)\n✓ flags two failing grades\n1 failing, 6 passing",
   "fix": "Changed the attendance comparison from <= 0.90 to < 0.90, matching 'below 90%'.",
   "testsGreen": "✓ flags 17 of 20 days (85%)\n✓ does not flag exactly 90%\n✓ flags two failing grades\n✓ does not flag one failing grade\n✓ clears after 10 school days\n✓ hidden from teachers and rosters\n✓ visible to the counsellor and head of year\n7 passing",
-  "release": "✓ Requirements approved, hash unchanged\n✓ Tests green\n✓ Access check: the flag is unreadable from teacher and student accounts\n✓ No student personal data in fixtures or logs\nReleased."
+  "release": "✓ Requirements approved, hash unchanged\n✓ Tests green\n✓ Access check: the flag is unreadable from teacher and student accounts\n✓ No student personal data in fixtures or logs\nReleased.",
+  "output": "## Approved requirements\n- REQ-1 Flag a student when attendance over the last 20 school days is below 90%, or when they have two or more failing grades this term.\n- REQ-2 Only the student's counsellor and the head of year can see the flag. It never appears on rosters, class lists or anything students or parents can view.\n- REQ-3 The flag clears after 10 school days in which neither condition holds.\n- REQ-4 Each counsellor gets a weekly list of students flagged since the last list.\n- AC-2 STU-104 attended 17 of 20 days (85%): flagged.\n- AC-5 STU-207 attended 18 of 20 days (90%): not flagged, because the rule is below 90%.\n- AC-6 Two failing grades this term: flagged. One failing grade: not flagged.\n## What the counsellor now sees\n- A \"Students to follow up\" list: \"STU-104 · attendance 85% over the last 20 school days\".\n- A weekly digest of newly flagged students, to follow up within a week.\n- Teachers, students and parents see nothing new: the flag cannot be read from their accounts.\n## Evidence\n- 7 tests passing, including \"hidden from teachers and rosters\".\n- Access check passed; no student personal data in fixtures or logs."
 }

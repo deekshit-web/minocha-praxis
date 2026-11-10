@@ -13,11 +13,24 @@
   "reviewOfB": "D-B1 · P0 · Missed the expired passport\n  Draft B checks the address date but not the passport's expiry (2026-09-30).\nStrengths: applies the 3-month address rule with the exact cut-off date.",
   "synthesis": "Kept from B: the address finding with its cut-off date.\nFixed D-A1 and D-B1: the passport expired on 2026-09-30; a valid ID is required.\nFixed D-A2: a recent proof of address is required.\nRecommendation: request more documents (a valid photo ID and a proof of address dated after 2026-08-10). Do not approve yet.\nDefects resolved: 3 of 3.",
   "checks": [
-    { "name": "Every date checked against the review date", "detail": "ID expiry and address date compared with 2026-11-10." },
-    { "name": "Every policy rule applied", "detail": "K-2 identity and address rules both evaluated." },
-    { "name": "Decision follows from findings", "detail": "Two failed requirements lead to 'request more', not 'approve'." },
-    { "name": "No personal data in the record", "detail": "Only synthetic CUST- and ID- references." }
+    {
+      "name": "Every date checked against the review date",
+      "detail": "ID expiry and address date compared with 2026-11-10."
+    },
+    {
+      "name": "Every policy rule applied",
+      "detail": "K-2 identity and address rules both evaluated."
+    },
+    {
+      "name": "Decision follows from findings",
+      "detail": "Two failed requirements lead to 'request more', not 'approve'."
+    },
+    {
+      "name": "No personal data in the record",
+      "detail": "Only synthetic CUST- and ID- references."
+    }
   ],
   "approval": "Approved by the onboarding analyst; a second reviewer is not required for a 'request more' outcome.",
-  "deliver": "Request sent to the customer for a valid photo ID and a recent proof of address; the account stays pending with a 30-day follow-up."
+  "deliver": "Request sent to the customer for a valid photo ID and a recent proof of address; the account stays pending with a 30-day follow-up.",
+  "output": "## Decision: request more documents. Do not approve yet.\nCustomer CUST-3381 · reviewed 2026-11-10 · risk rating standard\n## Findings\n- Identity: fails. Passport ID-778 expired on 2026-09-30, before the review date. Policy K-2 requires a valid, unexpired photo ID.\n- Address: fails. The utility bill is dated 2026-06-02. K-2 needs proof dated within 3 months of review, that is after 2026-08-10.\n- Sanctions screening: passes. No match.\n## Requested from the customer\n- A valid, unexpired photo ID.\n- A proof of address dated after 2026-08-10.\n## Next step\n- The account stays pending, with a follow-up on 2026-12-10 (30 days)."
 }
