@@ -5,6 +5,8 @@
   "title": "Ship a stock-out alert for distributors",
   "summary": "Warn the sales team before a distributor runs out of a fast-moving product.",
   "deliverable": "A tested alert in the distributor portal",
+  "project": "Distributor portal",
+  "requester": "National sales operations",
   "brief": "Alert the area sales manager when a distributor is likely to run out of a product within a week, so a replenishment order can be raised in time.",
   "questions": "Q1. How is 'likely to run out' measured?\nQ2. Which sales figure is the basis?\nQ3. Who gets the alert, and how often?\nQ4. Should seasonal products be treated differently?",
   "answers": "Q1. Days of cover: stock on hand divided by average daily sales.\nQ2. The last 4 weeks of distributor sell-out, averaged per day.\nQ3. The area sales manager, once per distributor per product per day at most.\nQ4. Not in v1; flag it as a proposal.",

@@ -5,6 +5,8 @@
   "title": "Ship a CO-50 appeal-readiness gate",
   "summary": "Stop specialists from marking a medical-necessity appeal ready until the clinical note and filing deadline are both present.",
   "deliverable": "A tested feature in the denial workbench",
+  "project": "Denial workbench",
+  "requester": "PFS lead, Northwind Imaging",
   "brief": "On CO-50 medical-necessity denials, the specialist must not mark the appeal packet ready unless a clinical-note reference and a filing-deadline date are both present.",
   "questions": "Q1. Does the gate apply to CO-50 only, or to every denial class?\nQ2. Can anyone override the gate?\nQ3. What counts as a clinical-note reference: an id, or an uploaded note?\nQ4. Which date is the filing deadline?\nQ5. What should the specialist see when blocked?",
   "answers": "Q1. CO-50 only.\nQ2. Nobody in v1.\nQ3. A non-empty DOC-### id.\nQ4. Date of service plus 90 days (Northwind Health timely filing).\nQ5. The button names exactly what is missing.",

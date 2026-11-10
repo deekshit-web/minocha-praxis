@@ -5,6 +5,8 @@
   "title": "Decide a damaged-shipment claim",
   "summary": "Work out what to claim from the carrier for a damaged shipment, and what to refund the customer.",
   "deliverable": "A claim decision with amounts and reasons",
+  "project": "Claims desk",
+  "requester": "Claims supervisor",
   "brief": "Shipment SHP-9031 (18 kg of glassware, invoice value 1,200) arrived damaged. Decide what to claim from the carrier and what to refund the customer.",
   "sources": "Carrier contract C-7: liability limited to 25 per kg unless declared value cover was bought; claims within 30 days of delivery.\nShipment SHP-9031: 18 kg, no declared value cover, delivered 2026-11-03; damage photos on file.\nCustomer policy R-4: refund the invoice value for damage on arrival; recover from the carrier what the contract allows.",
   "draftA": "Claim from carrier: 1,200, the full invoice value of the glassware.\nRefund to customer: 1,200 under R-4.\nNet cost to the company: 0.\nFile the claim with the damage photos.",

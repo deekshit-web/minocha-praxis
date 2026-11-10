@@ -5,6 +5,8 @@
   "title": "Draft a denial appeal letter",
   "summary": "Turn a CO-50 denial and its supporting record into a payer-ready appeal letter.",
   "deliverable": "An appeal letter ready to send",
+  "project": "Appeals desk",
+  "requester": "Denial specialist",
   "brief": "Draft an appeal for CLM-221 (PAT-221), denied CO-50 for an MRI of the lumbar spine. The clinical note DOC-318 documents six weeks of failed conservative therapy. Payer: Northwind Health.",
   "sources": "Northwind Health policy LS-14: lumbar MRI is covered after 6 weeks of documented conservative therapy, or sooner with red-flag symptoms.\nCARC CO-50: appeal with the coverage policy and a clinical-note reference; do not change the diagnosis code.\nClaim CLM-221: date of service 2026-08-20, filing deadline 2026-11-18.\nDOC-318: physical therapy 2026-07-01 to 2026-08-14, NSAIDs, no improvement.",
   "draftA": "Re: Appeal of CLM-221, denied CO-50\nWe request reconsideration. Policy LS-14 covers lumbar MRI after 6 weeks of conservative therapy. DOC-318 records physical therapy from 2026-07-01 to 2026-08-14, more than 6 weeks, plus NSAIDs, without improvement. We also ask the payer to accept a revised diagnosis code that better reflects severity.",

@@ -5,6 +5,8 @@
   "title": "Ship an early-warning flag for at-risk students",
   "summary": "Flag students whose attendance and grades suggest they need support, so a counsellor can reach out early.",
   "deliverable": "A tested feature in the school information system",
+  "project": "School information system",
+  "requester": "Head of year 7",
   "brief": "Flag students at risk of falling behind, using attendance and recent grades, so their counsellor can follow up within a week.",
   "questions": "Q1. Which signals count: attendance, grades, or both?\nQ2. What thresholds trigger the flag?\nQ3. Who can see the flag?\nQ4. Does the flag clear on its own?",
   "answers": "Q1. Both.\nQ2. Attendance below 90% over the last 20 school days, or two or more failing grades in the current term.\nQ3. The student's counsellor and the head of year only.\nQ4. It clears when neither condition has held for 10 school days.",

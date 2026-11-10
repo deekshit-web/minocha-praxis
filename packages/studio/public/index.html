@@ -166,6 +166,17 @@
       .proof th, .proof td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--line); }
       .proof a { color: var(--teal-deep); font-weight: 600; }
       .output .doc pre { margin: 8px 0; padding: 10px 12px; overflow-x: auto; background: #f6f2ea; border-radius: 6px; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+      .runhead { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline; margin: 14px 0 -4px; font-size: 14px; color: var(--muted); }
+      .runhead b { color: var(--ink); font-weight: 600; }
+      .runhead code, .record code, .log { font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .record { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; margin: 10px 0 2px; padding: 8px 12px; background: #f6f2ea; border-radius: 8px; font-size: 13px; }
+      .record dt { color: var(--muted); }
+      .record dd { margin: 0; font-variant-numeric: tabular-nums; }
+      .logcard { margin-top: 14px; }
+      .log { margin: 6px 0 0; max-height: 260px; overflow: auto; white-space: pre; color: var(--ink); }
+      .log .t { color: var(--muted); }
+      .log .bad { color: var(--clay); }
+      .log .ok { color: var(--moss); }
       .output { margin-top: 14px; border-color: var(--teal); box-shadow: 0 1px 0 var(--line); }
       .output h2 { margin: 2px 0 4px; font: 26px/1.2 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
       .output .meta { margin: 0 0 6px; color: var(--muted); }
@@ -207,6 +218,7 @@
       <div class="workflows" id="workflows"></div>
 
       <section id="run" hidden>
+        <div class="runhead" id="runhead"></div>
         <div class="scoreboard">
           <div class="tile" id="tile-step"><span class="label">Step</span><span class="value" id="step-value">-</span><span class="sub" id="step-sub"></span></div>
           <div class="tile"><span class="label">Model time if live</span><span class="value" id="time-value">0 s</span><span class="sub" id="time-sub"></span></div>
@@ -236,6 +248,7 @@
           </div>
         </div>
         <div class="card detail" id="detail" hidden></div>
+        <div class="card logcard" id="logcard" hidden><p class="eyebrow">Run log</p><div class="log" id="log"></div></div>
         <div class="card output" id="output" hidden></div>
       </section>
 
@@ -256,12 +269,36 @@
       let selected = null;
       // The finished deliverable shows when the run ends, or earlier if a viewer asks for it.
       let outputShown = false;
+      // When the viewer pressed Play, and an id for this replay. Step times below are that clock plus the
+      // model time a live run would take, so the log reads as the live run would.
+      let runStartedAt = null;
+      let runId = null;
+      let logKey = "";
       let scrollToOutput = false;
       const play = { index: 0, progress: 0, playing: false, speed: 30, last: 0, frame: 0, drawn: 0, approved: new Set() };
 
       const byId = (id) => document.getElementById(id);
       function text(id, value) { byId(id).textContent = value ?? ""; }
       function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+      function hashHex(key, length) {
+        let hash = 2166136261;
+        let out = "";
+        while (out.length < length) {
+          for (const char of key + out.length) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0;
+          out += hash.toString(16).padStart(8, "0");
+        }
+        return out.slice(0, length);
+      }
+      function clock(date) { return date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" }); }
+      function finishedAt(index) {
+        let seconds = 0;
+        for (let i = 0; i <= index; i++) seconds += flow.steps[i].seconds;
+        return new Date((runStartedAt || Date.now()) + seconds * 1000);
+      }
+      const VENDOR = {
+        "claude-opus-5": { api: "Anthropic Messages API, streamed", id: "msg_sim_", stop: "end_turn", limit: "64,000" },
+        "grok-4.7": { api: "xAI Chat Completions", id: "chatcmpl-sim-", stop: "stop", limit: null },
+      };
       function money(value) { return "$" + (value || 0).toFixed(2); }
       function duration(seconds) {
         if (seconds < 60) return Math.round(seconds) + " s";
@@ -323,6 +360,8 @@
         phase = 0;
         selected = null;
         outputShown = false;
+        runStartedAt = null;
+        runId = null;
         history.replaceState(null, "", "#" + flow.id);
         text("title", flow.title);
         text("lede", flow.brief);
@@ -427,6 +466,7 @@
         renderCaption();
         renderDetail();
         renderOutput();
+        renderRunLog();
         byId("play").textContent = play.playing ? "❚❚ Pause" : play.index >= flow.steps.length ? "▶ Replay" : play.index > 0 || play.progress > 0 ? "▶ Resume" : "▶ Play";
       }
 
@@ -530,6 +570,29 @@
           detail.append(title, pre);
           return pre;
         };
+        if (step.kind === "llm") {
+          const vendor = VENDOR[step.actor] || { api: step.actor, id: "sim-", stop: "stop", limit: null };
+          const done = state === "done";
+          const firstToken = Math.max(1, Math.round(step.seconds * FIRST_TOKEN));
+          const rows = [
+            ["Model", step.actor + " · " + vendor.api],
+            ["Request", vendor.id + hashHex((runId || flow.id) + step.id, 16) + " (simulated)"],
+            ["Tokens", step.tokens.input.toLocaleString() + " in · " + (done ? step.tokens.output.toLocaleString() : share ? Math.round(step.tokens.output * share).toLocaleString() + "…" : "0") + " out" + (vendor.limit ? " · limit " + vendor.limit : "")],
+            ["Timing", done ? "first token " + duration(firstToken) + " · total " + duration(step.seconds) : state === "running" ? "running · " + duration(step.seconds * play.progress) : "not started"],
+            ["Stop reason", done ? vendor.stop : "-"],
+            ["Cost if live", money(step.estimatedCostUsd)],
+          ];
+          const record = document.createElement("dl");
+          record.className = "record";
+          for (const [label, value] of rows) {
+            const dt = document.createElement("dt");
+            dt.textContent = label;
+            const dd = document.createElement("dd");
+            dd.textContent = value;
+            record.append(dt, dd);
+          }
+          detail.appendChild(record);
+        }
         section("Given", step.given);
         if (state === "idle") section(step.kind === "human" ? "Outcome" : "Produced", "Not reached yet.");
         else if (state === "waiting") section("Waiting", "Approve to continue.");
@@ -537,6 +600,67 @@
           const pre = section(step.kind === "human" ? "Outcome" : "Produced", step.output, state === "running" ? share : undefined);
           if (state === "running") pre.scrollTop = pre.scrollHeight;
         }
+      }
+
+      function renderRunLog() {
+        const head = byId("runhead");
+        if (!runId && (play.index > 0 || play.progress > 0)) {
+          runStartedAt = Date.now();
+          runId = "run_" + hashHex(flow.id + runStartedAt, 8);
+        }
+        const key = flow.id + "|" + play.index + "|" + runId;
+        if (key === logKey) return;
+        logKey = key;
+        clear(head);
+        const part = (label, value) => {
+          const span = document.createElement("span");
+          const strong = document.createElement("b");
+          strong.textContent = value;
+          span.append(document.createTextNode(label), strong);
+          head.appendChild(span);
+        };
+        part("Project ", flow.project);
+        part("Requested by ", flow.requester);
+        if (runId) {
+          part("Run ", runId);
+          part("Started ", clock(new Date(runStartedAt)) + " (your clock)");
+        }
+        const card = byId("logcard");
+        const log = byId("log");
+        card.hidden = !runId || play.index === 0;
+        clear(log);
+        if (card.hidden) return;
+        const kinds = { llm: "model", tool: "tool", check: "check", human: "person", input: "input" };
+        flow.steps.slice(0, play.index).forEach((step, index) => {
+          const line = document.createElement("div");
+          const time = document.createElement("span");
+          time.className = "t";
+          time.textContent = clock(finishedAt(index)) + "  ";
+          let what;
+          let tone = "";
+          if (step.kind === "llm") {
+            const vendor = VENDOR[step.actor] || { stop: "stop" };
+            what = step.actor + " · " + step.tokens.input.toLocaleString() + " in / " + step.tokens.output.toLocaleString() + " out · " + duration(step.seconds) + " · " + vendor.stop + " · " + money(step.estimatedCostUsd) + " if live";
+            if (step.verdict === "flagged") {
+              what += " · P0 raised";
+              tone = "bad";
+            }
+          } else if (step.kind === "human") what = step.id === "answers" ? "answered by " + flow.requester : step.output;
+          else if (step.verdict === "flagged") {
+            what = (step.output.match(/\d+ failing, \d+ passing/) || ["failed"])[0];
+            tone = "bad";
+          } else if (step.kind === "check") {
+            what = "passed";
+            tone = "ok";
+          } else if (step.kind === "input") what = "received from " + flow.requester;
+          else what = (step.output.match(/\d+ passing/) || ["done"])[0];
+          const body = document.createElement("span");
+          if (tone) body.className = tone;
+          body.textContent = kinds[step.kind].padEnd(7) + step.title.padEnd(18) + what;
+          line.append(time, body);
+          log.appendChild(line);
+        });
+        log.scrollTop = log.scrollHeight;
       }
 
       function renderOutput() {
@@ -664,6 +788,10 @@
           play.progress = 0;
           play.approved = new Set();
         }
+        if (play.index === 0 && play.progress === 0) {
+          runStartedAt = Date.now();
+          runId = "run_" + hashHex(flow.id + runStartedAt, 8);
+        }
         play.playing = true;
         play.last = performance.now();
         selected = null;
@@ -711,6 +839,8 @@
         phase = 0;
         selected = null;
         outputShown = false;
+        runStartedAt = null;
+        runId = null;
         buildPipe();
         render();
       });

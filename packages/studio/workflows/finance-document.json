@@ -5,6 +5,8 @@
   "title": "Review a KYC file",
   "summary": "Check a new customer's identity file against policy and recommend approve, request more, or refuse.",
   "deliverable": "A KYC decision with reasons",
+  "project": "Retail onboarding",
+  "requester": "Onboarding analyst",
   "brief": "Review the onboarding file for customer CUST-3381 and recommend whether to approve the account, ask for more documents, or refuse. Review date: 2026-11-10.",
   "sources": "KYC policy K-2: a valid, unexpired photo ID is required; proof of address must be dated within 3 months of review.\nFile CUST-3381: passport ID-778, expiry 2026-09-30; utility bill dated 2026-06-02; sanctions screening: no match.\nRisk rating: standard.",
   "draftA": "Identity: passport ID-778 on file, name matches the application.\nAddress: utility bill on file.\nScreening: no sanctions match.\nRecommendation: approve; standard risk.",
