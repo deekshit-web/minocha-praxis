@@ -63,6 +63,11 @@ const SpecSchema = z.object({
    * Lines starting "## " are headings and "- " are bullets.
    */
   output: Text,
+  /**
+   * What one model alone would have handed over, next to what the panel delivers: a passage from the draft a
+   * review flagged, the passage that replaced it in the output, and why it mattered, in plain words.
+   */
+  contrast: z.object({ draft: z.enum(["A", "B"]), before: Text, after: Text, why: Text }),
 });
 
 export type WorkflowSpec = z.infer<typeof SpecSchema>;
@@ -102,6 +107,7 @@ export interface Workflow {
   requester: string;
   brief: string;
   output: string;
+  contrast: { draft: "A" | "B"; before: string; after: string; why: string };
   phases: string[];
   /** Where two steps are walled off from each other: the two drafts, and in a build the tests and the code. */
   walls: Array<{ phase: number; col: number; span: number; label: string }>;
@@ -233,6 +239,7 @@ export function expand(spec: WorkflowSpec): Workflow {
     title: spec.title,
     summary: spec.summary,
     deliverable: spec.deliverable,
+    contrast: spec.contrast,
     project: spec.project,
     requester: spec.requester,
     brief: spec.brief,

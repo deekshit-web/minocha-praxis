@@ -34,6 +34,10 @@ export function createStudioServer(options: StudioOptions = {}): Server {
         send(res, 200, readFileSync(join(repoRoot(), "packages/studio/public/index.html"), "utf8"), "text/html; charset=utf-8");
         return;
       }
+      if (req.method === "GET" && url.pathname === "/checks.js") {
+        send(res, 200, readFileSync(join(repoRoot(), "packages/studio/public/checks.js"), "utf8"), "text/javascript; charset=utf-8");
+        return;
+      }
       if (req.method === "GET" && url.pathname === "/api/evidence") {
         const body = readFileSync(join(repoRoot(), EVIDENCE), "utf8");
         if (url.searchParams.has("download")) {
