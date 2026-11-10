@@ -73,7 +73,7 @@ Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 
 Builds add a second wall: Grok writes the test cases and the test script from the approved requirements, Claude writes the code without seeing them, and the test runner runs one against the other. Above the workflows, a proof panel summarises a real, metered run of the requirements panel (`packages/studio/evidence/`), with its per-call costs and a defect Grok caught in Claude's draft, and offers the record for download.
 
-To add a workflow, drop a JSON file in `packages/studio/workflows/`; `workflows.ts` validates it and expands it into steps, and the tests check that every domain has both kinds and that each run has its caught-it moment.
+To add a workflow, drop a JSON file in `packages/studio/workflows/`; `workflows.ts` validates it and expands it into steps, and the tests check that every domain has both kinds, that each run has its caught-it moment, and that a build's generated test cases, test script and test run agree. Each workflow ends with its finished output: the document, or for a build the approved requirements, what shipped and the generated tests.
 
 ## Layout
 
