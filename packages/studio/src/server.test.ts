@@ -17,6 +17,7 @@ test("the studio serves its catalog and each simulated workflow, and refuses oth
     const checks = await fetch(`${origin}/checks.js`);
     assert.match(checks.headers.get("content-type") ?? "", /javascript/);
     assert.match(await checks.text(), /export const LIVE_CHECKS/);
+    assert.match(await (await fetch(`${origin}/tests.js`)).text(), /export function runTests/);
     const evidence = (await (await fetch(`${origin}/api/evidence`)).json()) as { totals: { calls: number }; highlight: { severity: string } };
     assert.equal(evidence.totals.calls, 5);
     assert.equal(evidence.highlight.severity, "P0");

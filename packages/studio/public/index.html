@@ -181,6 +181,16 @@
       .tryit .verdict { margin: 6px 0 0; font-weight: 650; }
       .tryit .verdict.fail { color: var(--clay); }
       .tryit .verdict.ok { color: var(--moss); }
+      .testlab { margin-top: 14px; }
+      .testlab h2 { margin: 2px 0 4px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
+      .testlab .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+      .testlab button { border: 1px solid var(--line); background: var(--paper-2); border-radius: 999px; padding: 7px 14px; font: inherit; cursor: pointer; }
+      .testlab button.primary { background: var(--teal); border-color: var(--teal); color: #f7fffe; font-weight: 650; }
+      .testlab pre { margin: 8px 0; padding: 10px 12px; overflow-x: auto; background: #f6f2ea; border-radius: 6px; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+      .testlab .runout div { font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+      .testlab .runout .bad { color: var(--clay); }
+      .testlab .runout .ok { color: var(--moss); }
+      .testlab .runout .sum { margin-top: 6px; font-weight: 650; }
       .output .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 12px 0 6px; }
       .output .vs > div { padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
       .output .vs .before { border-color: #e2b3a6; background: #fdf6f3; }
@@ -292,13 +302,14 @@
           </div>
         </div>
         <section class="card tryit" id="tryit" hidden></section>
+        <section class="card testlab" id="testlab" hidden></section>
         <div class="card detail" id="detail" hidden></div>
         <div class="card logcard tech" id="logcard" hidden><p class="eyebrow">Run log</p><div class="log" id="log"></div></div>
         <div class="card output" id="output" hidden></div>
       </section>
 
       <footer>
-        How to read this page: every output was written in advance to show how the workflow behaves; no model is called and nothing is billed. Model times and costs are estimates of a live run, from the same price table the live runs use. The live, metered version of this pipeline exists for the healthcare requirements step and is run on request.
+        How to read this page: every model output was written in advance to show how the workflow behaves; no model is called and nothing is billed. The code checks and the build workflows' tests are different: they are real code, and they run in your browser. Model times and costs are estimates of a live run, from the same price table the live runs use. The live, metered version of this pipeline exists for the healthcare requirements step and is run on request.
       </footer>
     </div>
 
@@ -316,6 +327,18 @@
       let outputShown = false;
       // The live checks (public/checks.js) and the figures the viewer has typed over the AI's.
       let LIVE = null;
+      // The build workflows' real tests (public/tests.js), and the runs made for this replay.
+      let TESTS = null;
+      let testRuns = {};
+      function testRun(version) {
+        const key = flow.id + ":" + version;
+        if (!testRuns[key]) {
+          const started = performance.now();
+          const results = TESTS.runTests(flow.id, version);
+          testRuns[key] = { results, ms: performance.now() - started };
+        }
+        return testRuns[key];
+      }
       let claimEdits = {};
       function liveResults() {
         return LIVE && flow && LIVE.LIVE_CHECKS[flow.id] ? LIVE.runChecks(flow.id, claimEdits) : [];
@@ -418,6 +441,8 @@
         runId = null;
         claimEdits = {};
         tryKey = "";
+        labKey = "";
+        testRuns = {};
         play.blocked = false;
         history.replaceState(null, "", "#" + flow.id);
         text("title", flow.title);
@@ -526,6 +551,7 @@
         renderOutput();
         renderRunLog();
         renderTryIt();
+        renderTestLab();
         byId("play").textContent = play.playing ? "❚❚ Pause" : play.index >= flow.steps.length ? "▶ Replay" : play.index > 0 || play.progress > 0 ? "▶ Resume" : "▶ Play";
       }
 
@@ -669,7 +695,12 @@
         if (state === "idle") section(step.kind === "human" ? "Outcome" : "Produced", "Not reached yet.");
         else if (state === "waiting") section("Waiting", "Approve to continue.");
         else {
-          const body = step.id === "checks" && liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name + "\n  " + check.detail).join("\n") : step.output;
+          const realTests = TESTS && TESTS.LIVE_TESTS.includes(flow.id) && (step.id === "testsRed" || step.id === "testsGreen");
+          if (realTests) {
+            const run = testRun(step.id === "testsRed" ? "first" : "fixed");
+            meta.textContent = "These tests really ran, in your browser, against the " + (step.id === "testsRed" ? "first version of the code" : "fixed code") + ": " + run.results.length + " tests in " + run.ms.toFixed(1) + " ms.";
+          }
+          const body = realTests ? TESTS.report(testRun(step.id === "testsRed" ? "first" : "fixed").results) : step.id === "checks" && liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name + "\n  " + check.detail).join("\n") : step.output;
           const pre = section(step.kind === "human" ? "Outcome" : state === "blocked" ? "Failed" : "Produced", body, state === "running" ? share : undefined);
           if (state === "running") pre.scrollTop = pre.scrollHeight;
         }
@@ -759,6 +790,58 @@
           : "All checks pass. The run can continue to a person for approval.";
       }
 
+      let labKey = "";
+      function renderTestLab() {
+        const card = byId("testlab");
+        const live = TESTS && TESTS.LIVE_TESTS.includes(flow.id);
+        card.hidden = !live;
+        if (!live || labKey === flow.id) return;
+        labKey = flow.id;
+        clear(card);
+        const add = (tag, value, className) => {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (value !== undefined) node.textContent = value;
+          return node;
+        };
+        card.append(
+          add("p", "Run the tests yourself", "eyebrow"),
+          add("h2", "Grok's test script is real code. Run it against the first version of the feature, then against Claude's fix."),
+          add("p", "Nothing here is recorded: the tests run in your browser each time you press a button, against working code.", "meta"),
+        );
+        const buttons = add("div", undefined, "buttons");
+        const first = add("button", "▶ Run against the first version", "primary");
+        const fixed = add("button", "▶ Run against the fixed version");
+        first.type = fixed.type = "button";
+        buttons.append(first, fixed);
+        const out = add("div", undefined, "runout");
+        const run = (version) => {
+          clear(out);
+          const started = performance.now();
+          const results = TESTS.runTests(flow.id, version);
+          const ms = performance.now() - started;
+          for (const result of results) {
+            out.appendChild(add("div", (result.pass ? "✓ " : "✗ ") + result.name + "  (" + result.ms.toFixed(2) + " ms)", result.pass ? "ok" : "bad"));
+            if (!result.pass) out.appendChild(add("div", "    " + result.message, "bad"));
+          }
+          const failing = results.filter((result) => !result.pass).length;
+          out.appendChild(
+            add(
+              "div",
+              (failing ? failing + " failing, " + (results.length - failing) + " passing" : results.length + " passing") + " · ran just now in " + ms.toFixed(1) + " ms · " + (version === "first" ? "the first version of the code" : "the code after Claude's fix"),
+              "sum " + (failing ? "bad" : "ok"),
+            ),
+          );
+        };
+        first.addEventListener("click", () => run("first"));
+        fixed.addEventListener("click", () => run("fixed"));
+        const script = add("details");
+        script.appendChild(add("summary", "Show the test script"));
+        const scriptStep = flow.steps.find((step) => step.id === "testScript");
+        script.appendChild(add("pre", scriptStep ? scriptStep.output : ""));
+        card.append(buttons, out, script);
+      }
+
       function afterEdit() {
         if (play.blocked && !liveFailures().length) play.blocked = false;
         render();
@@ -842,7 +925,7 @@
           title.textContent = flow.deliverable;
           const meta = document.createElement("p");
           meta.className = "meta";
-          meta.textContent = "What this run hands over, after both reviews, the code checks and a person's approval. Like every step on this page, it was written in advance; no model produced it just now.";
+          meta.textContent = "What this run hands over, after both reviews, the code checks and a person's approval. Like every model step on this page, it was written in advance; no model produced it just now.";
           const doc = document.createElement("div");
           doc.className = "doc";
           let list = null;
@@ -1104,6 +1187,13 @@
         card.append(row, summary, plainly, quote, why, details);
         card.hidden = false;
       }
+
+      import("/tests.js")
+        .then((module) => {
+          TESTS = module;
+          if (flow) render();
+        })
+        .catch(() => {});
 
       import("/checks.js")
         .then((module) => {

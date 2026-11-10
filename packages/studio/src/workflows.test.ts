@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { LIVE_CHECKS, runChecks } from "../public/checks.js";
+import { LIVE_TESTS, report, runTests } from "../public/tests.js";
 import { DOMAINS, catalog, expand, loadSpecs, workflowIssues } from "./workflows.ts";
 
 test("every domain offers a feature build and a document workflow", () => {
@@ -130,4 +131,24 @@ test("every workflow's live checks pass on the approved figures and fail on the 
     }
   }
   assert.equal(Object.keys(LIVE_CHECKS).length, loadSpecs().length);
+});
+
+test("each build's tests really run: one fails on the first version, all pass after the fix", () => {
+  const builds = loadSpecs().filter((spec) => spec.kind === "build");
+  assert.deepEqual([...LIVE_TESTS].sort(), builds.map((spec) => spec.id).sort());
+  const source = readFileSync(join(repoRoot(), "packages/studio/public/tests.js"), "utf8");
+  for (const spec of builds) {
+    const first = runTests(spec.id, "first");
+    const fixed = runTests(spec.id, "fixed");
+    assert.equal(first.filter((result) => !result.pass).length, 1, spec.id);
+    assert.ok(fixed.every((result) => result.pass), spec.id);
+    // What the workflow shows is what the runner prints.
+    assert.equal(spec.testsRed, report(first), spec.id);
+    assert.equal(spec.testsGreen, report(fixed), spec.id);
+    // The script the workflow shows is the code that runs.
+    const start = source.indexOf(`"${spec.id}": (test, assert, code) => {`);
+    const from = source.indexOf("// <test-script>", start) + "// <test-script>".length;
+    const block = source.slice(from, source.indexOf("// </test-script>", from)).split("\n").map((line) => line.replace(/^ {4}/, "")).join("\n").trim();
+    assert.equal(spec.testScript, block, spec.id);
+  }
 });
