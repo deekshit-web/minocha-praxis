@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "factory": "node scripts/factory.mjs",
     "rcm": "node scripts/rcm.mjs",
-    "live-prd": "node scripts/live-prd.mjs"
+    "live-prd": "node scripts/live-prd.mjs",
+    "eval-prd": "node scripts/eval-prd.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -54,6 +54,10 @@ export class GrokModel implements ModelProvider {
     this.fetch = options.fetch ?? patientFetch;
   }
 
+  get requestedModel(): string {
+    return this.model;
+  }
+
   async complete(request: CompletionRequest): Promise<Completion> {
     const seat = this.seats[request.role];
     if (!seat) throw new Error(`grok-seat-missing:${request.role}`);

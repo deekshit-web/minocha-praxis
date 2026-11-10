@@ -30,16 +30,28 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { FEATURE_B_BRIEF, RULES, groundedCitations, questionPanel } from "./panels.ts";
 
+/** One decision from the question round: what was asked and what the requester chose. */
+export interface Decision {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+/** Feature B's question round with the suggested answers chosen, as the factory runs it. */
+export function featureBDecisions(): Decision[] {
+  return questionPanel().synthesis.questions.map((question) => {
+    const option = question.options.find((item) => item.id === question.defaultOptionId);
+    return { id: question.id, question: question.prompt, answer: `${option?.label}. ${option?.consequence ?? ""}`.trim() };
+  });
+}
+
 /**
  * Everything every PRD seat is told: the brief, the question-round answers, the CARC table,
  * the pack files retrieval finds for the brief, and the document conventions. The gates are not
  * restated as rules to satisfy; they judge the result.
  */
-export function prdContext(brief: string): string {
-  const answers = questionPanel().synthesis.questions.map((question) => {
-    const option = question.options.find((item) => item.id === question.defaultOptionId);
-    return `- ${question.id} ${question.prompt} Answer: ${option?.label}. ${option?.consequence ?? ""}`;
-  });
+export function prdContext(brief: string, decisions: Decision[] = featureBDecisions()): string {
+  const answers = decisions.map((item) => `- ${item.id} ${item.question} Answer: ${item.answer}`);
   const carc = CARC_RULES.map((rule) => `| ${rule.code} | ${rule.carcClass} | ${rule.meaning} | ${rule.nextAction} |`);
   const pack = relevant(loadPack(join(repoRoot(), "packages/knowledge/pack")), intakeNouns(brief)).map(
     (chunk) => `### pack/${chunk.path}\n\n${chunk.text}`,

@@ -37,19 +37,30 @@ export class ClaudeModel implements ModelProvider {
   readonly mode = "live" as const;
   private readonly client: Anthropic;
   private readonly model: string;
+  private readonly fallbacks: boolean;
 
+  /**
+   * `fallbacks: false` turns off server-side refusal fallbacks. An eval needs that: a refused call must fail
+   * as a refusal, not come back quietly served by another model.
+   */
   constructor(
     private readonly context: string,
-    private readonly seats: Record<PanelRole, SeatSpec>,
-    options: { client?: Anthropic; model?: string } = {},
+    private readonly seats: Partial<Record<PanelRole, SeatSpec>>,
+    options: { client?: Anthropic; model?: string; fallbacks?: boolean } = {},
   ) {
     this.client = options.client ?? new Anthropic();
     this.model = options.model ?? CLAUDE_MODEL;
+    this.fallbacks = options.fallbacks ?? true;
+  }
+
+  get requestedModel(): string {
+    return this.model;
   }
 
   /** The answering model may differ from the requested one when a refusal fell back. */
   async complete(request: CompletionRequest): Promise<Completion> {
     const seat = this.seats[request.role];
+    if (!seat) throw new Error(`claude-seat-missing:${request.role}`);
     const compiled = seat.compiled !== false;
     const instructions = compiled
       ? seat.instructions
@@ -59,8 +70,7 @@ export class ClaudeModel implements ModelProvider {
     const params = {
       model: this.model,
       max_tokens: 64000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default" as const,
+      ...(this.fallbacks ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
       system: [
         { type: "text" as const, text: this.context, cache_control: { type: "ephemeral" as const } },
         { type: "text" as const, text: instructions },

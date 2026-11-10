@@ -5,3 +5,7 @@ runs/
 .env.*
 *.log
 evals/prd-panel/inputs.html
+.claude/hillclimb/**/traces/
+.claude/hillclimb/**/report.html
+.claude/hillclimb/**/state.json
+.claude/hillclimb/**/trajectory/

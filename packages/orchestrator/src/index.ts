@@ -31,6 +31,7 @@ export {
   type PanelRole,
   type PanelStage,
   type ReviewPanel,
+  type SynthesisRationale,
 } from "./panel.ts";
 export { CompletionError, FixturePlayer, PanelCallError, ResumingProvider, playPanel, recordedLines, UnconfiguredModel } from "./provider.ts";
 export { CLAUDE_MODEL, ClaudeModel, type SeatSpec } from "./claude.ts";

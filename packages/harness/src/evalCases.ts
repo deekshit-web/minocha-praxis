@@ -70,9 +70,9 @@ export function plantDraft(planted: PlantedCase): Prd {
 }
 
 /** Every code check a PRD meets before a person sees it. A planted defect has to slip past all of them. */
-export function codeGateIssues(prd: Prd): string[] {
+export function codeGateIssues(prd: Prd, brief = FEATURE_B_BRIEF): string[] {
   return [
-    ...prdGateIssues(prd, prdIssues(prd, groundedCitations(FEATURE_B_BRIEF), RULES)),
+    ...prdGateIssues(prd, prdIssues(prd, groundedCitations(brief), RULES)),
     ...findPhi(JSON.stringify(prd)).map((finding) => `phi:${finding.kind}`),
   ];
 }
