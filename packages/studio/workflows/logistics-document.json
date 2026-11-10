@@ -34,5 +34,11 @@
   ],
   "approval": "Approved by the claims supervisor.",
   "deliver": "Customer refunded 1,200; carrier claim for 450 filed with photos on 2026-11-10; proposal sent to the logistics manager.",
-  "output": "## Decision\n- Refund the customer 1,200, the invoice value (policy R-4).\n- Claim 450 from the carrier: 18 kg × 25 per kg, the contract C-7 limit without declared value cover.\n- Net cost to the company: 1,200 - 450 = 750.\n## Carrier claim\n- Deadline: 2026-12-03 (delivered 2026-11-03, plus 30 days).\n- Filed on 2026-11-10 with the damage photos.\n## Proposal, needs sign-off\n- Buy declared value cover for fragile shipments over 500 in value, so a loss like this one is recovered in full."
+  "output": "## Decision\n- Refund the customer 1,200, the invoice value (policy R-4).\n- Claim 450 from the carrier: 18 kg × 25 per kg, the contract C-7 limit without declared value cover.\n- Net cost to the company: 1,200 - 450 = 750.\n## Carrier claim\n- Deadline: 2026-12-03 (delivered 2026-11-03, plus 30 days).\n- Filed on 2026-11-10 with the damage photos.\n## Proposal, needs sign-off\n- Buy declared value cover for fragile shipments over 500 in value, so a loss like this one is recovered in full.",
+  "contrast": {
+    "draft": "A",
+    "before": "Claim from carrier: 1,200, the full invoice value of the glassware.",
+    "after": "Claim 450 from the carrier: 18 kg × 25 per kg, the contract C-7 limit without declared value cover.",
+    "why": "The contract caps the carrier's liability at 450. One AI alone claimed 1,200, which would be rejected, and reported the loss as zero when it is 750."
+  }
 }

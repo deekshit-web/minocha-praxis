@@ -34,5 +34,11 @@
   ],
   "approval": "Approved by the brand manager and the trade finance controller.",
   "deliver": "Plan sent to the key account team with store lists, the price file and the approved artwork brief.",
-  "output": "## Promotion plan: SKU-5502 launch, 4 weeks, modern trade\n- Week 1: list price 6.00 with a free 50 ml travel size. Gross margin (6.00 - 3.30 - 0.25) ÷ 6.00 = 40.8%.\n- Weeks 2-4: 15% off, promo price 5.10. Gross margin (5.10 - 3.30) ÷ 5.10 = 35.3%.\n- In store: end-cap displays in the top 40 stores, shelf talkers in all stores.\n- Message: \"Gentle daily care, new formula.\" No medical or \"clinically proven\" claims (policy CL-1).\n## Forecast\n- 12,000 units, assumed even at 3,000 a week.\n- Gross profit: 3,000 × 2.45 + 9,000 × 1.80 = 7,350 + 16,200 = 23,550.\n- Every week stays at or above the 35% margin floor (policy PP-3).\n## Rejected options\n- 30% off (4.20): margin 21.4%, below the floor.\n- 15% off and the gift together: margin (5.10 - 3.30 - 0.25) ÷ 5.10 = 30.4%, below the floor."
+  "output": "## Promotion plan: SKU-5502 launch, 4 weeks, modern trade\n- Week 1: list price 6.00 with a free 50 ml travel size. Gross margin (6.00 - 3.30 - 0.25) ÷ 6.00 = 40.8%.\n- Weeks 2-4: 15% off, promo price 5.10. Gross margin (5.10 - 3.30) ÷ 5.10 = 35.3%.\n- In store: end-cap displays in the top 40 stores, shelf talkers in all stores.\n- Message: \"Gentle daily care, new formula.\" No medical or \"clinically proven\" claims (policy CL-1).\n## Forecast\n- 12,000 units, assumed even at 3,000 a week.\n- Gross profit: 3,000 × 2.45 + 9,000 × 1.80 = 7,350 + 16,200 = 23,550.\n- Every week stays at or above the 35% margin floor (policy PP-3).\n## Rejected options\n- 30% off (4.20): margin 21.4%, below the floor.\n- 15% off and the gift together: margin (5.10 - 3.30 - 0.25) ÷ 5.10 = 30.4%, below the floor.",
+  "contrast": {
+    "draft": "A",
+    "before": "Mechanic: 30% off for 4 weeks, promo price 4.20.",
+    "after": "Weeks 2-4: 15% off, promo price 5.10. Gross margin (5.10 - 3.30) ÷ 5.10 = 35.3%.",
+    "why": "30% off takes gross margin to 21.4%, far below the company's 35% floor. One AI alone also claimed 'clinically proven' with no study behind it."
+  }
 }

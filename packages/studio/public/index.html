@@ -153,6 +153,44 @@
       .wall { grid-row: 2; align-self: center; border-top: 2px dashed var(--clay); position: relative; z-index: 1; }
       .wall span { position: absolute; left: 50%; top: -10px; transform: translateX(-50%); padding: 0 6px; background: var(--paper); color: var(--clay); font-size: 11px; font-weight: 650; white-space: nowrap; }
       .detail { margin-top: 14px; }
+      body.plain .tech { display: none !important; }
+      .viewtoggle { display: inline-flex; margin-top: 8px; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+      .viewtoggle button { border: 0; background: var(--paper-2); color: var(--muted); padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+      .viewtoggle button[aria-pressed="true"] { background: var(--teal-deep); color: #f7fffe; }
+      .headside { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+      .headside .viewtoggle { margin-top: 0; }
+      @media (max-width: 1180px) { .headside { align-items: flex-start; } }
+      .node.blocked { background: #fbf0ec; color: var(--ink); border-color: var(--clay); box-shadow: 0 0 0 3px rgba(141, 61, 44, 0.15); }
+      .node.blocked .s { color: var(--clay); font-weight: 650; }
+      .caption.blocked { border-left-color: var(--clay); background: #fbf0ec; }
+      .tryit { margin-top: 14px; }
+      .tryit h2, .output .vs h3 { margin: 2px 0 4px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
+      .tryit .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 18px; margin-top: 8px; }
+      .tryit dl { display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; margin: 4px 0 10px; font-size: 14px; }
+      .tryit dt { color: var(--muted); }
+      .tryit dd { margin: 0; }
+      .tryit label { display: block; margin: 8px 0 3px; font-size: 13px; font-weight: 650; color: var(--teal-deep); }
+      .tryit .claim { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+      .tryit input { flex: 1 1 200px; min-width: 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; }
+      .tryit button { border: 1px solid var(--line); background: var(--paper-2); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+      .tryit button.draft { border-color: #e2b3a6; color: var(--clay); }
+      .tryit ul.results { list-style: none; margin: 4px 0; padding: 0; }
+      .tryit ul.results li { margin: 0 0 8px; padding: 8px 12px; border-radius: 8px; background: #eef6f1; border-left: 3px solid var(--moss); }
+      .tryit ul.results li.fail { background: #fbf0ec; border-left-color: var(--clay); }
+      .tryit ul.results b { display: block; }
+      .tryit .verdict { margin: 6px 0 0; font-weight: 650; }
+      .tryit .verdict.fail { color: var(--clay); }
+      .tryit .verdict.ok { color: var(--moss); }
+      .output .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 12px 0 6px; }
+      .output .vs > div { padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+      .output .vs .before { border-color: #e2b3a6; background: #fdf6f3; }
+      .output .vs .after { border-color: #b9cfc6; background: #f3faf6; }
+      .output .vs h3 { font-size: 17px; }
+      .output .vs .quote { margin: 8px 0; font-size: 15px; }
+      .output .vs mark { background: #f6d5c9; color: inherit; padding: 0 2px; }
+      .output .vs .after .quote span { background: #d5ecdf; padding: 0 2px; }
+      .output .why { margin: 4px 0 12px; font-size: 15px; }
+      @media (max-width: 760px) { .tryit .cols, .output .vs { grid-template-columns: 1fr; } }
       .proof { margin: 0 0 16px; border-color: #c9ddd9; }
       .proof .row { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; justify-content: space-between; }
       .proof h2 { margin: 2px 0 6px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
@@ -206,9 +244,15 @@
         <div>
           <p class="eyebrow">Kodiflex Foundry · agentic workflows</p>
           <h1 id="title">Pick a domain and a workflow</h1>
-          <p id="lede" class="lede">Each workflow shows two different AI models drafting separately, reviewing each other's work, and a person approving the result. This page replays prepared runs, so no model is called and nothing is billed. The run below it is real.</p>
+          <p id="lede" class="lede">AI writes fluently and is sometimes confidently wrong. Here two different AIs do the work separately and check each other, plain code checks verify the result, and a person approves it, so mistakes are caught before they reach you. This page replays prepared runs, so no model is called and nothing is billed. The run summarised below is real.</p>
         </div>
-        <span class="sim" title="Every output on this page was written in advance. Times and costs show what a live run would take."><i></i>Simulated · no model is called · $0</span>
+        <div class="headside">
+          <span class="sim" title="Every output on this page was written in advance. Times and costs show what a live run would take."><i></i>Simulated · no model is called · $0</span>
+          <div class="viewtoggle" role="group" aria-label="Level of detail">
+            <button type="button" data-view="plain" aria-pressed="true">Plain</button>
+            <button type="button" data-view="technical" aria-pressed="false">Technical</button>
+          </div>
+        </div>
       </header>
 
       <section class="card proof" id="proof" hidden></section>
@@ -247,8 +291,9 @@
             <div class="pipe" id="pipe"><svg id="lines" aria-hidden="true"></svg></div>
           </div>
         </div>
+        <section class="card tryit" id="tryit" hidden></section>
         <div class="card detail" id="detail" hidden></div>
-        <div class="card logcard" id="logcard" hidden><p class="eyebrow">Run log</p><div class="log" id="log"></div></div>
+        <div class="card logcard tech" id="logcard" hidden><p class="eyebrow">Run log</p><div class="log" id="log"></div></div>
         <div class="card output" id="output" hidden></div>
       </section>
 
@@ -269,6 +314,15 @@
       let selected = null;
       // The finished deliverable shows when the run ends, or earlier if a viewer asks for it.
       let outputShown = false;
+      // The live checks (public/checks.js) and the figures the viewer has typed over the AI's.
+      let LIVE = null;
+      let claimEdits = {};
+      function liveResults() {
+        return LIVE && flow && LIVE.LIVE_CHECKS[flow.id] ? LIVE.runChecks(flow.id, claimEdits) : [];
+      }
+      function liveFailures() {
+        return liveResults().filter((check) => !check.pass);
+      }
       // When the viewer pressed Play, and an id for this replay. Step times below are that clock plus the
       // model time a live run would take, so the log reads as the live run would.
       let runStartedAt = null;
@@ -362,6 +416,9 @@
         outputShown = false;
         runStartedAt = null;
         runId = null;
+        claimEdits = {};
+        tryKey = "";
+        play.blocked = false;
         history.replaceState(null, "", "#" + flow.id);
         text("title", flow.title);
         text("lede", flow.brief);
@@ -373,6 +430,7 @@
       }
 
       function stateOf(step, index) {
+        if (play.blocked && index === play.index) return "blocked";
         if (index < play.index) return step.verdict === "flagged" ? "flagged" : "done";
         if (index > play.index) return "idle";
         if (step.kind === "human" && !play.approved.has(step.id)) return play.progress > 0 || play.playing ? "waiting" : "idle";
@@ -435,7 +493,7 @@
           const share = state === "running" ? play.progress : 1;
           meta = state === "idle" ? "simulated call" : duration(step.seconds * share) + " · " + money((step.estimatedCostUsd || 0) * share);
         } else if (step.kind === "human") meta = state === "waiting" ? "waiting for you" : state === "idle" ? "" : "approved";
-        const label = { idle: "", running: step.kind === "llm" ? "thinking…" : "working…", waiting: "your turn", done: "done", flagged: "flagged" }[state];
+        const label = { idle: "", running: step.kind === "llm" ? "thinking…" : "working…", waiting: "your turn", done: "done", flagged: "flagged", blocked: "blocked: " + liveFailures().length + " failed" }[state];
         const flaggedLabel = step.id.startsWith("reviewOf") ? "caught a serious defect" : step.id === "testsRed" ? "1 test failing" : "flagged";
         return [kicker, name, meta, state === "flagged" ? flaggedLabel : label];
       }
@@ -467,6 +525,7 @@
         renderDetail();
         renderOutput();
         renderRunLog();
+        renderTryIt();
         byId("play").textContent = play.playing ? "❚❚ Pause" : play.index >= flow.steps.length ? "▶ Replay" : play.index > 0 || play.progress > 0 ? "▶ Resume" : "▶ Play";
       }
 
@@ -491,19 +550,27 @@
         text("cost-sub", "of about " + money(flow.estimatedCostUsd) + " · this page spends $0");
         const checks = flow.steps.filter((step) => step.kind === "check");
         const run = checks.filter((step) => flow.steps.indexOf(step) < play.index);
-        text("checks-value", run.length ? run.length + " / " + checks.length + " passed" : "-");
-        text("checks-sub", run.length ? "Plain code checks, no model" : "Not run yet");
+        text("checks-value", play.blocked ? liveFailures().length + " failed" : run.length ? run.length + " / " + checks.length + " passed" : "-");
+        text("checks-sub", play.blocked ? "Run stopped by the checks" : run.length ? "Plain code checks, no model" : "Not run yet");
       }
 
       function renderCaption() {
         const total = flow.steps.length;
         const approve = byId("approve");
+        byId("caption").parentElement.classList.remove("blocked");
         if (play.index >= total) {
           text("caption", "Done. Two models drafted and reviewed, code checks passed, and a person approved: " + flow.deliverable.toLowerCase() + ". The output is below.");
           approve.hidden = true;
           return;
         }
         const step = flow.steps[play.index];
+        byId("caption").parentElement.classList.toggle("blocked", !!play.blocked);
+        if (play.blocked) {
+          approve.hidden = true;
+          const failed = liveFailures().length;
+          text("caption", "Blocked. " + failed + " code check" + (failed === 1 ? "" : "s") + " failed, so the run stops here and nothing reaches a person. Fix the figures below, or press Reset figures.");
+          return;
+        }
         const waiting = step.kind === "human" && !play.approved.has(step.id) && (play.playing || play.progress > 0);
         approve.hidden = !waiting;
         text("caption", play.progress === 0 && !play.playing && play.index === 0 ? "Press Play, or step through with Next step." : step.caption);
@@ -547,8 +614,13 @@
         const meta = document.createElement("p");
         meta.className = "meta";
         const share = state === "running" ? streamed(step, play.progress) : null;
+        const plainView = document.body.classList.contains("plain");
         meta.textContent =
-          step.kind === "llm" && share !== null
+          plainView && step.kind === "llm" && share !== null
+            ? share === 0
+              ? modelLabel(step.actor) + " is reading what it was given…"
+              : modelLabel(step.actor) + " is writing. In a live run this step takes about " + duration(step.seconds) + "."
+            : step.kind === "llm" && share !== null
             ? share === 0
               ? "Request sent to " + modelLabel(step.actor) + " (simulated). Waiting for the first token… " + step.tokens.input.toLocaleString() + " tokens in."
               : "Streaming (simulated): " + Math.round(step.tokens.output * share).toLocaleString() + " of about " + step.tokens.output.toLocaleString() + " output tokens · " + duration(step.seconds * play.progress) + " of about " + duration(step.seconds) + "."
@@ -583,7 +655,7 @@
             ["Cost if live", money(step.estimatedCostUsd)],
           ];
           const record = document.createElement("dl");
-          record.className = "record";
+          record.className = "record tech";
           for (const [label, value] of rows) {
             const dt = document.createElement("dt");
             dt.textContent = label;
@@ -597,9 +669,99 @@
         if (state === "idle") section(step.kind === "human" ? "Outcome" : "Produced", "Not reached yet.");
         else if (state === "waiting") section("Waiting", "Approve to continue.");
         else {
-          const pre = section(step.kind === "human" ? "Outcome" : "Produced", step.output, state === "running" ? share : undefined);
+          const body = step.id === "checks" && liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name + "\n  " + check.detail).join("\n") : step.output;
+          const pre = section(step.kind === "human" ? "Outcome" : state === "blocked" ? "Failed" : "Produced", body, state === "running" ? share : undefined);
           if (state === "running") pre.scrollTop = pre.scrollHeight;
         }
+      }
+
+      let tryKey = "";
+      function renderTryIt() {
+        const card = byId("tryit");
+        const live = LIVE && LIVE.LIVE_CHECKS[flow.id];
+        card.hidden = !live;
+        if (!live) return;
+        const add = (tag, value, className) => {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (value !== undefined) node.textContent = value;
+          return node;
+        };
+        if (tryKey !== flow.id) {
+          tryKey = flow.id;
+          clear(card);
+          card.append(
+            add("p", "Try to break it", "eyebrow"),
+            add("h2", "These checks are real code, running in your browser. Change what the AI wrote and watch them catch it."),
+          );
+          const cols = add("div", undefined, "cols");
+          const left = add("div");
+          left.appendChild(add("p", "What the workflow starts from", "label"));
+          const facts = add("dl");
+          for (const [name, value] of live.facts) facts.append(add("dt", name), add("dd", value));
+          left.appendChild(facts);
+          left.appendChild(add("p", "What the AI wrote (edit it)", "label"));
+          for (const claim of live.claims) {
+            const label = add("label", claim.label);
+            const input = document.createElement("input");
+            input.id = "claim-" + claim.id;
+            input.value = claimEdits[claim.id] ?? claim.value;
+            label.htmlFor = input.id;
+            input.addEventListener("input", () => {
+              claimEdits[claim.id] = input.value;
+              afterEdit();
+            });
+            const draft = add("button", "Use draft " + claim.draftFrom + "'s version", "draft");
+            draft.type = "button";
+            draft.addEventListener("click", () => {
+              claimEdits[claim.id] = claim.draft;
+              input.value = claim.draft;
+              afterEdit();
+            });
+            const row = add("div", undefined, "claim");
+            row.append(input, draft);
+            left.append(label, row);
+          }
+          const reset = add("button", "Reset figures");
+          reset.type = "button";
+          reset.style.marginTop = "10px";
+          reset.addEventListener("click", () => {
+            claimEdits = {};
+            for (const claim of live.claims) byId("claim-" + claim.id).value = claim.value;
+            afterEdit();
+          });
+          left.appendChild(reset);
+          const right = add("div");
+          right.appendChild(add("p", "Code checks · no AI involved", "label"));
+          right.appendChild(add("ul", undefined, "results"));
+          right.appendChild(add("p", "", "verdict"));
+          cols.append(left, right);
+          card.appendChild(cols);
+        }
+        const results = liveResults();
+        const list = card.querySelector("ul.results");
+        clear(list);
+        for (const check of results) {
+          const item = add("li", undefined, check.pass ? "" : "fail");
+          item.append(add("b", (check.pass ? "✓ " : "✗ ") + check.name), document.createTextNode(check.detail));
+          list.appendChild(item);
+        }
+        const failed = results.filter((check) => !check.pass).length;
+        const checksIndex = flow.steps.findIndex((step) => step.id === "checks");
+        const verdict = card.querySelector(".verdict");
+        verdict.className = "verdict " + (failed ? "fail" : "ok");
+        verdict.textContent = failed
+          ? play.blocked
+            ? "The run is stopped at Code checks. Fix the figures, or reset them, and it can continue."
+            : play.index > checksIndex
+            ? failed + " check" + (failed === 1 ? "" : "s") + " would fail. Press Restart to run the workflow with these figures: it will stop at Code checks."
+            : failed + " check" + (failed === 1 ? "" : "s") + " failed. When the run reaches Code checks it will stop there, and nothing reaches a person."
+          : "All checks pass. The run can continue to a person for approval.";
+      }
+
+      function afterEdit() {
+        if (play.blocked && !liveFailures().length) play.blocked = false;
+        render();
       }
 
       function renderRunLog() {
@@ -624,6 +786,7 @@
         if (runId) {
           part("Run ", runId);
           part("Started ", clock(new Date(runStartedAt)) + " (your clock)");
+          [...head.children].slice(-2).forEach((node) => node.classList.add("tech"));
         }
         const card = byId("logcard");
         const log = byId("log");
@@ -718,7 +881,36 @@
             node.textContent = heading ? line.slice(3) : line;
             doc.appendChild(node);
           }
-          card.append(eyebrow, title, meta, doc);
+          const contrast = flow.contrast;
+          const vs = document.createElement("div");
+          vs.className = "vs";
+          const side = (className, heading, quote, sub) => {
+            const box = document.createElement("div");
+            box.className = className;
+            const h = document.createElement("h3");
+            h.textContent = heading;
+            const p = document.createElement("p");
+            p.className = "quote";
+            const mark = document.createElement(className === "before" ? "mark" : "span");
+            mark.textContent = quote;
+            p.appendChild(mark);
+            const note = document.createElement("p");
+            note.className = "meta";
+            note.textContent = sub;
+            box.append(h, p, note);
+            return box;
+          };
+          vs.append(
+            side("before", "One AI alone would have handed you", contrast.before, "From draft " + contrast.draft + " (" + (contrast.draft === "A" ? "Claude" : "Grok") + "), before review."),
+            side("after", "What you get instead", contrast.after, "After the other AI's review, the merge, the code checks and a person's approval."),
+          );
+          const why = document.createElement("p");
+          why.className = "why";
+          why.textContent = "Why it matters: " + contrast.why;
+          const full = document.createElement("p");
+          full.className = "label";
+          full.textContent = "The full output";
+          card.append(eyebrow, title, meta, vs, why, full, doc);
         }
         if (scrollToOutput) {
           scrollToOutput = false;
@@ -757,6 +949,14 @@
       }
 
       function advance() {
+        const current = flow.steps[play.index];
+        if (current && current.id === "checks" && liveFailures().length) {
+          play.blocked = true;
+          play.progress = 1;
+          stop();
+          return;
+        }
+        play.blocked = false;
         play.index += 1;
         play.progress = 0;
         if (play.index >= flow.steps.length) {
@@ -783,6 +983,7 @@
       }
 
       function start() {
+        if (play.blocked) return;
         if (play.index >= flow.steps.length) {
           play.index = 0;
           play.progress = 0;
@@ -841,6 +1042,7 @@
         outputShown = false;
         runStartedAt = null;
         runId = null;
+        play.blocked = false;
         buildPipe();
         render();
       });
@@ -884,9 +1086,10 @@
         );
         const quote = add("blockquote");
         quote.append(add("span", "Grok 4.7, reviewing Claude's draft · " + run.highlight.severity, "who"), document.createTextNode(run.highlight.point));
+        const plainly = add("p", "In plain words: Claude's draft called a deadline 17 days away \"within 14 days\", which would have marked it urgent by mistake. Grok caught it, and the error never reached a person.");
         const why = add("ul", undefined, "why");
         ["Two vendors' models, not one", "Drafts written apart", "Each reviews the other", "Checks run as code, not AI", "Tests written apart from the code", "Nothing ships without a person"].forEach((item) => why.appendChild(add("li", item)));
-        const details = add("details");
+        const details = add("details", undefined, "tech");
         details.appendChild(add("summary", "Every call in that run"));
         const table = add("table");
         const head = add("tr");
@@ -898,9 +1101,32 @@
           table.appendChild(tr);
         }
         details.appendChild(table);
-        card.append(row, summary, quote, why, details);
+        card.append(row, summary, plainly, quote, why, details);
         card.hidden = false;
       }
+
+      import("/checks.js")
+        .then((module) => {
+          LIVE = module;
+          if (flow) render();
+        })
+        .catch(() => {});
+
+      function setView(view) {
+        document.body.classList.toggle("plain", view !== "technical");
+        document.querySelectorAll(".viewtoggle button").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.view === view)));
+        try {
+          localStorage.setItem("foundry-view", view);
+        } catch (error) {}
+        logKey = "";
+        if (flow) render();
+      }
+      document.querySelectorAll(".viewtoggle button").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
+      let savedView = "plain";
+      try {
+        savedView = localStorage.getItem("foundry-view") || "plain";
+      } catch (error) {}
+      setView(savedView);
 
       fetch("/api/evidence")
         .then((response) => (response.ok ? response.json() : null))

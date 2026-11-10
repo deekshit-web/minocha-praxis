@@ -3,6 +3,7 @@ import { findPhi, repoRoot } from "@northwind/orchestrator";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { LIVE_CHECKS, runChecks } from "../public/checks.js";
 import { DOMAINS, catalog, expand, loadSpecs, workflowIssues } from "./workflows.ts";
 
 test("every domain offers a feature build and a document workflow", () => {
@@ -105,4 +106,28 @@ test("the real-run evidence adds up and carries no patient data", () => {
   assert.equal(run.totals.costUsd, Math.round(used.reduce((total, call) => total + call.costUsd, 0) * 100) / 100);
   assert.equal(run.totals.costIncludingRetryUsd, Math.round(run.calls.reduce((total, call) => total + call.costUsd, 0) * 100) / 100);
   assert.deepEqual(findPhi(JSON.stringify(run)), []);
+});
+
+test("each before-and-after quotes a flagged draft and the output that replaced it", () => {
+  for (const spec of loadSpecs()) {
+    const flow = expand(spec);
+    const draft = spec.contrast.draft === "A" ? spec.draftA : spec.draftB;
+    const review = spec.contrast.draft === "A" ? spec.reviewOfA : spec.reviewOfB;
+    assert.ok(draft.includes(spec.contrast.before), `${spec.id}: before is not in draft ${spec.contrast.draft}`);
+    assert.match(review, /\bP0\b/, `${spec.id}: draft ${spec.contrast.draft} was not flagged`);
+    assert.ok(flow.output.includes(spec.contrast.after), `${spec.id}: after is not in the output`);
+  }
+});
+
+test("every workflow's live checks pass on the approved figures and fail on the flagged draft's", () => {
+  for (const spec of loadSpecs()) {
+    const live = LIVE_CHECKS[spec.id as keyof typeof LIVE_CHECKS];
+    assert.ok(live, spec.id);
+    assert.ok(runChecks(spec.id).every((check) => check.pass), `${spec.id}: approved figures fail`);
+    for (const claim of live.claims) {
+      const results = runChecks(spec.id, { [claim.id]: claim.draft });
+      assert.ok(results.some((check) => !check.pass), `${spec.id}: draft ${claim.draftFrom}'s ${claim.id} passes`);
+    }
+  }
+  assert.equal(Object.keys(LIVE_CHECKS).length, loadSpecs().length);
 });
