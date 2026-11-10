@@ -1,4 +1,4 @@
-# The zero-token workflow studio, for a public host such as Railway. It calls no model and needs no keys.
+# Kodiflex Foundry, the zero-token workflow studio, for a public host such as Railway. It calls no model and needs no keys.
 FROM node:22-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
