@@ -18,6 +18,9 @@ buildSync({
   external: ["undici", "esbuild"],
 });
 
+// --build-only stops after bundling, for a container image that runs the bundle itself.
+if (process.argv.includes("--build-only")) process.exit(0);
+
 const child = spawnSync(process.execPath, [outfile], {
   stdio: "inherit",
   env: { ...process.env, NORTHWIND_ROOT: root, PORT: process.env.PORT ?? "4320" },
