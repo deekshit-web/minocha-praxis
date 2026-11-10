@@ -87,6 +87,19 @@
       .tile-sub { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
       .tile.good .tile-value { color: var(--moss); }
       .tile.warn .tile-value { color: var(--clay); }
+      .tile.turn { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(14, 107, 102, 0.16); }
+      .tile.turn .tile-sub { color: var(--teal-deep); font-weight: 650; }
+      #suggest {
+        border: 1px solid var(--teal);
+        background: var(--paper-2);
+        color: var(--teal-deep);
+        border-radius: 999px;
+        padding: 8px 14px;
+        margin: 0 0 12px;
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+      }
       a.chip { color: inherit; text-decoration: none; }
       .chip {
         display: inline-flex;
@@ -694,6 +707,13 @@
       }
 
       let liveRuns = [];
+      let waitingState = null;
+      let waitingSince = null;
+
+      /** Every step of a recorded run waits on a person; the page says so instead of leaving a clock to tick. */
+      function yourTurn(next) {
+        return Boolean(next) && next.state !== "blocked" && next.state !== "recorded" && (next.actions || []).length > 0;
+      }
       let expandedStages = new Set();
       let autoStage = null;
 
@@ -793,13 +813,22 @@
         }
         const end = timing.finishedAt || Date.now();
         text("run-clock", formatMs(end - timing.startedAt));
-        text("run-clock-sub", timing.finishedAt ? "Finished" : "Running, including time at approval gates");
+        text(
+          "run-clock-sub",
+          timing.finishedAt
+            ? "Finished"
+            : yourTurn(view) && waitingSince
+              ? "Waiting for you for " + formatMs(Date.now() - waitingSince)
+              : "Running, including time at approval gates",
+        );
       }
 
       function renderScoreboard(next) {
         const index = STORY.findIndex((step) => step.states.includes(next.state));
         text("tile-step", next.state === "recorded" ? "Done" : index >= 0 ? index + 1 + " of " + STORY.length : "—");
-        text("tile-step-sub", next.state === "blocked" ? "Stopped by a guardrail" : index >= 0 ? STORY[index].label : "");
+        const turn = yourTurn(next);
+        document.getElementById("tile-step").parentElement.classList.toggle("turn", turn);
+        text("tile-step-sub", next.state === "blocked" ? "Stopped by a guardrail" : turn ? "Your turn: " + guide(next)[2] : index >= 0 ? STORY[index].label : "");
         const calls = next.calls;
         const live = calls.filter((call) => call.source === "live");
         text("run-cost", formatTotal(calls));
@@ -976,11 +1005,28 @@
         });
         const currentIndex = STORY.findIndex((step) => step.states.includes(next.state));
         text("rail-detail", here ? "You are on " + here + "." : next.state === "recorded" ? "Finished." : "");
-        text("dock-kicker", currentIndex >= 0 ? "Step " + (currentIndex + 1) + " of " + STORY.length : "");
+        if (next.state !== waitingState) {
+          waitingState = next.state;
+          waitingSince = Date.now();
+        }
+        text("dock-kicker", currentIndex >= 0 ? "Step " + (currentIndex + 1) + " of " + STORY.length + (yourTurn(next) ? " · Your turn" : "") : "");
 
         const questions = document.getElementById("questions");
         clear(questions);
         if (next.questions) {
+          const suggest = document.createElement("button");
+          suggest.type = "button";
+          suggest.id = "suggest";
+          suggest.textContent = "Use the suggested answers";
+          suggest.title = "Selects the suggested option on every question. You still press Continue.";
+          suggest.addEventListener("click", () => {
+            for (const question of next.questions) {
+              const option = document.querySelector('input[name="' + CSS.escape(question.id) + '"][value="' + CSS.escape(question.defaultOptionId) + '"]');
+              if (option) option.checked = true;
+            }
+            refreshAnswers();
+          });
+          questions.appendChild(suggest);
           next.questions.forEach((question, index) => {
             const field = document.createElement("fieldset");
             const legend = document.createElement("legend");
