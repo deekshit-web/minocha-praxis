@@ -6,15 +6,23 @@ import { join } from "node:path";
 import { catalog, expand, loadSpecs } from "./workflows.ts";
 
 function send(res: ServerResponse, status: number, body: unknown, type = "application/json; charset=utf-8"): void {
-  res.writeHead(status, { "content-type": type, "cache-control": "no-store" });
+  res.writeHead(status, { "content-type": type, "cache-control": "no-store", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer" });
   res.end(typeof body === "string" ? body : JSON.stringify(body));
 }
 
+export interface StudioOptions {
+  /**
+   * Hosted on the open internet rather than on this machine. The loopback Host check is dropped, since a
+   * public host name is expected, and anything but GET is refused. The studio has no writes, so nothing else changes.
+   */
+  hosted?: boolean;
+}
+
 /** Serves the studio page and its simulated workflows. Nothing here calls a model. */
-export function createStudioServer(): Server {
+export function createStudioServer(options: StudioOptions = {}): Server {
   return createServer((req, res) => {
-    if (foreignRequest(req)) {
-      send(res, 403, { error: "foreign-origin" });
+    if (options.hosted ? req.method !== "GET" && req.method !== "HEAD" : foreignRequest(req)) {
+      send(res, options.hosted ? 405 : 403, { error: options.hosted ? "read-only" : "foreign-origin" });
       return;
     }
     const url = new URL(req.url ?? "/", "http://127.0.0.1");
@@ -39,16 +47,16 @@ export function createStudioServer(): Server {
       }
       send(res, 404, { error: "not-found" });
     } catch (error) {
-      send(res, 500, { error: error instanceof Error ? error.message : "error" });
+      send(res, 500, { error: !options.hosted && error instanceof Error ? error.message : "error" });
     }
   });
 }
 
-export function listenStudio(port = 4320): Promise<{ port: number; close: () => Promise<void> }> {
-  const server = createStudioServer();
+export function listenStudio(port = 4320, options: StudioOptions = {}): Promise<{ port: number; close: () => Promise<void> }> {
+  const server = createStudioServer(options);
   return new Promise((resolve, reject) => {
     server.once("error", reject);
-    server.listen(port, "127.0.0.1", () => {
+    server.listen(port, options.hosted ? "0.0.0.0" : "127.0.0.1", () => {
       const address = server.address();
       const actual = typeof address === "object" && address ? address.port : port;
       resolve({ port: actual, close: () => new Promise((done, fail) => server.close((error) => (error ? fail(error) : done()))) });

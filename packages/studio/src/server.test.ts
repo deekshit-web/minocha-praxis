@@ -21,3 +21,19 @@ test("the studio serves its catalog and each simulated workflow, and refuses oth
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });
+
+test("hosted, the studio answers any host name but stays read-only", async () => {
+  const server = createStudioServer({ hosted: true });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  const origin = `http://127.0.0.1:${typeof address === "object" && address ? address.port : 0}`;
+  try {
+    const page = await fetch(`${origin}/`, { headers: { host: "studio.up.railway.app" } });
+    assert.equal(page.status, 200);
+    assert.equal(page.headers.get("x-content-type-options"), "nosniff");
+    assert.equal((await fetch(`${origin}/api/catalog`, { headers: { host: "studio.up.railway.app" } })).status, 200);
+    assert.equal((await fetch(`${origin}/api/catalog`, { method: "POST" })).status, 405);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});

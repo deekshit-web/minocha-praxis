@@ -44,7 +44,7 @@ npm run typecheck   # esbuild strips types without checking them, so this is the
 npm run rcm         # denial workbench on http://127.0.0.1:4173
 npm run factory     # factory UI on http://127.0.0.1:4317
 npm run live-prd    # play the PRD panel on Claude and run the PRD gates on the result
-npm run studio      # zero-token workflow studio on http://127.0.0.1:4320
+npm run studio      # Kodiflex Foundry, the zero-token workflow studio, on http://127.0.0.1:4320
 ```
 
 For the full demo, start the workbench first, then the factory. If the workbench runs somewhere else, set `NORTHWIND_WORKBENCH` (for example `http://127.0.0.1:5173`) when starting the factory. In the factory, step through Begin intake → answers → approve PRD → accept suggestion S-1 → approve architecture → apply the repair → approve tests → record. The trace links open the matching workbench pages. Reset clears the factory session, its sandbox and the workbench ready marks.
@@ -67,9 +67,9 @@ Each seat answers in a fixed JSON shape (`orchestrator/src/schemas.ts`), and the
 
 Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 
-### The workflow studio
+### Kodiflex Foundry, the workflow studio
 
-`npm run studio` serves a demo for passers-by that costs nothing to run. Pick a domain (healthcare, education, FMCG, financial services, logistics) and a workflow: a feature build (requirements, then code, a failing test, a fix and a release gate) or a document or decision. Each run shows the same pipeline as the live panel: two drafts from Claude and Grok that cannot see each other, crossed reviews in which one catches a serious defect, a merge, plain code checks, and a pause for a person to approve. Every output is written in advance and no model is called. The page shows what each call would cost and how long it would take live, priced from the same table as the live runs, and a "Tokens spent" tile that stays at 0. Link straight to a workflow with `#<id>`, for example `http://127.0.0.1:4320/#fmcg-document`.
+`npm run studio` serves Kodiflex Foundry, a demo for passers-by that costs nothing to run. Pick a domain (healthcare, education, FMCG, financial services, logistics) and a workflow: a feature build (requirements, then code, a failing test, a fix and a release gate) or a document or decision. Each run shows the same pipeline as the live panel: two drafts from Claude and Grok that cannot see each other, crossed reviews in which one catches a serious defect, a merge, plain code checks, and a pause for a person to approve. Every output is written in advance and no model is called. The page shows what each call would cost and how long it would take live, priced from the same table as the live runs, and a "Tokens spent" tile that stays at 0. Link straight to a workflow with `#<id>`, for example `http://127.0.0.1:4320/#fmcg-document`.
 
 To add a workflow, drop a JSON file in `packages/studio/workflows/`; `workflows.ts` validates it and expands it into steps, and the tests check that every domain has both kinds and that each run has its caught-it moment.
 
