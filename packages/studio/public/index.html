@@ -865,7 +865,7 @@
             ["Tokens", step.tokens.input.toLocaleString() + " in · " + (done ? step.tokens.output.toLocaleString() : share ? Math.round(step.tokens.output * share).toLocaleString() + "…" : "0") + " out" + (vendor.limit ? " · limit " + vendor.limit : "")],
             ["Timing", done ? "first token " + duration(firstToken) + " · total " + duration(step.seconds) : state === "running" ? "running · " + duration(step.seconds * play.progress) : "not started"],
             ["Stop reason", done ? vendor.stop : "-"],
-            ["Cost if live", money(step.estimatedCostUsd)],
+            ["Cost if live", money(step.estimatedCostUsd) + (step.calibrated && recordings.count ? " (estimate, calibrated on " + recordings.calls + " real calls)" : " (estimate)")],
           ];
           const record = document.createElement("dl");
           record.className = "record tech";
