@@ -117,6 +117,7 @@
       }
       #approve { border: 0; border-radius: 999px; padding: 10px 20px; font: inherit; font-weight: 650; cursor: pointer; white-space: nowrap; }
       .pipe-scroll { overflow-x: auto; }
+      .pipe.dense .node { padding-left: 8px; padding-right: 8px; }
       .pipe { position: relative; display: grid; grid-template-rows: auto 26px auto; column-gap: 22px; padding: 6px 2px; min-width: 980px; }
       .pipe svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
       .pipe path { fill: none; stroke: var(--line); stroke-width: 2; }
@@ -412,7 +413,7 @@
       </section>
 
       <footer>
-        How to read this page: the drafting, review and coding models' outputs were written in advance to show how the workflow behaves, and cost nothing. Model C's small decisions run live when a decision-model key is set, for a fraction of a cent, and say so. The code checks and the build workflows' tests are different: they are real code, and they run in your browser. Model times and costs are estimates of a live run, from the same price table the live runs use. The live, metered version of this pipeline exists for the healthcare requirements step and is run on request.
+        How to read this page: the drafts, reviews, merges and final checks are recordings of real model runs, replayed so the page costs nothing; each step says whether it is recorded, and shows the real time, tokens and cost of the call it replays. Model C's small decisions run live when a decision-model key is set, for a fraction of a cent, and say so. The code checks and the build workflows' tests are real code, and they run in your browser. Steps marked replay or simulated show estimates from the same price table the live runs use. With a passcode, the panel also runs live on your own request.
       </footer>
     </div>
 
@@ -648,7 +649,10 @@
         for (const node of [...pipe.querySelectorAll(".node, .wall")]) node.remove();
         const steps = flow.steps.filter((step) => step.phase === phase);
         const cols = Math.max(...steps.map((step) => step.col)) + 1;
-        pipe.style.gridTemplateColumns = "repeat(" + cols + ", minmax(" + (cols > 8 ? 100 : 118) + "px, 1fr))";
+        // Wide phases (the PRD with its final check has 12 steps) tighten up so the last step, the person, stays on screen.
+        pipe.style.gridTemplateColumns = "repeat(" + cols + ", minmax(" + (cols > 10 ? 84 : cols > 8 ? 100 : 118) + "px, 1fr))";
+        pipe.style.columnGap = cols > 10 ? "14px" : "";
+        pipe.classList.toggle("dense", cols > 10);
         for (const step of steps) {
           const node = document.createElement("button");
           node.type = "button";
@@ -966,7 +970,7 @@
           const rows = step.recorded
             ? [
                 ["Model", step.actor + " · " + vendor.api],
-                ["Request", "A recorded live call, " + new Date(flow.recording.recordedAt).toISOString().slice(0, 16).replace("T", " ") + " UTC"],
+                ["Request", "A recorded live call, " + new Date((step.id.startsWith("final") && flow.recording.finalCheckedAt) || flow.recording.recordedAt).toISOString().slice(0, 16).replace("T", " ") + " UTC"],
                 ["Tokens", step.tokens.input.toLocaleString() + " in · " + step.tokens.output.toLocaleString() + " out"],
                 ["Timing", "took " + duration(step.seconds)],
                 ["Stop reason", vendor.stop],
@@ -1702,7 +1706,7 @@
           title.textContent = flow.deliverable;
           const meta = document.createElement("p");
           meta.className = "meta";
-          meta.textContent = "What this run hands over, after both reviews, the code checks and a person's approval. Like every model step on this page, it was written in advance; no model produced it just now.";
+          meta.textContent = "What this run hands over, after both reviews, " + (flow.steps.some((step) => step.id === "finalCheck") ? "the final check, " : "") + "the code checks and a person's approval. " + (flow.recording ? "The models wrote it in a recorded real run on " + new Date(flow.recording.recordedAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + "; it is replayed here, so nothing is billed now." : "It was prepared in advance to show how the workflow behaves; no model produced it just now.");
           const doc = document.createElement("div");
           doc.className = "doc";
           let list = null;

@@ -37,16 +37,25 @@ against the single draft.
 ## What the final Grok review found
 
 In v4, the strict all-Claude panel had already reviewed and merged each PRD. Grok then reviewed the merged PRD
-once. It raised P0s on **all 8 briefs: 16 P0s and 22 P1s**, and Claude revised every one. Examples:
+once. It raised P0s on **all 8 briefs: 16 P0s and 22 P1s**, and Claude revised every one.
 
-- a scenario expected a deadline that did not match the fixture table;
-- a requirement said "aggregate counts only" while a test expected individual claim ids;
-- the same screen was specified two different ways;
-- work was assigned to a role the policy file does not give it.
+A P0 is the reviewer's own judgement, so every one of the 16 was then checked one by one against the PRD text Grok
+reviewed and the knowledge pack. The checker was Claude Code reading the text, not a person, so a person should
+spot-check it:
 
-Claude accepted most findings and rejected some with reasons. The checklist judges barely moved, because the
-checklist asks whether the PRD covers the brief, not whether it is consistent with itself and the policy files.
-That is the gap the final review fills, and the eval does not yet score it.
+| Verdict | Count | Examples |
+|---|---|---|
+| Real, and serious | 7 | routing a line without an authorization id is "required" in one requirement and a specialist's choice in another (B01); the unmapped-remark resubmit control is specified two incompatible ways (B02); a P0 criterion's count of 1 cannot show which of two claims was counted (B06); the ban on working OA-23 lines misses the upheld and overturned states (B07); a P0 scenario opens a line from a queue that the PRD removes it from (B07) |
+| Real, but minor (rated too high) | 6 | a scenario lists expected values in claim order while the table sorts by days (B03); "only aggregate counts" contradicts the next-action text shown on the same views (B06); an open question about something the criteria already decide (B08) |
+| Not valid | 3 | an unmapped line "shows its next action" in a sentence that also says it stays unmapped (B01); a screen pattern for appealable denials demanded for non-appealable lines (B02) |
+
+So 13 of the 16 were real problems in documents a strict panel had already passed, and 7 of them would have
+produced a wrong build or a release test that cannot decide. The other side of the strict rule: 9 of 16 P0s were
+over-rated or wrong, so the fix step must be free to reject a finding with a reason, as it is.
+
+The checklist judges barely moved, because the checklist asks whether the PRD covers the brief, not whether it is
+consistent with itself and the policy files. That is the gap the final review fills, and the eval does not yet
+score it.
 
 ## Self-review: does Claude rate its own mistakes as seriously?
 
@@ -61,6 +70,6 @@ Claude reviewers still passed documents in which Grok found P0s.
 
 1. Default to the all-Claude panel: it scores as well as anything and is the fastest review setup.
 2. Keep one independent review from a different vendor on the final document before a person approves it. It
-   is where the serious faults are found. It adds about $0.35 and 8 minutes, which can run while the person reads.
+   is where the remaining serious faults were found (7 confirmed in 8 documents). It adds about $0.35 and 8 minutes, which can run while the person reads.
 3. Route low-risk work to one model and a person (Model C decides).
 4. Next for the eval: add a consistency check to the judges, so the score counts what the final review catches.

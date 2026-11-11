@@ -129,5 +129,6 @@
         "note": "Correct: REQ-2 requires the date on every customer-facing time, but AC-1 and AC-3 checked only the clock time. Both now require the notice to show the date. No specific date was added because the facts give none for that shipment."
       }
     ]
-  }
+  },
+  "finalCheckedAt": "2026-11-11T16:59:35.806Z"
 }

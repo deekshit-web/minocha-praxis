@@ -96,5 +96,6 @@
   "finalReview": {
     "findings": [],
     "strengths": "Boundary math matches the rules: 43.0% DTI and score 640 pass at the limits, 44.0% DTI and score 639 fail, and dual failures state both reasons plus that this is not a final decision."
-  }
+  },
+  "finalCheckedAt": "2026-11-11T16:49:17.645Z"
 }
