@@ -279,7 +279,7 @@ export function decisionFor(spec: WorkflowSpec, stepId: string): Decision | null
       questions: findings.map(([, id, severity, title]) => ({
         key: (id ?? "").replace("-", "_"),
         type: "noul" as const,
-        instructions: `Must finding ${id} (${title}) be fixed before this can be approved?`,
+        instructions: `Reviewers rate findings P0 (blocking: must be fixed), P1 (should be fixed before approval) or P2 (optional). Finding ${id} is rated ${severity}: ${title}. Must it be fixed before this is approved?`,
         label: `Must the next step fix ${id} (${(title ?? "").toLowerCase()})?`,
         expect: severity === "P0" || severity === "P1" ? "yes" : "no",
         confidence: (severity === "P0" ? [0.95, 0.99] : severity === "P1" ? [0.68, 0.9] : [0.65, 0.88]) as [number, number],
@@ -300,7 +300,7 @@ export function decisionFor(spec: WorkflowSpec, stepId: string): Decision | null
         return {
           key: (id ?? "").replace("-", "_"),
           type: "noul" as const,
-          instructions: `Is review point ${id} (${title}) worth applying before release, rather than declining it?`,
+          instructions: `Review point ${id} is rated ${severity}: ${title}. P1 points fix a real problem (a bug, a security or privacy risk, or two copies of logic that can drift) and should be applied. P2 points are suggestions about style, naming, comments or libraries; the author may decline them with a reason when the change would add duplication or a dependency for little gain. Should ${id} be applied rather than declined?`,
           label: `Worth applying ${id} (${(title ?? "").toLowerCase()})?`,
           expect: apply ? "yes" : "no",
           confidence: (apply ? (severity === "P1" ? [0.86, 0.97] : [0.6, 0.78]) : [0.7, 0.88]) as [number, number],
@@ -314,7 +314,7 @@ export function decisionFor(spec: WorkflowSpec, stepId: string): Decision | null
     const passed = (smoke.match(/^✓/gm) ?? []).length;
     const rollback = (spec.deploy?.production ?? "").match(/^Rollback plan:.*$/m)?.[0] ?? "";
     return {
-      state: `Smoke tests on staging:\n${smoke}\n\n${rollback}`,
+      state: `Smoke tests on staging: ${passed} passed, 0 failed.\n${smoke.replace(/^✓ /gm, "PASSED: ")}\n\n${rollback}`,
       questions: [
         { key: "smoke", type: "noul", instructions: "Did every smoke test pass?", label: `Did every smoke test pass (${passed} of ${passed})?`, expect: "yes", confidence: [0.97, 0.99] },
         { key: "rollback", type: "noul", instructions: "Is there a clear plan to roll this back if it goes wrong?", label: "Is there a tested rollback plan?", expect: "yes", confidence: [0.9, 0.98] },
@@ -438,7 +438,7 @@ export function expand(spec: WorkflowSpec): Workflow {
       llm({ id: "code", phase: 2, col: 0, row: 1, title: "Write code", caption: "Model A writes the change, and may touch only the files the approved design allows.", given: "The approved PRD and architecture. Not the tests.", output: spec.code ?? "", after: ["archApprove"] }, CLAUDE, SIZE.code),
       llm({ id: "codeReview", phase: 2, col: 1, row: 1, title: "Code review", caption: "Model B reviews Model A's code, as a second engineer would.", given: "The code change and the architecture.", output: review?.review ?? "", after: ["code"], verdict: reviewVerdict(review?.review ?? "") }, GROK, SIZE.codeReview),
       llm({ id: "reviewTriage", phase: 2, col: 2, row: 1, title: "Decide", caption: "Model C decides which review points are worth applying, each with a confidence score.", given: "The review's points.", output: decisionText(spec, "reviewTriage"), after: ["codeReview"] }, JEV, SIZE.decide),
-      llm({ id: "codeRevise", phase: 2, col: 3, row: 1, title: "Apply review", caption: "Model A applies the points Model C marked, and records why it declines the rest.", given: "The code, the review and the decision.", output: review?.revise ?? "", after: ["reviewTriage"] }, CLAUDE, SIZE.codeRevise),
+      llm({ id: "codeRevise", phase: 2, col: 3, row: 1, title: "Apply review", caption: "Model A applies the points Model C marked, and records its reason wherever it declines one.", given: "The code, the review and the decision.", output: review?.revise ?? "", after: ["reviewTriage"] }, CLAUDE, SIZE.codeRevise),
       llm({ id: "unitTests", phase: 2, col: 4, row: 1, title: "Unit tests", caption: "Model A writes unit tests for its own code.", given: "Its own code.", output: spec.unitScript ?? "", after: ["codeRevise"] }, CLAUDE, SIZE.unitTests),
       step({ id: "unitRun", kind: "tool", phase: 2, col: 5, row: 1, title: "Run unit tests", actor: "Test runner", caption: "Model A's unit tests pass. But an author tests what they thought of; the next stage tests what was asked for.", given: "Claude's unit tests and code.", output: spec.unitRun ?? "", after: ["unitTests"], seconds: 10, verdict: "pass" }),
       llm({ id: "testCases", phase: 3, col: 0, row: 1, title: "Test cases", caption: "Model B turns every acceptance criterion into test cases. It works from the PRD and has never seen the code.", given: "The approved PRD only. Not the code.", output: spec.testCases ?? "", after: ["approve"] }, GROK, SIZE.testCases),

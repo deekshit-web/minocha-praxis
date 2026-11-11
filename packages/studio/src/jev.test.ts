@@ -66,3 +66,14 @@ test("an error or an unreadable answer falls back to the replay", async () => {
   const garbled = createDecider({ apiKey: "test-key", fetchImpl: fakeJev(() => ({ answers: {} })).fetchImpl });
   assert.match((await garbled.decide(spec, "route"))?.reason ?? "", /could not be read/);
 });
+
+test("a live answer that differs from what happens next is reported, not hidden", async () => {
+  const unsure = (body: { questions: Record<string, { type: string }> }) => ({
+    answers: Object.fromEntries(Object.keys(body.questions).map((key) => [key, { type: "noul", noul: key === "CR_3" ? 0.54 : 0.95 }])),
+    usage: { input_tokens: 500 },
+  });
+  const decider = createDecider({ apiKey: "test-key", fetchImpl: fakeJev(unsure).fetchImpl });
+  const result = await decider.decide(spec, "reviewTriage");
+  assert.equal(result?.disagreements?.length, 1);
+  assert.match(result?.disagreements?.[0] ?? "", /CR-3.*said yes \(0\.54, a close call\).*went with no/);
+});

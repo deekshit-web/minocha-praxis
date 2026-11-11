@@ -17,6 +17,8 @@ export interface DecisionResult {
   costUsd?: number;
   reason?: string;
   cached?: boolean;
+  /** Live answers that differ from what the prepared run does next, so the page can say so. */
+  disagreements?: string[];
 }
 
 export interface DeciderOptions {
@@ -84,8 +86,16 @@ export function createDecider(options: DeciderOptions = {}) {
       answers[question.key] = answer;
     }
     const inputTokens = body.usage?.input_tokens ?? 0;
+    const disagreements = decision.questions.flatMap((question) => {
+      const answer = answers[question.key];
+      const said = answer?.type === "noul" ? (answer.noul >= 0.5 ? "yes" : "no") : answer?.type === "choice" ? answer.choice : "";
+      if (said === question.expect) return [];
+      const sure = answer?.type === "noul" ? Math.max(answer.noul, 1 - answer.noul) : answer?.type === "choice" ? (answer.probabilities[answer.choice] ?? 0) : 0;
+      return [`${question.label} Model C said ${said} (${sure.toFixed(2)}${sure < 0.6 ? ", a close call" : ""}); in this run the next step went with ${question.expect}.`];
+    });
     return {
       live: true,
+      disagreements,
       text: formatDecision(decision, answers),
       model: body.model ?? JEV_MODEL,
       ms: now() - started,

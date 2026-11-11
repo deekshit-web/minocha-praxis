@@ -767,7 +767,9 @@
         const heading = document.createElement("h3");
         const badge = document.createElement("span");
         badge.className = "badge" + (step.kind === "llm" ? " llm" : "");
-        badge.textContent = step.actor === "jev-1.14.0" ? "Simulated decision" : KIND_BADGE[step.kind];
+        const liveDecision = step.actor === "jev-1.14.0" && decisions[flow.id + ":" + step.id] && decisions[flow.id + ":" + step.id].live;
+        badge.textContent = step.actor === "jev-1.14.0" ? (liveDecision ? "Live decision" : "Simulated decision") : KIND_BADGE[step.kind];
+        if (liveDecision) badge.style.background = "#d9efe2";
         heading.append(badge, document.createTextNode(step.title + (step.kind === "llm" ? " · " + modelLabel(step.actor) : "")));
         const meta = document.createElement("p");
         meta.className = "meta";
@@ -876,7 +878,13 @@
           }
           if (decision) meta.textContent = decisionNote(decision);
           const body = decision && !decision.pending ? decision.text : decision ? "" : realUnit ? TESTS.report(TESTS.runTests(flow.id, "first", "unit")) : realTests ? TESTS.report(testRun(step.id === "testsRed" ? "first" : "fixed").results) : step.id === "checks" && liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name + "\n  " + check.detail).join("\n") : step.output;
-          const pre = section(step.kind === "human" ? "Outcome" : state === "blocked" ? "Failed" : "Produced", body, state === "running" ? share : undefined);
+          const pre = section(step.kind === "human" ? "Outcome" : state === "blocked" ? "Failed" : "Produced", body, state === "running" && !decision ? share : undefined);
+          if (decision && decision.live && decision.disagreements && decision.disagreements.length) {
+            const note = document.createElement("p");
+            note.className = "approving";
+            note.textContent = "This live answer differs from what happens next in this run. " + decision.disagreements.join(" ") + " A person sees both at approval.";
+            detail.appendChild(note);
+          }
           if (state === "running") pre.scrollTop = pre.scrollHeight;
         }
       }
@@ -973,7 +981,10 @@
           return "Approved · " + (fixed ? fixed[1] + " defects fixed" : "checked");
         }
         if (name === "Architecture") return "Approved · " + count(out("archReview"), /^AR-\d/gm) + " findings resolved";
-        if (name === "Code") return new Set(out("code").match(/(?:src|packages|migrations)\/[\w./*-]+\.(?:ts|tsx|sql)/g) || []).size + " files written";
+        if (name === "Code") {
+          const files = new Set(out("code").match(/(?:src|packages|migrations)\/[\w./*-]+\.(?:ts|tsx|sql)/g) || []).size;
+          return files + (files === 1 ? " file written" : " files written");
+        }
         if (name === "Code review") {
           const revise = out("codeRevise");
           return count(out("codeReview"), /^CR-\d/gm) + " findings · " + count(revise, / applied/g) + " applied · " + count(revise, / declined/g) + " declined";
