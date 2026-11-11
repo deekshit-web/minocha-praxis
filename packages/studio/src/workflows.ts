@@ -51,13 +51,13 @@ const SpecSchema = z.object({
    */
   testCases: Text.optional(),
   testScript: Text.optional(),
-  /** Build: the architecture Claude proposes, Grok's review of it, the revision, its checks and its approval. */
+  /** Build: the architecture Model A proposes, Model B's review of it, the revision, its checks and its approval. */
   architecture: z
     .object({ draft: Text, review: Text, final: Text, checks: z.array(z.object({ name: Text, detail: Text })).min(2), approval: Text })
     .optional(),
-  /** Build: Grok's review of Claude's code, and what Claude applied or declined. */
+  /** Build: Model B's review of Model A's code, and what Model A applied or declined. */
   codeReview: z.object({ review: Text, revise: Text }).optional(),
-  /** Build: Claude's own unit tests, and their run on the code as first written (generated from public/tests.js). */
+  /** Build: Model A's own unit tests, and their run on the code as first written (generated from public/tests.js). */
   unitScript: Text.optional(),
   unitRun: Text.optional(),
   /** Build: staging, smoke tests, the production approval and the rollout. */
@@ -127,6 +127,8 @@ export interface Workflow {
   output: string;
   contrast: { draft: "A" | "B"; before: string; after: string; why: string };
   phases: string[];
+  /** What each model's role is, keyed by model id. */
+  models: typeof MODELS;
   /** The stages this workflow walks through, in order: software development for a build. */
   stages: string[];
   /** Where two steps are walled off from each other: the two drafts, and in a build the tests and the code. */
@@ -138,6 +140,17 @@ export interface Workflow {
 
 const CLAUDE = "claude-opus-5";
 const GROK = "grok-4.7";
+const JEV = "jev-1.14.0";
+
+/**
+ * The three roles a workflow uses. The page names them by role, so any model can fill one; the model ids below
+ * are what this replay assumes, shown only in the technical view.
+ */
+export const MODELS: Record<string, { label: string; role: string; qualities: string }> = {
+  [CLAUDE]: { label: "Model A", role: "Builder", qualities: "Deep reasoning. Writes the PRD, the design, the code and the fixes." },
+  [GROK]: { label: "Model B", role: "Checker", qualities: "An independent model from a different vendor, fast and low-cost. Reviews the builder's work and writes the tests." },
+  [JEV]: { label: "Model C", role: "Decider", qualities: "A decision model. Answers yes/no and multiple-choice questions with a confidence score in about 0.1 s, for a fraction of a cent. It cannot write text, so it cannot make things up." },
+};
 
 /** Typical sizes from the real Claude + Grok PRD run, so estimates sit near what a live run would cost. */
 const SIZE = {
@@ -147,6 +160,7 @@ const SIZE = {
   reviewClaude: { input: 25_000, output: 7_000, seconds: 94 },
   reviewGrok: { input: 25_000, output: 1_200, seconds: 259 },
   merge: { input: 45_000, output: 25_000, seconds: 320 },
+  decide: { input: 3_000, output: 0, seconds: 0.1 },
   archDraft: { input: 22_000, output: 5_000, seconds: 150 },
   archReview: { input: 20_000, output: 1_500, seconds: 200 },
   archFinal: { input: 28_000, output: 6_000, seconds: 170 },
@@ -184,17 +198,187 @@ function reviewVerdict(review: string): "pass" | "flagged" {
   return /\bP0\b/.test(review) ? "flagged" : "pass";
 }
 
+/** A probability fixed per workflow and question, so a replay shows the same decision every time. */
+function confidence(key: string, low: number, high: number): string {
+  return (low + (spread(key) - 0.75) / 0.55 * (high - low)).toFixed(2);
+}
+
+/** How risky each workflow is, and whether it touches personal, health or financial data. */
+const RISK: Record<string, { level: "high" | "medium"; data: boolean }> = {
+  "healthcare-build": { level: "high", data: true },
+  "healthcare-document": { level: "high", data: true },
+  "education-build": { level: "high", data: true },
+  "education-document": { level: "medium", data: false },
+  "fmcg-build": { level: "medium", data: false },
+  "fmcg-document": { level: "medium", data: false },
+  "finance-build": { level: "high", data: true },
+  "finance-document": { level: "high", data: true },
+  "logistics-build": { level: "medium", data: true },
+  "logistics-document": { level: "medium", data: false },
+};
+
+/** One typed question for the decision model. `expect` and the confidence range drive the replay's answer. */
+export interface DecisionQuestion {
+  key: string;
+  type: "noul" | "choice";
+  /** What the decision model is asked. */
+  instructions: string;
+  /** Choice questions: each option and what it means. */
+  criteria?: Record<string, string>;
+  /** How the question reads on the page. */
+  label: string;
+  expect: string;
+  confidence: [number, number];
+}
+
+export type DecisionAnswer = { type: "noul"; noul: number } | { type: "choice"; choice: string; probabilities: Record<string, number> };
+
+/** A decision the decision model makes: what it reads, what it is asked, and how its answers are concluded. */
+export interface Decision {
+  state: string;
+  questions: DecisionQuestion[];
+  conclude(answers: Record<string, DecisionAnswer>): string;
+}
+
+const yesNo = (answer: DecisionAnswer | undefined) => answer?.type === "noul" && answer.noul >= 0.5;
+
+/** The questions behind each of Model C's steps, built from the workflow's own content. */
+export function decisionFor(spec: WorkflowSpec, stepId: string): Decision | null {
+  const risk = RISK[spec.id] ?? { level: "high", data: true };
+  if (stepId === "route")
+    return {
+      state: `Project: ${spec.project}\nRequested by: ${spec.requester}\nRequest: ${spec.brief}`,
+      questions: [
+        {
+          key: "risk",
+          type: "choice",
+          instructions: "How risky is this change if it is wrong?",
+          criteria: {
+            low: "A small, contained change; a mistake is cheap and easy to undo.",
+            medium: "A mistake costs money or time, or misleads customers or staff, but harms no one's rights, health or finances.",
+            high: "A mistake could harm someone's health, privacy, finances or legal rights, or breach a regulation.",
+          },
+          label: "How risky is this change?",
+          expect: risk.level,
+          confidence: [0.78, 0.93],
+        },
+        { key: "data", type: "noul", instructions: "Does this change touch personal, health or financial data about people?", label: "Does it touch personal, health or financial data?", expect: risk.data ? "yes" : "no", confidence: [0.88, 0.98] },
+        { key: "single", type: "noul", instructions: "Can a single AI model, working alone with no independent review, handle this change safely?", label: "Can one model handle it safely on its own?", expect: "no", confidence: [0.84, 0.96] },
+      ],
+      conclude(answers) {
+        const level = answers.risk?.type === "choice" ? answers.risk.choice : "high";
+        return level === "low" && yesNo(answers.single)
+          ? "Decision: one model and a person. A low-risk change does not need the full panel."
+          : "Decision: the full panel. Two independent models check each other, and a person signs off at every gate.\nA low-risk request, such as fixing a typo, would go to one model and a person, at a fraction of the cost.";
+      },
+    };
+  if (stepId === "triage") {
+    const findings = [...`${spec.reviewOfA}\n${spec.reviewOfB}`.matchAll(/^(D-[AB]\d+) · (P\d) · (.+)$/gm)];
+    return {
+      state: `${spec.reviewOfA}\n\n${spec.reviewOfB}`,
+      questions: findings.map(([, id, severity, title]) => ({
+        key: (id ?? "").replace("-", "_"),
+        type: "noul" as const,
+        instructions: `Reviewers rate findings P0 (blocking: must be fixed), P1 (should be fixed before approval) or P2 (optional). Finding ${id} is rated ${severity}: ${title}. Must it be fixed before this is approved?`,
+        label: `Must the next step fix ${id} (${(title ?? "").toLowerCase()})?`,
+        expect: severity === "P0" || severity === "P1" ? "yes" : "no",
+        confidence: (severity === "P0" ? [0.95, 0.99] : severity === "P1" ? [0.68, 0.9] : [0.65, 0.88]) as [number, number],
+      })),
+      conclude(answers) {
+        const must = findings.map(([, id]) => id ?? "").filter((id) => yesNo(answers[id.replace("-", "_")]));
+        return `Decision: ${must.length ? `must fix ${must.join(", ")}` : "nothing blocks"}.`;
+      },
+    };
+  }
+  if (stepId === "reviewTriage") {
+    const revise = spec.codeReview?.revise ?? "";
+    const findings = [...(spec.codeReview?.review ?? "").matchAll(/^(CR-\d+) · (P\d) · (.+)$/gm)];
+    return {
+      state: `${spec.codeReview?.review ?? ""}\n\nThe change:\n${spec.code ?? ""}`,
+      questions: findings.map(([, id, severity, title]) => {
+        const apply = new RegExp(`^${id} applied`, "m").test(revise);
+        return {
+          key: (id ?? "").replace("-", "_"),
+          type: "noul" as const,
+          instructions: `Review point ${id} is rated ${severity}: ${title}. P1 points fix a real problem (a bug, a security or privacy risk, or two copies of logic that can drift) and should be applied. P2 points are suggestions about style, naming, comments or libraries; the author may decline them with a reason when the change would add duplication or a dependency for little gain. Should ${id} be applied rather than declined?`,
+          label: `Worth applying ${id} (${(title ?? "").toLowerCase()})?`,
+          expect: apply ? "yes" : "no",
+          confidence: (apply ? (severity === "P1" ? [0.86, 0.97] : [0.6, 0.78]) : [0.7, 0.88]) as [number, number],
+        };
+      }),
+      conclude: () => "Decision: apply the points marked yes; the builder records why it declines the rest.",
+    };
+  }
+  if (stepId === "goNoGo") {
+    const smoke = spec.deploy?.smoke ?? "";
+    const passed = (smoke.match(/^✓/gm) ?? []).length;
+    const rollback = (spec.deploy?.production ?? "").match(/^Rollback plan:.*$/m)?.[0] ?? "";
+    return {
+      state: `Smoke tests on staging: ${passed} passed, 0 failed.\n${smoke.replace(/^✓ /gm, "PASSED: ")}\n\n${rollback}`,
+      questions: [
+        { key: "smoke", type: "noul", instructions: "Did every smoke test pass?", label: `Did every smoke test pass (${passed} of ${passed})?`, expect: "yes", confidence: [0.97, 0.99] },
+        { key: "rollback", type: "noul", instructions: "Is there a clear plan to roll this back if it goes wrong?", label: "Is there a tested rollback plan?", expect: "yes", confidence: [0.9, 0.98] },
+        { key: "risk", type: "noul", instructions: "Is there any sign this release would harm real users?", label: "Any sign of risk to real users?", expect: "no", confidence: [0.86, 0.95] },
+      ],
+      conclude: (answers) =>
+        yesNo(answers.smoke) && yesNo(answers.rollback) && !yesNo(answers.risk) ? "Recommendation: go. A person makes the final call." : "Recommendation: no-go. A person should look before anything ships.",
+    };
+  }
+  return null;
+}
+
+/** The answers a replay shows: the expected answer, with a confidence fixed per workflow and question. */
+export function replayAnswers(spec: WorkflowSpec, stepId: string, decision: Decision): Record<string, DecisionAnswer> {
+  const answers: Record<string, DecisionAnswer> = {};
+  for (const question of decision.questions) {
+    const p = Number(confidence(`${spec.id}:${stepId}:${question.key}`, question.confidence[0], question.confidence[1]));
+    if (question.type === "noul") answers[question.key] = { type: "noul", noul: question.expect === "yes" ? p : Number((1 - p).toFixed(2)) };
+    else {
+      const options = Object.keys(question.criteria ?? {});
+      const rest = 1 - p;
+      const others = options.filter((option) => option !== question.expect);
+      const probabilities: Record<string, number> = {};
+      others.forEach((option, index) => (probabilities[option] = Number((rest * (index === 0 ? 0.25 : 0.75)).toFixed(2))));
+      probabilities[question.expect] = p;
+      answers[question.key] = { type: "choice", choice: question.expect, probabilities };
+    }
+  }
+  return answers;
+}
+
+/** How a decision reads on the page, whether the answers are live or replayed. */
+export function formatDecision(decision: Decision, answers: Record<string, DecisionAnswer>): string {
+  const lines = decision.questions.map((question) => {
+    const answer = answers[question.key];
+    if (!answer) return `${question.label}  → no answer`;
+    if (answer.type === "noul") {
+      const yes = answer.noul >= 0.5;
+      return `${question.label}  → ${yes ? "yes" : "no"} · ${(yes ? answer.noul : 1 - answer.noul).toFixed(2)}`;
+    }
+    const options = Object.keys(question.criteria ?? answer.probabilities);
+    const spread = options.map((option) => `${option} ${(answer.probabilities[option] ?? 0).toFixed(2)}`).join(" · ");
+    return `${question.label}  → ${answer.choice} · ${(answer.probabilities[answer.choice] ?? 0).toFixed(2)}  (${spread})`;
+  });
+  return [...lines, decision.conclude(answers)].join("\n");
+}
+
+function decisionText(spec: WorkflowSpec, stepId: string): string {
+  const decision = decisionFor(spec, stepId);
+  return decision ? formatDecision(decision, replayAnswers(spec, stepId, decision)) : "";
+}
+
 /** Both shapes share the panel: two walled-off drafts, crossed reviews, one merge, code checks, a person. */
 function panel(spec: WorkflowSpec, startCol: number, inputs: string[]): Step[] {
   const c = startCol;
   return [
-    llm({ id: "draftA", phase: 0, col: c, row: 0, title: "Draft A", caption: "Claude writes a first draft from the brief. It cannot see the other draft.", given: "The brief and everything gathered so far. Not draft B.", output: spec.draftA, after: inputs }, CLAUDE, SIZE.draftClaude),
-    llm({ id: "draftB", phase: 0, col: c, row: 2, title: "Draft B", caption: "Grok writes its own draft, separately. Two different models bring two different sets of blind spots.", given: "The same brief and material. Not draft A.", output: spec.draftB, after: inputs }, GROK, SIZE.draftGrok),
-    llm({ id: "reviewOfB", phase: 0, col: c + 1, row: 0, title: "Claude reviews B", caption: "Claude reviews Grok's draft for defects. No model reviews its own work.", given: "Draft B only.", output: spec.reviewOfB, after: ["draftB"], verdict: reviewVerdict(spec.reviewOfB) }, CLAUDE, SIZE.reviewClaude),
-    llm({ id: "reviewOfA", phase: 0, col: c + 1, row: 2, title: "Grok reviews A", caption: "Grok reviews Claude's draft the same way.", given: "Draft A only.", output: spec.reviewOfA, after: ["draftA"], verdict: reviewVerdict(spec.reviewOfA) }, GROK, SIZE.reviewGrok),
-    llm({ id: "merge", phase: 0, col: c + 2, row: 1, title: "Merge", caption: "Claude merges both drafts and has to resolve every serious defect either review raised.", given: "Both drafts and both reviews.", output: spec.synthesis, after: ["reviewOfA", "reviewOfB"], verdict: "pass" }, CLAUDE, SIZE.merge),
-    step({ id: "checks", kind: "check", phase: 0, col: c + 3, row: 1, title: "Code checks", actor: "No model", caption: "Plain code checks verify the result. No model is involved here.", given: "The merged result.", output: spec.checks.map((item) => `✓ ${item.name}\n  ${item.detail}`).join("\n"), after: ["merge"], seconds: 1, verdict: "pass" }),
-    step({ id: "approve", kind: "human", phase: 0, col: c + 4, row: 1, title: "You approve", actor: "Person", caption: "A person approves. Nothing moves forward without it.", given: "The checked result, both drafts, and both reviews.", output: spec.approval, after: ["checks"], seconds: 0 }),
+    llm({ id: "draftA", phase: 0, col: c, row: 0, title: "Draft A", caption: "Model A writes a first draft from the brief. It cannot see the other draft.", given: "The brief and everything gathered so far. Not draft B.", output: spec.draftA, after: inputs }, CLAUDE, SIZE.draftClaude),
+    llm({ id: "draftB", phase: 0, col: c, row: 2, title: "Draft B", caption: "Model B writes its own draft, separately. Two different models bring two different sets of blind spots.", given: "The same brief and material. Not draft A.", output: spec.draftB, after: inputs }, GROK, SIZE.draftGrok),
+    llm({ id: "reviewOfB", phase: 0, col: c + 1, row: 0, title: "A reviews B", caption: "Model A reviews Model B's draft for defects. No model reviews its own work.", given: "Draft B only.", output: spec.reviewOfB, after: ["draftB"], verdict: reviewVerdict(spec.reviewOfB) }, CLAUDE, SIZE.reviewClaude),
+    llm({ id: "reviewOfA", phase: 0, col: c + 1, row: 2, title: "B reviews A", caption: "Model B reviews Model A's draft the same way.", given: "Draft A only.", output: spec.reviewOfA, after: ["draftA"], verdict: reviewVerdict(spec.reviewOfA) }, GROK, SIZE.reviewGrok),
+    llm({ id: "triage", phase: 0, col: c + 2, row: 1, title: "Triage", caption: "Model C, a fast decision model, decides which findings the merge must fix, each with a confidence score. It costs a fraction of a cent.", given: "Both reviews' findings.", output: decisionText(spec, "triage"), after: ["reviewOfA", "reviewOfB"] }, JEV, SIZE.decide),
+    llm({ id: "merge", phase: 0, col: c + 3, row: 1, title: "Merge", caption: "Model A merges both drafts and has to resolve every finding Model C marked.", given: "Both drafts, both reviews and the triage.", output: spec.synthesis, after: ["triage"], verdict: "pass" }, CLAUDE, SIZE.merge),
+    step({ id: "checks", kind: "check", phase: 0, col: c + 4, row: 1, title: "Code checks", actor: "No model", caption: "Plain code checks verify the result. No model is involved here.", given: "The merged result.", output: spec.checks.map((item) => `✓ ${item.name}\n  ${item.detail}`).join("\n"), after: ["merge"], seconds: 1, verdict: "pass" }),
+    step({ id: "approve", kind: "human", phase: 0, col: c + 5, row: 1, title: "You approve", actor: "Person", caption: "A person approves. Nothing moves forward without it.", given: "The checked result, both drafts, and both reviews.", output: spec.approval, after: ["checks"], seconds: 0 }),
   ];
 }
 
@@ -209,7 +393,7 @@ function resize(item: Step, factor: number): Step {
   return {
     ...item,
     tokens,
-    seconds: Math.round(item.seconds * factor),
+    seconds: item.seconds < 1 ? item.seconds : Math.round(item.seconds * factor),
     estimatedCostUsd: callCost(item.actor, { inputTokens: tokens.input, outputTokens: tokens.output, cacheReadTokens: 0, cacheWriteTokens: 0 }),
   };
 }
@@ -236,54 +420,58 @@ export function expand(spec: WorkflowSpec): Workflow {
   let walls: Workflow["walls"];
   if (spec.kind === "build") {
     phases = ["PRD", "Architecture", "Code and review", "Test", "Deploy"];
-    walls = [{ phase: 0, col: 3, span: 1, label: "cannot see each other" }];
+    walls = [{ phase: 0, col: 4, span: 1, label: "cannot see each other" }];
     const arch = spec.architecture;
     const review = spec.codeReview;
     const deploy = spec.deploy;
     steps = [
       brief,
-      llm({ id: "clarify", phase: 0, col: 1, row: 1, title: "Questions", caption: "Claude asks the few questions whose answers change what gets built.", given: "The brief.", output: spec.questions ?? "", after: ["brief"] }, CLAUDE, SIZE.clarify),
-      step({ id: "answers", kind: "human", phase: 0, col: 2, row: 1, title: "Your answers", actor: "Requester", caption: "The requester answers. Their answers become the agreed assumptions.", given: "The questions.", output: spec.answers ?? "", after: ["clarify"], seconds: 0 }),
-      ...panel(spec, 3, ["answers"]),
-      llm({ id: "archDraft", phase: 1, col: 0, row: 1, title: "Architecture", caption: "Claude designs how to build it: the components, the data, and the exact files it may change.", given: "The approved PRD.", output: arch?.draft ?? "", after: ["approve"] }, CLAUDE, SIZE.archDraft),
-      llm({ id: "archReview", phase: 1, col: 1, row: 1, title: "Grok reviews it", caption: "Grok reviews the design before any code exists, when a mistake is cheapest to fix.", given: "The PRD and the architecture.", output: arch?.review ?? "", after: ["archDraft"], verdict: reviewVerdict(arch?.review ?? "") }, GROK, SIZE.archReview),
-      llm({ id: "archFinal", phase: 1, col: 2, row: 1, title: "Revise", caption: "Claude revises the design to resolve every finding.", given: "The architecture and Grok's review.", output: arch?.final ?? "", after: ["archReview"], verdict: "pass" }, CLAUDE, SIZE.archFinal),
+      llm({ id: "route", phase: 0, col: 1, row: 1, title: "Route", caption: "Model C, a fast decision model, judges how risky the request is and how much checking it needs, in about a tenth of a second.", given: "The brief.", output: decisionText(spec, "route"), after: ["brief"] }, JEV, SIZE.decide),
+      llm({ id: "clarify", phase: 0, col: 2, row: 1, title: "Questions", caption: "Model A asks the few questions whose answers change what gets built.", given: "The brief.", output: spec.questions ?? "", after: ["route"] }, CLAUDE, SIZE.clarify),
+      step({ id: "answers", kind: "human", phase: 0, col: 3, row: 1, title: "Your answers", actor: "Requester", caption: "The requester answers. Their answers become the agreed assumptions.", given: "The questions.", output: spec.answers ?? "", after: ["clarify"], seconds: 0 }),
+      ...panel(spec, 4, ["answers"]),
+      llm({ id: "archDraft", phase: 1, col: 0, row: 1, title: "Architecture", caption: "Model A designs how to build it: the components, the data, and the exact files it may change.", given: "The approved PRD.", output: arch?.draft ?? "", after: ["approve"] }, CLAUDE, SIZE.archDraft),
+      llm({ id: "archReview", phase: 1, col: 1, row: 1, title: "B reviews it", caption: "Model B reviews the design before any code exists, when a mistake is cheapest to fix.", given: "The PRD and the architecture.", output: arch?.review ?? "", after: ["archDraft"], verdict: reviewVerdict(arch?.review ?? "") }, GROK, SIZE.archReview),
+      llm({ id: "archFinal", phase: 1, col: 2, row: 1, title: "Revise", caption: "Model A revises the design to resolve every finding.", given: "The architecture and Grok's review.", output: arch?.final ?? "", after: ["archReview"], verdict: "pass" }, CLAUDE, SIZE.archFinal),
       step({ id: "archChecks", kind: "check", phase: 1, col: 3, row: 1, title: "Design checks", actor: "No model", caption: "Code checks confirm every requirement has a home and the file fence is tight.", given: "The PRD and the revised architecture.", output: (arch?.checks ?? []).map((item) => `✓ ${item.name}\n  ${item.detail}`).join("\n"), after: ["archFinal"], seconds: 1, verdict: "pass" }),
       step({ id: "archApprove", kind: "human", phase: 1, col: 4, row: 1, title: "You approve", actor: "Person", caption: "A person approves the design. Code starts only after this.", given: "The architecture, the review and the checks.", output: arch?.approval ?? "", after: ["archChecks"], seconds: 0 }),
-      llm({ id: "code", phase: 2, col: 0, row: 1, title: "Write code", caption: "Claude writes the change, and may touch only the files the approved design allows.", given: "The approved PRD and architecture. Not the tests.", output: spec.code ?? "", after: ["archApprove"] }, CLAUDE, SIZE.code),
-      llm({ id: "codeReview", phase: 2, col: 1, row: 1, title: "Code review", caption: "Grok reviews Claude's code, as a second engineer would.", given: "The code change and the architecture.", output: review?.review ?? "", after: ["code"], verdict: reviewVerdict(review?.review ?? "") }, GROK, SIZE.codeReview),
-      llm({ id: "codeRevise", phase: 2, col: 2, row: 1, title: "Apply review", caption: "Claude applies the findings it agrees with, and says why it declines the rest.", given: "The code and the review.", output: review?.revise ?? "", after: ["codeReview"] }, CLAUDE, SIZE.codeRevise),
-      llm({ id: "unitTests", phase: 2, col: 3, row: 1, title: "Unit tests", caption: "Claude writes unit tests for its own code.", given: "Its own code.", output: spec.unitScript ?? "", after: ["codeRevise"] }, CLAUDE, SIZE.unitTests),
-      step({ id: "unitRun", kind: "tool", phase: 2, col: 4, row: 1, title: "Run unit tests", actor: "Test runner", caption: "Claude's unit tests pass. But an author tests what they thought of; the next stage tests what was asked for.", given: "Claude's unit tests and code.", output: spec.unitRun ?? "", after: ["unitTests"], seconds: 10, verdict: "pass" }),
-      llm({ id: "testCases", phase: 3, col: 0, row: 1, title: "Test cases", caption: "Grok turns every acceptance criterion into test cases. It works from the PRD and has never seen the code.", given: "The approved PRD only. Not the code.", output: spec.testCases ?? "", after: ["approve"] }, GROK, SIZE.testCases),
-      llm({ id: "testScript", phase: 3, col: 1, row: 1, title: "Test script", caption: "Grok writes the test cases as a runnable test script.", given: "The test cases and the code's public interface. Not its implementation.", output: spec.testScript ?? "", after: ["testCases"] }, GROK, SIZE.testScript),
-      step({ id: "testsRed", kind: "tool", phase: 3, col: 2, row: 1, title: "Run tests", actor: "Test runner", caption: "Grok's tests run against Claude's code, and one fails: a bug that passed code review and Claude's own unit tests.", given: "Grok's test script and Claude's code.", output: spec.testsRed ?? "", after: ["testScript", "unitRun"], seconds: 20, verdict: "flagged" }),
-      llm({ id: "fix", phase: 3, col: 3, row: 1, title: "Fix", caption: "Claude reads the failing test and makes one targeted fix.", given: "The failing test output and the code.", output: spec.fix ?? "", after: ["testsRed"] }, CLAUDE, SIZE.fix),
+      llm({ id: "code", phase: 2, col: 0, row: 1, title: "Write code", caption: "Model A writes the change, and may touch only the files the approved design allows.", given: "The approved PRD and architecture. Not the tests.", output: spec.code ?? "", after: ["archApprove"] }, CLAUDE, SIZE.code),
+      llm({ id: "codeReview", phase: 2, col: 1, row: 1, title: "Code review", caption: "Model B reviews Model A's code, as a second engineer would.", given: "The code change and the architecture.", output: review?.review ?? "", after: ["code"], verdict: reviewVerdict(review?.review ?? "") }, GROK, SIZE.codeReview),
+      llm({ id: "reviewTriage", phase: 2, col: 2, row: 1, title: "Decide", caption: "Model C decides which review points are worth applying, each with a confidence score.", given: "The review's points.", output: decisionText(spec, "reviewTriage"), after: ["codeReview"] }, JEV, SIZE.decide),
+      llm({ id: "codeRevise", phase: 2, col: 3, row: 1, title: "Apply review", caption: "Model A applies the points Model C marked, and records its reason wherever it declines one.", given: "The code, the review and the decision.", output: review?.revise ?? "", after: ["reviewTriage"] }, CLAUDE, SIZE.codeRevise),
+      llm({ id: "unitTests", phase: 2, col: 4, row: 1, title: "Unit tests", caption: "Model A writes unit tests for its own code.", given: "Its own code.", output: spec.unitScript ?? "", after: ["codeRevise"] }, CLAUDE, SIZE.unitTests),
+      step({ id: "unitRun", kind: "tool", phase: 2, col: 5, row: 1, title: "Run unit tests", actor: "Test runner", caption: "Model A's unit tests pass. But an author tests what they thought of; the next stage tests what was asked for.", given: "Claude's unit tests and code.", output: spec.unitRun ?? "", after: ["unitTests"], seconds: 10, verdict: "pass" }),
+      llm({ id: "testCases", phase: 3, col: 0, row: 1, title: "Test cases", caption: "Model B turns every acceptance criterion into test cases. It works from the PRD and has never seen the code.", given: "The approved PRD only. Not the code.", output: spec.testCases ?? "", after: ["approve"] }, GROK, SIZE.testCases),
+      llm({ id: "testScript", phase: 3, col: 1, row: 1, title: "Test script", caption: "Model B writes the test cases as a runnable test script.", given: "The test cases and the code's public interface. Not its implementation.", output: spec.testScript ?? "", after: ["testCases"] }, GROK, SIZE.testScript),
+      step({ id: "testsRed", kind: "tool", phase: 3, col: 2, row: 1, title: "Run tests", actor: "Test runner", caption: "Model B's tests run against Model A's code, and one fails: a bug that passed code review and Model A's own unit tests.", given: "Model B's test script and Model A's code.", output: spec.testsRed ?? "", after: ["testScript", "unitRun"], seconds: 20, verdict: "flagged" }),
+      llm({ id: "fix", phase: 3, col: 3, row: 1, title: "Fix", caption: "Model A reads the failing test and makes one targeted fix.", given: "The failing test output and the code.", output: spec.fix ?? "", after: ["testsRed"] }, CLAUDE, SIZE.fix),
       step({ id: "testsGreen", kind: "tool", phase: 3, col: 4, row: 1, title: "Tests again", actor: "Test runner", caption: "The same tests run again, with the unit tests, and all pass.", given: "The fixed code.", output: spec.testsGreen ?? "", after: ["fix"], seconds: 20, verdict: "pass" }),
       step({ id: "release", kind: "check", phase: 4, col: 0, row: 1, title: "Release gate", actor: "No model", caption: "The release gate re-checks approvals, tests and data rules before anything ships.", given: "Approvals, test results and scans.", output: spec.release ?? "", after: ["testsGreen"], seconds: 2, verdict: "pass" }),
       step({ id: "staging", kind: "tool", phase: 4, col: 1, row: 1, title: "Deploy to staging", actor: "Pipeline", caption: "The build goes to staging, a copy of production with no real users.", given: "The released build.", output: deploy?.staging ?? "", after: ["release"], seconds: 240 }),
       step({ id: "smoke", kind: "check", phase: 4, col: 2, row: 1, title: "Smoke tests", actor: "No model", caption: "Scripted checks exercise the main paths on staging.", given: "The staging deployment.", output: deploy?.smoke ?? "", after: ["staging"], seconds: 60, verdict: "pass" }),
-      step({ id: "deployApprove", kind: "human", phase: 4, col: 3, row: 1, title: "You approve", actor: "Person", caption: "A person approves the move to production.", given: "Test results, smoke tests and the rollback plan.", output: deploy?.approval ?? "", after: ["smoke"], seconds: 0 }),
-      step({ id: "production", kind: "tool", phase: 4, col: 4, row: 1, title: "Production", actor: "Pipeline", caption: "A gradual rollout to real users, watched, with a rollback plan ready.", given: "The approved build.", output: deploy?.production ?? "", after: ["deployApprove"], seconds: 600 }),
+      llm({ id: "goNoGo", phase: 4, col: 3, row: 1, title: "Go / no-go", caption: "Model C weighs the staging results and recommends go or no-go, with its confidence. A person still decides.", given: "Smoke tests and the rollback plan.", output: decisionText(spec, "goNoGo"), after: ["smoke"] }, JEV, SIZE.decide),
+      step({ id: "deployApprove", kind: "human", phase: 4, col: 4, row: 1, title: "You approve", actor: "Person", caption: "A person approves the move to production.", given: "Model C's recommendation, test results, smoke tests and the rollback plan.", output: deploy?.approval ?? "", after: ["goNoGo"], seconds: 0 }),
+      step({ id: "production", kind: "tool", phase: 4, col: 5, row: 1, title: "Production", actor: "Pipeline", caption: "A gradual rollout to real users, watched, with a rollback plan ready.", given: "The approved build.", output: deploy?.production ?? "", after: ["deployApprove"], seconds: 600 }),
     ];
     const stageOf: Record<string, string> = {
       archDraft: "Architecture", archReview: "Architecture", archFinal: "Architecture", archChecks: "Architecture", archApprove: "Architecture",
-      code: "Code", codeReview: "Code review", codeRevise: "Code review", unitTests: "Unit tests", unitRun: "Unit tests",
+      code: "Code", codeReview: "Code review", reviewTriage: "Code review", codeRevise: "Code review", unitTests: "Unit tests", unitRun: "Unit tests",
       testCases: "Test cases", testScript: "Test cases", testsRed: "Testing", fix: "Testing", testsGreen: "Testing",
-      release: "Deployment", staging: "Deployment", smoke: "Deployment", deployApprove: "Deployment", production: "Deployment",
+      release: "Deployment", staging: "Deployment", smoke: "Deployment", goNoGo: "Deployment", deployApprove: "Deployment", production: "Deployment",
     };
     steps = steps.map((item) => ({ ...item, stage: stageOf[item.id] ?? "PRD" }));
   } else {
     phases = ["Draft, review and approve"];
-    walls = [{ phase: 0, col: 2, span: 1, label: "cannot see each other" }];
+    walls = [{ phase: 0, col: 3, span: 1, label: "cannot see each other" }];
     steps = [
       brief,
-      step({ id: "sources", kind: "tool", phase: 0, col: 1, row: 1, title: "Knowledge lookup", actor: "Retrieval", caption: "The relevant policies and records are looked up, so the drafts work from facts.", given: "The brief.", output: spec.sources ?? "", after: ["brief"], seconds: 2 }),
-      ...panel(spec, 2, ["sources"]),
-      step({ id: "deliver", kind: "tool", phase: 0, col: 7, row: 1, title: "Deliver", actor: "Workflow", caption: "The approved result goes out, with a record of who approved what.", given: "The approved result.", output: spec.deliver ?? "", after: ["approve"], seconds: 2 }),
+      llm({ id: "route", phase: 0, col: 1, row: 1, title: "Route", caption: "Model C, a fast decision model, judges how risky the request is and how much checking it needs, in about a tenth of a second.", given: "The brief.", output: decisionText(spec, "route"), after: ["brief"] }, JEV, SIZE.decide),
+      step({ id: "sources", kind: "tool", phase: 0, col: 2, row: 1, title: "Knowledge lookup", actor: "Retrieval", caption: "The relevant policies and records are looked up, so the drafts work from facts.", given: "The brief.", output: spec.sources ?? "", after: ["route"], seconds: 2 }),
+      ...panel(spec, 3, ["sources"]),
+      step({ id: "deliver", kind: "tool", phase: 0, col: 9, row: 1, title: "Deliver", actor: "Workflow", caption: "The approved result goes out, with a record of who approved what.", given: "The approved result.", output: spec.deliver ?? "", after: ["approve"], seconds: 2 }),
     ];
     const stageOf: Record<string, string> = {
-      brief: "Research", sources: "Research", draftA: "Drafts", draftB: "Drafts", reviewOfA: "Cross-review", reviewOfB: "Cross-review",
+      brief: "Research", route: "Research", sources: "Research", draftA: "Drafts", draftB: "Drafts", reviewOfA: "Cross-review", reviewOfB: "Cross-review", triage: "Cross-review",
       merge: "Merge", checks: "Checks", approve: "Approval", deliver: "Delivery",
     };
     steps = steps.map((item) => ({ ...item, stage: stageOf[item.id] }));
@@ -305,6 +493,7 @@ export function expand(spec: WorkflowSpec): Workflow {
     brief: spec.brief,
     output: spec.kind === "build" ? buildOutput(spec) : spec.output,
     phases,
+    models: MODELS,
     stages: spec.kind === "build" ? BUILD_STAGES : DOCUMENT_STAGES,
     walls,
     steps,

@@ -3,6 +3,7 @@ import { foreignRequest } from "@northwind/rcm";
 import { readFileSync } from "node:fs";
 import { createServer, type Server, type ServerResponse } from "node:http";
 import { join } from "node:path";
+import { createDecider } from "./jev.ts";
 import { catalog, expand, loadSpecs } from "./workflows.ts";
 
 /** A summary of a real, metered run of the requirements panel, so viewers can see the replays are not invented. */
@@ -19,10 +20,13 @@ export interface StudioOptions {
    * public host name is expected, and anything but GET is refused. The studio has no writes, so nothing else changes.
    */
   hosted?: boolean;
+  /** Answers Model C's decisions, live when a key is set. Defaults to one reading JEV_API_KEY. */
+  decider?: ReturnType<typeof createDecider>;
 }
 
 /** Serves the studio page and its simulated workflows. Nothing here calls a model. */
 export function createStudioServer(options: StudioOptions = {}): Server {
+  const decider = options.decider ?? createDecider();
   return createServer((req, res) => {
     if (options.hosted ? req.method !== "GET" && req.method !== "HEAD" : foreignRequest(req)) {
       send(res, options.hosted ? 405 : 403, { error: options.hosted ? "read-only" : "foreign-origin" });
@@ -50,6 +54,19 @@ export function createStudioServer(options: StudioOptions = {}): Server {
       }
       if (req.method === "GET" && url.pathname === "/api/catalog") {
         send(res, 200, catalog());
+        return;
+      }
+      const decide = url.pathname.match(/^\/api\/decide\/([a-z0-9-]+)\/([a-zA-Z]+)$/);
+      if (req.method === "GET" && decide) {
+        const spec = loadSpecs().find((item) => item.id === decide[1]);
+        if (!spec) {
+          send(res, 404, { error: "unknown-workflow" });
+          return;
+        }
+        decider
+          .decide(spec, decide[2] ?? "")
+          .then((result) => (result ? send(res, 200, result) : send(res, 404, { error: "not-a-decision" })))
+          .catch(() => send(res, 500, { error: "error" }));
         return;
       }
       const match = url.pathname.match(/^\/api\/workflows\/([a-z0-9-]+)$/);

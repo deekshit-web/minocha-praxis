@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createDecider } from "./jev.ts";
 import { createStudioServer } from "./server.ts";
 
 test("the studio serves its catalog and each simulated workflow, and refuses other sites", async () => {
-  const server = createStudioServer();
+  const server = createStudioServer({ decider: createDecider({ apiKey: "" }) });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   const origin = `http://127.0.0.1:${typeof address === "object" && address ? address.port : 0}`;
@@ -14,6 +15,9 @@ test("the studio serves its catalog and each simulated workflow, and refuses oth
     const workflow = (await (await fetch(`${origin}/api/workflows/${first}`)).json()) as { steps: unknown[] };
     assert.ok(workflow.steps.length > 8);
     assert.equal((await fetch(`${origin}/api/workflows/nope`)).status, 404);
+    const decision = (await (await fetch(`${origin}/api/decide/fmcg-build/goNoGo`)).json()) as { text: string };
+    assert.match(decision.text, /Recommendation: go/);
+    assert.equal((await fetch(`${origin}/api/decide/fmcg-build/code`)).status, 404);
     const checks = await fetch(`${origin}/checks.js`);
     assert.match(checks.headers.get("content-type") ?? "", /javascript/);
     assert.match(await checks.text(), /export const LIVE_CHECKS/);
@@ -31,7 +35,7 @@ test("the studio serves its catalog and each simulated workflow, and refuses oth
 });
 
 test("hosted, the studio answers any host name but stays read-only", async () => {
-  const server = createStudioServer({ hosted: true });
+  const server = createStudioServer({ hosted: true, decider: createDecider({ apiKey: "" }) });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   const origin = `http://127.0.0.1:${typeof address === "object" && address ? address.port : 0}`;
