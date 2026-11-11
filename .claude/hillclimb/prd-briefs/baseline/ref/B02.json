@@ -1,0 +1,354 @@
+{
+  "problem": "When a remit carries a CO-16 denial, the person working the line cannot tell which claim element is missing without decoding the remark code by hand. A claim can therefore be resubmitted without the missing element being fixed. The workbench must show the missing element named by the remark code on the remit. It must also keep resubmission blocked until that element is known and corrected.",
+  "users": [
+    "Biller: works CO-16 lines as resubmissions, corrects the missing element and resubmits the claim (Q-2, pack/roles.md).",
+    "Denial specialist: triages the denial workqueue day to day, needs to see at a glance which CO-16 lines are waiting on which element, and hands them to the biller. Does not resubmit.",
+    "PFS lead: sees counts by CARC class, including CO-16 lines that are unmapped or blocked. Does not act on lines."
+  ],
+  "inScope": [
+    "Displaying the missing claim element on each CO-16 line, taken only from the remark code on the remit.",
+    "Displaying an unknown or unpaired remark code as 'unmapped' and keeping resubmission blocked for that line.",
+    "Showing the CO-16 next action exactly as written in the CARC table.",
+    "A resubmission gate: the biller can resubmit only once the named element is mapped and has been corrected.",
+    "CO-16 lines in the dense denial workqueue, with a missing-element column, sorted by days remaining to the filing deadline and filterable by CARC class.",
+    "Role-based visibility: the biller acts, the denial specialist and PFS lead view.",
+    "Synthetic identifiers only (PAT-###, CLM-###, DOC-###)."
+  ],
+  "outOfScope": [
+    "Guessing, inferring, or suggesting the missing element or its value when the remark code does not name it.",
+    "Suggesting CPT, ICD, or modifier changes (coder-owned).",
+    "Changing a diagnosis code or writing off a balance.",
+    "Appeals for CO-16 lines. CO-16 is worked as a correction and resubmission, not an appeal.",
+    "Working PR-1 or OA-23 lines as denials.",
+    "Other CARC workflows (CO-50, CO-197, CO-4) beyond their existing workqueue rows.",
+    "Production validation of remark-code pairings against the current X12 external code list.",
+    "Any HIPAA determination or business associate agreement."
+  ],
+  "assumptions": [
+    {
+      "answerId": "Q-1",
+      "text": "The missing element comes from the remark code on the remit. The product does not guess."
+    },
+    {
+      "answerId": "Q-2",
+      "text": "The biller works CO-16 lines, as resubmissions."
+    },
+    {
+      "answerId": "Q-3",
+      "text": "If the remark code is unknown, the line shows the code as unmapped and resubmission stays blocked."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "statement": "For every CO-16 line, the workbench shows the remark code from the remit and the claim element that the remark code names as missing.",
+      "rationale": "This is the core of the brief. Q-1 makes the remit's remark code the only source of the element."
+    },
+    {
+      "id": "REQ-2",
+      "statement": "When a CO-16 line's remark code has no entry in the product's remark-code mapping, the line shows the code with the status 'unmapped', shows no element, and keeps resubmission blocked.",
+      "rationale": "Q-3 sets this behaviour. pack/carc-demo.md says an unknown code stays unmapped and the product must not invent a meaning."
+    },
+    {
+      "id": "REQ-3",
+      "statement": "The resubmit action for a CO-16 claim is blocked until the missing element is mapped and the biller has recorded a correction to that element on the claim.",
+      "rationale": "The brief requires the element to be known before resubmission. The CO-16 next action is to correct the named element, then resubmit."
+    },
+    {
+      "id": "REQ-4",
+      "statement": "Only the biller role can correct and resubmit a CO-16 claim. The denial specialist and PFS lead can see the line and its missing element but have no resubmit action.",
+      "rationale": "Q-2 assigns CO-16 to the biller. pack/roles.md says the biller resubmits CO-16, the denial specialist works appealable denials, and the PFS lead sees counts only."
+    },
+    {
+      "id": "REQ-5",
+      "statement": "The CO-16 line shows the next action exactly as: 'Correct the missing element named by the remark and resubmit the claim.'",
+      "rationale": "The CARC table is the only allowed source of next-action text."
+    },
+    {
+      "id": "REQ-6",
+      "statement": "The workbench never proposes a value for the missing element and never suggests CPT, ICD, or modifier changes.",
+      "rationale": "Q-1 says the product does not guess. pack/roles.md says the product does not suggest CPT or ICD changes and nobody changes a diagnosis code."
+    },
+    {
+      "id": "REQ-7",
+      "statement": "The denial workqueue lists CO-16 lines in the appealable-denial table with a visible missing-element column (element name or 'unmapped'). The table sorts by days remaining to the filing deadline and filters by CARC class, and PR-1 lines stay in the separate patient-responsibility group.",
+      "rationale": "pack/patterns/workqueue.md requires this table pattern. It lets the specialist triage CO-16 lines and see deadline risk without opening a row."
+    },
+    {
+      "id": "REQ-8",
+      "statement": "All screens, fixtures, and stored data for this feature use only synthetic identifiers shaped PAT-###, CLM-###, and DOC-###.",
+      "rationale": "pack/phi-policy.md allows only these identifiers. A scanner hit blocks the run."
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "requirementId": "REQ-1",
+      "given": "Claim CLM-101 for PAT-101 has a CO-16 line whose remit remark code has an entry in the remark-code mapping",
+      "when": "the biller opens the CLM-101 line detail",
+      "then": "the detail shows CARC CO-16, the remark code exactly as received on the remit, and the claim element that the mapping entry names as missing",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-2",
+      "requirementId": "REQ-1",
+      "given": "a CO-16 line with a mapped remark code",
+      "when": "any user views the line",
+      "then": "the displayed element comes from the mapping entry for that remark code, and the remark code is shown next to it so the source is visible",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-3",
+      "requirementId": "REQ-2",
+      "given": "Claim CLM-102 has a CO-16 line whose remark code has no mapping entry",
+      "when": "the biller opens the line",
+      "then": "the line shows the remark code with the status 'unmapped', no element is displayed, and the resubmit action is disabled",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-4",
+      "requirementId": "REQ-2",
+      "given": "a CO-16 line marked 'unmapped'",
+      "when": "the biller tries to resubmit it through any path, including the workqueue row action",
+      "then": "the resubmission is rejected, the claim state does not change from denied, and the reason shown is that the remark code is unmapped",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-5",
+      "requirementId": "REQ-3",
+      "given": "CLM-101 has a mapped CO-16 line and no correction has been recorded for the named element",
+      "when": "the biller views the resubmit action",
+      "then": "the action is disabled and states that the named element must be corrected first",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-6",
+      "requirementId": "REQ-3",
+      "given": "the biller has recorded a correction to the named element on CLM-101",
+      "when": "the biller resubmits",
+      "then": "the resubmission is accepted, the line no longer appears as an open CO-16 line in the workqueue, and the record shows the corrected element and the biller who resubmitted",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-7",
+      "requirementId": "REQ-4",
+      "given": "a denial specialist opens the CO-16 line on CLM-101",
+      "when": "the line detail renders",
+      "then": "the remark code, missing element, and next action are visible and no correct or resubmit control is present",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-8",
+      "requirementId": "REQ-4",
+      "given": "a PFS lead views the workqueue",
+      "when": "they look at CO-16 lines",
+      "then": "they see the count of CO-16 lines, including how many are unmapped, and have no action on the lines",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-9",
+      "requirementId": "REQ-5",
+      "given": "any CO-16 line",
+      "when": "the line detail renders",
+      "then": "the next action reads exactly 'Correct the missing element named by the remark and resubmit the claim.'",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-10",
+      "requirementId": "REQ-6",
+      "given": "a CO-16 line, mapped or unmapped",
+      "when": "the biller opens the correction form",
+      "then": "no value is pre-filled or suggested for the element, and no CPT, ICD, or modifier suggestion appears anywhere on the screen",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-11",
+      "requirementId": "REQ-7",
+      "given": "the workqueue holds a CO-16 line with a mapped element (CLM-101), a CO-16 line with an unmapped code (CLM-102), a CO-50 line (CLM-103), and a PR-1 line (CLM-104)",
+      "when": "the denial specialist opens the workqueue",
+      "then": "CLM-101 shows its element name and CLM-102 shows 'unmapped' in the missing-element column; the appealable table is sorted by days remaining to the filing deadline; and CLM-104 appears only in the patient-responsibility group",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-12",
+      "requirementId": "REQ-7",
+      "given": "the workqueue is open",
+      "when": "the denial specialist filters by CARC class 'denial'",
+      "then": "the CO-16 lines stay visible with deadline risk shown on the row, without opening it",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-13",
+      "requirementId": "REQ-8",
+      "given": "the feature's seed data and screens",
+      "when": "they are scanned under pack/phi-policy.md",
+      "then": "no SSN, email address, phone number, raw MRN, or labelled date of birth is found, and every patient, claim, and document identifier matches PAT-###, CLM-###, or DOC-###",
+      "priority": "P0"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "SCN-1",
+      "criterionIds": [
+        "AC-1",
+        "AC-5",
+        "AC-6",
+        "AC-9",
+        "AC-10"
+      ],
+      "role": "Biller",
+      "startingState": "CLM-101 (PAT-101) is denied with a CO-16 line whose remark code is mapped. No correction has been recorded.",
+      "steps": [
+        "Open the workqueue and select CLM-101.",
+        "Read the remark code, the missing element, and the next action on the line detail.",
+        "Note that the resubmit action is disabled.",
+        "Open the correction form and confirm no value is suggested.",
+        "Enter the corrected value for the named element and save.",
+        "Resubmit the claim."
+      ],
+      "expected": "The element and the exact CO-16 next action were visible before any correction. Resubmit was disabled until the correction was saved, then succeeded. The line leaves the open CO-16 queue and the record shows the corrected element."
+    },
+    {
+      "id": "SCN-2",
+      "criterionIds": [
+        "AC-3",
+        "AC-4",
+        "AC-10"
+      ],
+      "role": "Biller",
+      "startingState": "CLM-102 is denied with a CO-16 line whose remark code has no mapping entry.",
+      "steps": [
+        "Open CLM-102 from the workqueue.",
+        "Read the line status.",
+        "Try to resubmit from the line detail.",
+        "Try to resubmit from the workqueue row action."
+      ],
+      "expected": "The line shows the remark code as 'unmapped' with no element and no suggested value. Both resubmit attempts are blocked with the reason 'remark code unmapped', and CLM-102 stays denied."
+    },
+    {
+      "id": "SCN-3",
+      "criterionIds": [
+        "AC-7",
+        "AC-9",
+        "AC-11"
+      ],
+      "role": "Denial specialist",
+      "startingState": "The workqueue contains CLM-101 (CO-16, mapped), CLM-102 (CO-16, unmapped), CLM-103 (CO-50), and CLM-104 (PR-1).",
+      "steps": [
+        "Open the workqueue at the start of the day.",
+        "Scan the missing-element column and the deadline ordering.",
+        "Open CLM-101 to confirm what the biller needs to fix.",
+        "Return to the workqueue."
+      ],
+      "expected": "CLM-101 shows its element and CLM-102 shows 'unmapped' in the column, and the table is sorted by days remaining. CLM-104 appears only in the patient-responsibility group. The CLM-101 detail shows the element and exact next action with no resubmit control."
+    },
+    {
+      "id": "SCN-4",
+      "criterionIds": [
+        "AC-13"
+      ],
+      "role": "Biller",
+      "startingState": "Feature seed data and fixtures are loaded for a demo run.",
+      "steps": [
+        "Run the PHI scanner over the seed data and the rendered screens.",
+        "Review the identifiers shown on the workqueue and line detail."
+      ],
+      "expected": "The scanner reports no hits and every identifier is shaped PAT-###, CLM-###, or DOC-###."
+    },
+    {
+      "id": "SCN-5",
+      "criterionIds": [
+        "AC-8",
+        "AC-12"
+      ],
+      "role": "PFS lead",
+      "startingState": "The workqueue holds several CO-16 lines, some of them unmapped.",
+      "steps": [
+        "Open the workqueue.",
+        "Filter by CARC class 'denial'.",
+        "Review the counts by class."
+      ],
+      "expected": "CO-16 lines stay listed with deadline risk visible on each row, and the counts show how many CO-16 lines are unmapped. No actions are available."
+    }
+  ],
+  "screens": [
+    {
+      "id": "SCR-1",
+      "title": "Denial workqueue",
+      "purpose": "Dense table of appealable denials with a missing-element column for CO-16 lines, sorted by days remaining to the filing deadline and filterable by CARC class, plus a separate patient-responsibility group.",
+      "scenarioIds": [
+        "SCN-2",
+        "SCN-3",
+        "SCN-4",
+        "SCN-5"
+      ]
+    },
+    {
+      "id": "SCR-2",
+      "title": "CO-16 line detail",
+      "purpose": "Shows the remark code from the remit, the missing element or 'unmapped', the exact CO-16 next action, and the resubmit gate status. Controls are role-dependent.",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-2",
+        "SCN-3",
+        "SCN-4"
+      ]
+    },
+    {
+      "id": "SCR-3",
+      "title": "Correct and resubmit",
+      "purpose": "Biller-only form to record the correction to the named element, with no pre-filled or suggested values, followed by resubmission once the gate clears.",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-2"
+      ]
+    }
+  ],
+  "openQuestions": [
+    {
+      "id": "OQ-1",
+      "text": "Open: The brief says the 'specialist' must see the missing element, but Q-2 and pack/roles.md give CO-16 to the biller. Is the denial specialist's view-only access to CO-16 lines (REQ-4) what the requester intended, or should CO-16 lines be hidden from the specialist's queue?"
+    },
+    {
+      "id": "OQ-2",
+      "text": "Open: Which claim element does each remark code name? pack/carc-demo.md pairs MA130 with CO-16 as a fixture but does not say which element MA130 names. Who owns and signs off the remark-code-to-element mapping?"
+    },
+    {
+      "id": "OQ-3",
+      "text": "Proposed: A CO-16 line that arrives with no remark code at all is treated the same as an unmapped code: shown as 'unmapped' with resubmission blocked. Needs sign-off."
+    },
+    {
+      "id": "OQ-4",
+      "text": "Proposed: A resubmitted CO-16 claim moves from 'denied' to 'submitted', since pack/claim-states.md has no separate resubmitted state. Needs sign-off."
+    },
+    {
+      "id": "OQ-5",
+      "text": "Proposed: A correction counts as 'recorded' when the biller saves a changed value for the named element on the claim. Needs sign-off."
+    },
+    {
+      "id": "OQ-6",
+      "text": "Open: If one remit carries several remark codes on a CO-16 line, some mapped and some unmapped, should resubmission stay blocked until every code is mapped and every named element is corrected?"
+    },
+    {
+      "id": "OQ-7",
+      "text": "Open: How does the denial specialist hand a CO-16 line to the biller? Is the biller's view of the shared workqueue enough, or is an explicit assignment needed?"
+    }
+  ],
+  "citations": [
+    "pack/carc-demo.md",
+    "pack/roles.md",
+    "pack/claim-states.md",
+    "pack/patterns/workqueue.md",
+    "pack/phi-policy.md"
+  ],
+  "carcReferences": [
+    {
+      "code": "CO-16",
+      "nextAction": "Correct the missing element named by the remark and resubmit the claim."
+    },
+    {
+      "code": "PR-1",
+      "nextAction": "Post the amount to patient responsibility. Do not open an appeal."
+    }
+  ]
+}

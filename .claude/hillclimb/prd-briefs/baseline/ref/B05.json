@@ -1,0 +1,282 @@
+{
+  "problem": "Front desk staff can currently book an imaging visit for a patient whose coverage snapshot is inactive, and nothing tells them why the booking should not go ahead. The product must block scheduling when coverage is inactive and show the reason at the point of booking, using only synthetic PAT-### identifiers.",
+  "users": [
+    "Front desk: reads eligibility and books imaging visits; must not schedule when coverage is inactive; does not work denials.",
+    "Denial specialist: secondary reader; works appealable denials downstream and cannot override the scheduling block in v1.",
+    "PFS lead: secondary reader of operational counts; does not mark packets ready or override the block."
+  ],
+  "inScope": [
+    "Checking the patient's coverage snapshot status (active or inactive, per ADR-001) when the front desk schedules an imaging visit.",
+    "Blocking the scheduling action when coverage status is inactive, enforced both in the UI and when the scheduling request is submitted.",
+    "Showing a visible reason for the block that names the coverage status and the PAT-### identifier.",
+    "Showing a non-blocking warning when coverage is unknown.",
+    "Showing the coverage snapshot, including status and copay, as a read-only eligibility view.",
+    "Displaying synthetic PAT-### identifiers only, reusing the ADR-001 patient key."
+  ],
+  "outOfScope": [
+    "Any override of the inactive-coverage block, by any role (v1).",
+    "Blocking on any coverage state other than inactive.",
+    "Displaying patient names or any identifier other than PAT-###, CLM-###, or DOC-###.",
+    "Introducing a second patient key for eligibility.",
+    "Editing coverage snapshots, or running payer eligibility inquiries from this screen.",
+    "Working denials, appeals, write-offs, or diagnosis or CPT changes from the scheduling flow.",
+    "HIPAA determinations; the PHI scanner is a demo control only."
+  ],
+  "assumptions": [
+    {
+      "answerId": "Q-1",
+      "text": "Only inactive coverage blocks scheduling. Unknown coverage shows a warning but does not block."
+    },
+    {
+      "answerId": "Q-2",
+      "text": "No override of the block exists in this version, for any role."
+    },
+    {
+      "answerId": "Q-3",
+      "text": "The screen shows synthetic PAT-### identifiers only. No patient names are shown."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "statement": "The system must prevent the front desk from creating an imaging visit for a patient whose coverage snapshot status is inactive. The block must be enforced when the scheduling request is submitted, not only by disabling a control.",
+      "rationale": "This is the core brief, and pack/roles.md states that the front desk must not schedule when coverage is inactive."
+    },
+    {
+      "id": "REQ-2",
+      "statement": "When scheduling is blocked, the screen must show the reason. The reason must state that coverage status is inactive and must identify the patient by PAT-###.",
+      "rationale": "The brief requires that the front desk see why the visit is blocked."
+    },
+    {
+      "id": "REQ-3",
+      "statement": "When the coverage status for a patient is unknown, the system must show a visible warning and still allow the visit to be scheduled.",
+      "rationale": "This follows the Q-1 answer: unknown coverage warns but does not block."
+    },
+    {
+      "id": "REQ-4",
+      "statement": "The system must offer no override, bypass, or force-schedule control for the inactive-coverage block, for any role.",
+      "rationale": "This follows the Q-2 answer: no override in this version."
+    },
+    {
+      "id": "REQ-5",
+      "statement": "Scheduling and eligibility screens must identify patients only by the ADR-001 PAT-### key. They must show no names and must not introduce a second patient key.",
+      "rationale": "This follows the Q-3 answer, pack/phi-policy.md, and pack/decisions/ADR-001-patient-and-coverage.md."
+    },
+    {
+      "id": "REQ-6",
+      "statement": "When coverage status is active, the system must allow scheduling and show the coverage snapshot status and copay.",
+      "rationale": "This confirms the block applies only to inactive coverage and shows the snapshot fields defined in ADR-001."
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "requirementId": "REQ-1",
+      "given": "PAT-101 has a coverage snapshot with status inactive",
+      "when": "the front desk tries to schedule an imaging visit for PAT-101",
+      "then": "no visit is created for PAT-101 and the confirm action is not available",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-2",
+      "requirementId": "REQ-1",
+      "given": "PAT-101 has coverage status inactive",
+      "when": "a scheduling request for PAT-101 is submitted directly, bypassing the disabled control",
+      "then": "the request is rejected, the response states the coverage-inactive reason, and the visit count for PAT-101 is unchanged",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-3",
+      "requirementId": "REQ-2",
+      "given": "PAT-101 has coverage status inactive",
+      "when": "the front desk selects PAT-101 on the scheduling screen",
+      "then": "a block message is visible that names PAT-101 and states the coverage status is inactive",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-4",
+      "requirementId": "REQ-3",
+      "given": "PAT-103 has no determinable coverage status (unknown)",
+      "when": "the front desk schedules an imaging visit for PAT-103",
+      "then": "a warning saying coverage is unknown is visible, and the visit is created",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-5",
+      "requirementId": "REQ-4",
+      "given": "a user signed in as front desk, denial specialist, or PFS lead views a blocked patient (PAT-101)",
+      "when": "they inspect the scheduling screen and the block message",
+      "then": "no override, bypass, or force-schedule control is present",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-6",
+      "requirementId": "REQ-5",
+      "given": "any patient is shown on the scheduling or eligibility screen",
+      "when": "the screen renders",
+      "then": "the patient appears only as a PAT-### identifier, and no name field or other identifier is shown",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-7",
+      "requirementId": "REQ-5",
+      "given": "the eligibility view loads a coverage snapshot",
+      "when": "the snapshot is linked to the patient",
+      "then": "the link uses the same PAT-### key used by the denial workbench, and no second patient key exists in the data shown",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-8",
+      "requirementId": "REQ-6",
+      "given": "PAT-102 has coverage status active with a copay recorded in cents",
+      "when": "the front desk schedules an imaging visit for PAT-102",
+      "then": "the status active and the copay are shown, and the visit is created without a warning or block",
+      "priority": "P1"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "SCN-1",
+      "criterionIds": [
+        "AC-1",
+        "AC-3",
+        "AC-6"
+      ],
+      "role": "Front desk",
+      "startingState": "PAT-101 has a coverage snapshot with status inactive. No visit exists for PAT-101.",
+      "steps": [
+        "Open the Schedule Imaging Visit screen.",
+        "Search for and select PAT-101.",
+        "Fill in the visit details.",
+        "Attempt to confirm the visit."
+      ],
+      "expected": "A block message names PAT-101 and states that coverage is inactive. The confirm action is unavailable and no visit is created. Only PAT-101 is shown; no name appears."
+    },
+    {
+      "id": "SCN-2",
+      "criterionIds": [
+        "AC-2",
+        "AC-5"
+      ],
+      "role": "Front desk",
+      "startingState": "PAT-101 has coverage status inactive and the block message is displayed.",
+      "steps": [
+        "Look for any override or force-schedule option on the block message and on the screen.",
+        "Re-submit the scheduling request for PAT-101, for example via a repeated submit or a direct request."
+      ],
+      "expected": "No override control exists. The re-submitted request is rejected with the coverage-inactive reason, and the visit count for PAT-101 is unchanged."
+    },
+    {
+      "id": "SCN-3",
+      "criterionIds": [
+        "AC-5",
+        "AC-6",
+        "AC-7"
+      ],
+      "role": "Denial specialist",
+      "startingState": "PAT-101 has coverage status inactive. The denial specialist is reviewing why no imaging visit or claim exists for PAT-101.",
+      "steps": [
+        "Open the Coverage Snapshot view for PAT-101.",
+        "Review the status and copay.",
+        "Look for any action to override the scheduling block."
+      ],
+      "expected": "The snapshot shows status inactive under PAT-101, keyed by the same PAT-### identifier used in the workbench. No override control is offered and no name is shown."
+    },
+    {
+      "id": "SCN-4",
+      "criterionIds": [
+        "AC-4"
+      ],
+      "role": "Front desk",
+      "startingState": "PAT-103 has no determinable coverage status.",
+      "steps": [
+        "Open the Schedule Imaging Visit screen.",
+        "Select PAT-103.",
+        "Fill in the visit details and confirm."
+      ],
+      "expected": "A coverage-unknown warning is visible, and the visit is created for PAT-103."
+    },
+    {
+      "id": "SCN-5",
+      "criterionIds": [
+        "AC-8"
+      ],
+      "role": "Front desk",
+      "startingState": "PAT-102 has coverage status active with a copay recorded.",
+      "steps": [
+        "Open the Schedule Imaging Visit screen.",
+        "Select PAT-102.",
+        "Fill in the visit details and confirm."
+      ],
+      "expected": "The status active and the copay are shown. The visit is created with no warning or block."
+    }
+  ],
+  "screens": [
+    {
+      "id": "SCR-1",
+      "title": "Schedule Imaging Visit",
+      "purpose": "The front desk selects a PAT-### patient and books an imaging visit. The confirm action is gated by coverage status.",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-2",
+        "SCN-4",
+        "SCN-5"
+      ]
+    },
+    {
+      "id": "SCR-2",
+      "title": "Coverage Status Banner and Block Message",
+      "purpose": "An inline panel on the scheduling screen. It shows a block reason (inactive), a warning (unknown), or status and copay (active), and has no override control.",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-2",
+        "SCN-4",
+        "SCN-5"
+      ]
+    },
+    {
+      "id": "SCR-3",
+      "title": "Coverage Snapshot (read-only)",
+      "purpose": "A read-only view of the ADR-001 coverage snapshot (status and copay) keyed by PAT-###. Downstream roles such as the denial specialist use it to see why a visit was not booked.",
+      "scenarioIds": [
+        "SCN-3"
+      ]
+    }
+  ],
+  "openQuestions": [
+    {
+      "id": "OQ-1",
+      "text": "Proposed: 'Unknown' coverage means no coverage snapshot exists for the PAT-### patient, since ADR-001 defines only the statuses active and inactive. Needs sign-off."
+    },
+    {
+      "id": "OQ-2",
+      "text": "Proposed: Coverage status is re-checked when the visit is submitted, not only when the patient is selected, so that a status change in between is honored. Needs sign-off."
+    },
+    {
+      "id": "OQ-3",
+      "text": "Proposed: The block message reads 'Scheduling blocked: coverage for PAT-### is inactive.' Needs sign-off."
+    },
+    {
+      "id": "OQ-4",
+      "text": "Proposed: Blocked scheduling attempts are logged by PAT-### and shown read-only to the denial specialist and PFS lead, to help explain missing visits and claims. Needs sign-off."
+    },
+    {
+      "id": "OQ-5",
+      "text": "Open: Which role, if any, may view the read-only Coverage Snapshot screen besides the front desk? pack/roles.md grants eligibility read only to the front desk."
+    },
+    {
+      "id": "OQ-6",
+      "text": "Open: Should the copay be displayed in dollars, converted from the stored cents value, and if so, with what rounding?"
+    },
+    {
+      "id": "OQ-7",
+      "text": "Open: What should the front desk tell the patient or do next after a block, given that no override exists in v1?"
+    }
+  ],
+  "citations": [
+    "pack/roles.md",
+    "pack/decisions/ADR-001-patient-and-coverage.md",
+    "pack/phi-policy.md"
+  ],
+  "carcReferences": []
+}

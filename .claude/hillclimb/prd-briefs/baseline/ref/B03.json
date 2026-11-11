@@ -1,0 +1,419 @@
+{
+  "problem": "Denial specialists at Northwind Imaging need to work appealable denials before the Northwind Health timely filing deadline. Today the workqueue does not rank rows by deadline risk, so a claim close to or past its deadline can sit below claims with months left. The workqueue must sort appealable denials by days remaining to the filing deadline. Each row must carry a risk label (overdue, urgent, soon, or comfortable, plus missing when no deadline exists) that is readable without opening the row.",
+  "users": [
+    "Denial specialist: primary user. Works appealable denials from the queue each day and may mark a CO-50 packet ready only when the readiness gate passes; cannot override the gate in v1.",
+    "Biller: resubmits corrected claims, including CO-16 and CO-4 rows that appear in the queue.",
+    "PFS lead: sees counts by CARC class; does not mark packets ready.",
+    "Coder: owns modifiers and diagnosis pointers; reads but does not use the deadline sort to change codes. This product does not suggest CPT or ICD changes."
+  ],
+  "inScope": [
+    "Computing the filing deadline as date of service plus 90 days for Northwind Health denials.",
+    "Computing days remaining from the demo clock (17 November 2026) to the filing deadline.",
+    "Labelling each appealable denial row overdue, urgent, soon, comfortable, or missing.",
+    "Sorting the appealable denial table by days remaining, ascending, with missing rows above comfortable rows.",
+    "Showing the label and days remaining as text in the row, so the risk is visible without opening the row.",
+    "Keeping PR-1 lines in a separate patient responsibility group and OA-23 lines out of the denial table.",
+    "Filtering the queue by CARC class without breaking the deadline sort.",
+    "Showing the next action for each mapped CARC code exactly as written in the CARC table, and showing an unknown code as unmapped.",
+    "Counts by CARC class for the PFS lead.",
+    "Synthetic identifiers only (PAT-###, CLM-###, DOC-###)."
+  ],
+  "outOfScope": [
+    "Changing the readiness gate or letting any role override it.",
+    "Writing off balances or changing diagnosis codes. Nobody in this demo may do either.",
+    "Suggesting CPT, ICD, or modifier changes.",
+    "Deciding medical necessity for CO-50 lines.",
+    "Payers other than Northwind Health, real plan ids, portals, or clearinghouse routes.",
+    "Notifications, emails, or reminders about approaching deadlines.",
+    "Front desk access to denial work.",
+    "Production use of the CARC meanings or remark pairings without confirming them against the current X12 external code list."
+  ],
+  "assumptions": [
+    {
+      "answerId": "Q-1",
+      "text": "Bands: a row past its filing deadline (fewer than 0 days remaining) is overdue; 0 to 14 days remaining is urgent; 15 to 45 days is soon; more than 45 days is comfortable."
+    },
+    {
+      "answerId": "Q-2",
+      "text": "The filing deadline is the date of service plus 90 days, per Northwind Health timely filing."
+    },
+    {
+      "answerId": "Q-3",
+      "text": "Rows with no filing deadline are labelled missing and sort before comfortable rows."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "statement": "The appealable denial table shall contain only lines whose CARC class is denial (CO-16, CO-50, CO-197, CO-4) and lines with unmapped codes. PR-1 lines shall appear in a separate patient responsibility group. OA-23 lines shall not appear as denial rows.",
+      "rationale": "The workqueue pattern separates appealable denials from patient responsibility. Claim states say PR-1 does not enter denied for appeal and OA-23 is not worked as a denial."
+    },
+    {
+      "id": "REQ-2",
+      "statement": "For each denial row, the system shall show the filing deadline as the date of service plus 90 days and the days remaining as the deadline date minus the demo clock date (17 November 2026), counted in calendar days.",
+      "rationale": "Q-2 sets the deadline rule, and the Northwind Health payer note fixes the demo clock."
+    },
+    {
+      "id": "REQ-3",
+      "statement": "The system shall label each dated denial row by days remaining: fewer than 0 is overdue, 0 to 14 is urgent, 15 to 45 is soon, and more than 45 is comfortable.",
+      "rationale": "Q-1 sets the bands, which match the Northwind Health deadline risk rule."
+    },
+    {
+      "id": "REQ-4",
+      "statement": "A denial row with no filing deadline shall be labelled missing. Its days remaining shall be blank, and it shall not receive any of the four dated labels.",
+      "rationale": "Q-3 sets this label. The payer note says the deadline is blank when the remit did not carry one, and the readiness gate treats a blank deadline as missing."
+    },
+    {
+      "id": "REQ-5",
+      "statement": "The appealable denial table shall sort dated rows by days remaining, ascending, so overdue rows come first. Every missing row shall sort above every comfortable row.",
+      "rationale": "The brief and the workqueue pattern call for a deadline sort, and Q-3 sets where missing rows go."
+    },
+    {
+      "id": "REQ-6",
+      "statement": "Each row shall show its risk label as text and its days remaining in the table itself. The label shall not rely on color alone.",
+      "rationale": "The workqueue pattern requires deadline risk to be visible without opening the row. The specialist triages from the table."
+    },
+    {
+      "id": "REQ-7",
+      "statement": "The user shall be able to filter the queue by CARC class, and the filtered result shall keep the deadline sort and the labels.",
+      "rationale": "The workqueue pattern requires filtering by CARC class."
+    },
+    {
+      "id": "REQ-8",
+      "statement": "For each mapped CARC code, the row detail shall show the next action exactly as written in the CARC table. A code not in the table shall show as unmapped, with no meaning or next action invented.",
+      "rationale": "The CARC table is the only source of next actions, and the demo CARC note forbids inventing meanings for unknown codes."
+    },
+    {
+      "id": "REQ-9",
+      "statement": "The risk label shall not change role permissions or the readiness gate. The denial specialist works rows but cannot override the gate. The PFS lead sees counts by CARC class and has no mark-ready control. Front desk users have no access to the denial queue.",
+      "rationale": "The roles note defines these permissions, and the claim states note allows appeal-ready for CO-50 only after the gate passes."
+    },
+    {
+      "id": "REQ-10",
+      "statement": "All patients, claims, and documents in the queue, seed data, and fixtures shall use only the synthetic identifiers PAT-###, CLM-###, and DOC-###, and shall pass the PHI scan.",
+      "rationale": "The PHI policy blocks any run that contains an SSN, email address, phone number, raw MRN, or labelled date of birth."
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "requirementId": "REQ-1",
+      "given": "Seed data with CLM-101 (CO-50), CLM-102 (PR-1), and CLM-103 (OA-23).",
+      "when": "The denial specialist opens the denial workqueue.",
+      "then": "CLM-101 appears in the appealable denial table. CLM-102 appears only in the patient responsibility group. CLM-103 does not appear in the appealable denial table.",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-2",
+      "requirementId": "REQ-2",
+      "given": "CLM-104 (CO-197) has a date of service of 2026-09-01, and the demo clock is 17 November 2026.",
+      "when": "The workqueue loads.",
+      "then": "CLM-104 shows a filing deadline of 2026-11-30 and 13 days remaining.",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-3",
+      "requirementId": "REQ-3",
+      "given": "Denial rows with filing deadlines of 2026-11-16, 2026-11-17, 2026-12-01, 2026-12-02, 2027-01-01, and 2027-01-02, and a demo clock of 17 November 2026.",
+      "when": "The workqueue loads.",
+      "then": "The rows show -1 overdue, 0 urgent, 14 urgent, 15 soon, 45 soon, and 46 comfortable, respectively.",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-4",
+      "requirementId": "REQ-4",
+      "given": "CLM-110 (CO-50) has a blank filing deadline.",
+      "when": "The workqueue loads.",
+      "then": "CLM-110 shows the label missing and a blank days remaining. It does not show 0, overdue, urgent, soon, or comfortable.",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-5",
+      "requirementId": "REQ-5",
+      "given": "Dated denial rows with -18, 13, 30, and 60 days remaining, loaded in random order.",
+      "when": "The workqueue loads.",
+      "then": "The rows appear in the order -18, 13, 30, 60, top to bottom.",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-6",
+      "requirementId": "REQ-5",
+      "given": "A missing row, CLM-110, and comfortable rows with 46 and 60 days remaining.",
+      "when": "The workqueue loads.",
+      "then": "CLM-110 appears above both comfortable rows.",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-7",
+      "requirementId": "REQ-6",
+      "given": "The workqueue is loaded with rows in every band and one missing row.",
+      "when": "The denial specialist views the table without opening any row.",
+      "then": "Each row shows its label as a text word (overdue, urgent, soon, comfortable, or missing) and its days remaining, or a blank for missing.",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-8",
+      "requirementId": "REQ-7",
+      "given": "The queue contains CO-50, CO-197, and CO-16 rows across several bands.",
+      "when": "The denial specialist filters to the CO-50 class.",
+      "then": "Only CO-50 rows show. They keep their labels and stay in ascending days-remaining order, with any missing row above comfortable rows.",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-9",
+      "requirementId": "REQ-8",
+      "given": "CLM-101 is a CO-50 row.",
+      "when": "The denial specialist opens the row detail.",
+      "then": "The next action reads exactly: \"Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product.\"",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-10",
+      "requirementId": "REQ-8",
+      "given": "CLM-120 carries a code that is not in the CARC table.",
+      "when": "The denial specialist opens the row detail.",
+      "then": "The code shows as unmapped, and no meaning or next action text is displayed.",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-11",
+      "requirementId": "REQ-9",
+      "given": "A PFS lead is signed in.",
+      "when": "The PFS lead opens the class count summary.",
+      "then": "Counts by CARC class are shown, and no mark-ready control is available anywhere in the PFS lead's view.",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-12",
+      "requirementId": "REQ-9",
+      "given": "CLM-110 is a CO-50 row in denied with a blank filing deadline (labelled missing).",
+      "when": "The denial specialist tries to mark the packet ready.",
+      "then": "The readiness gate does not pass and reports the missing deadline. CLM-110 stays in denied, and no override control is offered.",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-13",
+      "requirementId": "REQ-10",
+      "given": "The seed data and fixtures for the workqueue.",
+      "when": "The PHI scan runs before the run is recorded.",
+      "then": "The scan reports no hits, and every identifier shown in the queue matches PAT-###, CLM-###, or DOC-###.",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-14",
+      "requirementId": "REQ-2",
+      "given": "The host system date differs from 17 November 2026.",
+      "when": "The workqueue loads.",
+      "then": "Days remaining and labels are computed from the demo clock of 17 November 2026, not from the host date.",
+      "priority": "P1"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "SCN-1",
+      "criterionIds": [
+        "AC-1",
+        "AC-2",
+        "AC-3",
+        "AC-5",
+        "AC-7"
+      ],
+      "role": "Denial specialist",
+      "startingState": "Demo clock is 17 November 2026. The seed holds CLM-101 (CO-50, PAT-001), CLM-102 (PR-1, PAT-002), CLM-103 (OA-23, PAT-003), and CLM-104 (CO-197, PAT-004, date of service 2026-09-01), plus dated denial rows at -18, 30, and 60 days remaining. All are in denied state.",
+      "steps": [
+        "Sign in as the denial specialist.",
+        "Open the denial workqueue.",
+        "Read the label and days remaining on each row without opening any row.",
+        "Check the patient responsibility group."
+      ],
+      "expected": "The appealable table lists the -18 overdue row first, then CLM-104 (deadline 2026-11-30, 13 urgent), then the 30 soon row, then the 60 comfortable row. Every row shows a text label. CLM-102 appears only in the patient responsibility group, and CLM-103 is absent from the appealable table."
+    },
+    {
+      "id": "SCN-2",
+      "criterionIds": [
+        "AC-3",
+        "AC-14"
+      ],
+      "role": "Denial specialist",
+      "startingState": "The host date is set to a date other than 17 November 2026. The seed holds denial rows CLM-130 to CLM-135 with deadlines 2026-11-16, 2026-11-17, 2026-12-01, 2026-12-02, 2027-01-01, and 2027-01-02.",
+      "steps": [
+        "Open the denial workqueue.",
+        "Read the days remaining and label on CLM-130 to CLM-135."
+      ],
+      "expected": "The rows show -1 overdue, 0 urgent, 14 urgent, 15 soon, 45 soon, and 46 comfortable, all computed from the 17 November 2026 demo clock."
+    },
+    {
+      "id": "SCN-3",
+      "criterionIds": [
+        "AC-4",
+        "AC-6",
+        "AC-12"
+      ],
+      "role": "Denial specialist",
+      "startingState": "CLM-110 (CO-50, PAT-010) is in denied with a blank filing deadline. Comfortable rows CLM-111 (46 days) and CLM-112 (60 days) are also in the queue.",
+      "steps": [
+        "Open the denial workqueue.",
+        "Find CLM-110 and read its label.",
+        "Open CLM-110 and try to mark the packet ready."
+      ],
+      "expected": "CLM-110 shows missing with a blank days remaining, and it sits above CLM-111 and CLM-112. The readiness gate does not pass and reports the missing deadline. CLM-110 stays in denied, and no override is offered."
+    },
+    {
+      "id": "SCN-4",
+      "criterionIds": [
+        "AC-9",
+        "AC-10"
+      ],
+      "role": "Denial specialist",
+      "startingState": "The queue holds CLM-101 (CO-50, DOC-201 attached) and CLM-120 (a code not in the CARC table).",
+      "steps": [
+        "Open CLM-101 from the workqueue and read the next action.",
+        "Return to the queue, open CLM-120, and read the code panel."
+      ],
+      "expected": "CLM-101 shows exactly: \"Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product.\" CLM-120 shows its code as unmapped, with no meaning or next action."
+    },
+    {
+      "id": "SCN-5",
+      "criterionIds": [
+        "AC-8"
+      ],
+      "role": "Denial specialist",
+      "startingState": "The queue holds CO-50, CO-197, and CO-16 rows across overdue, urgent, soon, comfortable, and missing.",
+      "steps": [
+        "Open the denial workqueue.",
+        "Apply the CARC class filter for CO-50."
+      ],
+      "expected": "Only CO-50 rows remain, in ascending days-remaining order with labels intact. Any missing CO-50 row sits above the comfortable CO-50 rows."
+    },
+    {
+      "id": "SCN-6",
+      "criterionIds": [
+        "AC-11"
+      ],
+      "role": "PFS lead",
+      "startingState": "The queue holds rows of every CARC class in the seed.",
+      "steps": [
+        "Sign in as the PFS lead.",
+        "Open the class count summary.",
+        "Look for any mark-ready control."
+      ],
+      "expected": "Counts by CARC class are displayed, and no mark-ready control is available."
+    },
+    {
+      "id": "SCN-7",
+      "criterionIds": [
+        "AC-13"
+      ],
+      "role": "Denial specialist",
+      "startingState": "The workqueue seed data and fixtures are staged for a run.",
+      "steps": [
+        "Run the PHI scan over the seed data and fixtures.",
+        "Open the denial workqueue and review the identifiers on every row."
+      ],
+      "expected": "The scan reports no hits, and every identifier matches PAT-###, CLM-###, or DOC-###."
+    }
+  ],
+  "screens": [
+    {
+      "id": "SCR-1",
+      "title": "Denial workqueue",
+      "purpose": "A dense table of appealable denials sorted by days remaining. Each row shows the claim id, patient id, CARC code, filing deadline, days remaining, and a text risk label. The screen has a CARC class filter and a separate patient responsibility group.",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-2",
+        "SCN-3",
+        "SCN-5",
+        "SCN-7"
+      ]
+    },
+    {
+      "id": "SCR-2",
+      "title": "Denial row detail",
+      "purpose": "Shows the date of service, the computed filing deadline, days remaining, the label, the CARC code with its exact next action (or unmapped), and the readiness gate result. A gate-bound mark-ready action is available to the denial specialist.",
+      "scenarioIds": [
+        "SCN-3",
+        "SCN-4"
+      ]
+    },
+    {
+      "id": "SCR-3",
+      "title": "CARC class count summary",
+      "purpose": "Read-only counts by CARC class for the PFS lead, with no mark-ready control.",
+      "scenarioIds": [
+        "SCN-6"
+      ]
+    }
+  ],
+  "openQuestions": [
+    {
+      "id": "OQ-1",
+      "text": "Proposed: missing rows sort after all overdue, urgent, and soon rows and immediately before comfortable rows. Needs sign-off."
+    },
+    {
+      "id": "OQ-2",
+      "text": "Proposed: rows with equal days remaining, and rows within the missing group, are ordered by claim id ascending. Needs sign-off."
+    },
+    {
+      "id": "OQ-3",
+      "text": "Proposed: CO-16 and CO-4 rows, which the biller resubmits rather than appeals, stay in the appealable denial table because they are denial-class rows. Needs sign-off."
+    },
+    {
+      "id": "OQ-4",
+      "text": "Open: Q-2 computes the deadline from the date of service, but the payer note says the deadline is blank when the remit did not carry one. Is a row missing only when the remit carries no deadline, only when the date of service is absent, or in either case?"
+    },
+    {
+      "id": "OQ-5",
+      "text": "Open: If a remit carries a filing deadline that differs from the date of service plus 90 days, which value is shown and used for the label?"
+    },
+    {
+      "id": "OQ-6",
+      "text": "Proposed: days remaining counts calendar days, and the deadline date itself is 0 days remaining (urgent). Needs sign-off."
+    },
+    {
+      "id": "OQ-7",
+      "text": "Open: Should rows in appeal-submitted, upheld, overturned, or closed state stay in the workqueue, and if so, with which label?"
+    },
+    {
+      "id": "OQ-8",
+      "text": "Proposed: rows with unmapped codes appear in the appealable denial table with their deadline label and an unmapped next action. Needs sign-off."
+    },
+    {
+      "id": "OQ-9",
+      "text": "Open: Does the PFS lead summary need counts by risk label as well as by CARC class?"
+    }
+  ],
+  "citations": [
+    "pack/patterns/workqueue.md",
+    "pack/payer-northwind.md",
+    "pack/carc-demo.md",
+    "pack/claim-states.md",
+    "pack/roles.md",
+    "pack/phi-policy.md"
+  ],
+  "carcReferences": [
+    {
+      "code": "CO-16",
+      "nextAction": "Correct the missing element named by the remark and resubmit the claim."
+    },
+    {
+      "code": "CO-50",
+      "nextAction": "Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product."
+    },
+    {
+      "code": "CO-197",
+      "nextAction": "Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request."
+    },
+    {
+      "code": "CO-4",
+      "nextAction": "Correct the modifier and resubmit. Do not invent a modifier in this product."
+    },
+    {
+      "code": "PR-1",
+      "nextAction": "Post the amount to patient responsibility. Do not open an appeal."
+    },
+    {
+      "code": "OA-23",
+      "nextAction": "Confirm the prior payer adjudication. Do not work this as a denial."
+    }
+  ]
+}

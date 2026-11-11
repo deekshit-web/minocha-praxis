@@ -1,0 +1,311 @@
+{
+  "problem": "Denial specialists working the Northwind Imaging denial workbench can see PR-1 deductible lines mixed in with true denials. That wastes worklist time and risks an appeal being opened on a line the payer has assigned to the patient. PR-1 lines must be routed to a separate patient-responsibility group and must never offer an appeal action to any role.",
+  "users": [
+    "Denial specialist who works the daily denial worklist and opens appeals on true denials",
+    "Revenue-cycle lead who reviews worklist volume and patient-responsibility totals"
+  ],
+  "inScope": [
+    "Line-level routing of PR-1 claim lines into a patient-responsibility group, kept separate from the denial list",
+    "Suppressing every appeal action on PR-1 lines for every role, in the UI and in the domain rule",
+    "Showing the PR-1 CARC meaning and the only allowed next action, copied from the demo table",
+    "Claims with mixed lines, where a PR-1 line and a denial line (for example CO-50) sit on the same CLM-###",
+    "Using only synthetic PAT-###, CLM-###, and DOC-### identifiers"
+  ],
+  "outOfScope": [
+    "Patient statements, including generating, sending, or previewing them",
+    "Changes to how CO-16, CO-50, CO-197, CO-4, or OA-23 lines are worked, beyond keeping them out of the patient-responsibility group",
+    "Collecting patient payments or setting up payment plans",
+    "Eligibility and coverage snapshot changes",
+    "Adding CARC codes or meanings beyond the demo table"
+  ],
+  "assumptions": [
+    {
+      "answerId": "Q-1",
+      "text": "PR-1 lines appear in a separate patient-responsibility group, not in the denial list."
+    },
+    {
+      "answerId": "Q-2",
+      "text": "No role can appeal a PR-1 line."
+    },
+    {
+      "answerId": "Q-3",
+      "text": "Patient statements are out of scope for this change."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "statement": "The workbench routes every claim line carrying CARC PR-1 into a patient-responsibility group and excludes that line from the denial worklist.",
+      "rationale": "Q-1 answer. pack/claim-states.md says a PR-1 deductible line is patient responsibility and does not enter denied for appeal."
+    },
+    {
+      "id": "REQ-2",
+      "statement": "No role is offered an appeal action on a PR-1 line, and the domain rule rejects any attempt to move a PR-1 line to appeal-ready or appeal-submitted, whatever the entry point.",
+      "rationale": "Q-2 answer. The PR-1 next action says 'Do not open an appeal.' pack/patterns/detail-checklist.md requires actions to call the domain rule rather than reimplement it in the component."
+    },
+    {
+      "id": "REQ-3",
+      "statement": "The PR-1 line detail shows the CARC meaning 'Deductible amount.' and the next action 'Post the amount to patient responsibility. Do not open an appeal.' exactly as written in the demo table.",
+      "rationale": "pack/carc-demo.md and pack/patterns/detail-checklist.md require the demo-table meaning and the only allowed next action, with no invented text."
+    },
+    {
+      "id": "REQ-4",
+      "statement": "Routing happens per line. On a claim with both PR-1 and denial lines, the denial lines stay in the denial worklist with their own actions, and the PR-1 lines appear only in the patient-responsibility group.",
+      "rationale": "Specialists must still work true denials (for example CO-50) on a claim that also carries a deductible line."
+    },
+    {
+      "id": "REQ-5",
+      "statement": "Each entry in the patient-responsibility group shows the CLM-###, the PAT-###, the line, and the PR-1 amount.",
+      "rationale": "Specialists and leads need to confirm what was posted to patient responsibility without opening each claim."
+    },
+    {
+      "id": "REQ-6",
+      "statement": "Every screen, seed record, and test fixture for this feature uses only PAT-###, CLM-###, and DOC-### identifiers and contains no SSN, email address, phone number, MRN, or date of birth.",
+      "rationale": "pack/phi-policy.md and pack/decisions/ADR-001-patient-and-coverage.md."
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "requirementId": "REQ-1",
+      "given": "Claim CLM-101 for PAT-101 has a single line with CARC PR-1",
+      "when": "The denial specialist opens the denial worklist",
+      "then": "CLM-101's PR-1 line is not listed in the denial worklist",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-2",
+      "requirementId": "REQ-1",
+      "given": "Claim CLM-101 for PAT-101 has a single line with CARC PR-1",
+      "when": "The denial specialist opens the patient-responsibility group",
+      "then": "CLM-101's PR-1 line is listed in the group",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-3",
+      "requirementId": "REQ-2",
+      "given": "A user in any role views a PR-1 line in the group or in line detail",
+      "when": "The page renders",
+      "then": "No appeal, mark appeal-ready, or submit appeal control is present, either enabled or disabled",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-4",
+      "requirementId": "REQ-2",
+      "given": "A PR-1 line on CLM-102",
+      "when": "A request asks the domain rule to transition that line to appeal-ready or appeal-submitted, for example through a direct API call",
+      "then": "The request is rejected, the line state is unchanged, and the response names PR-1 as patient responsibility",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-5",
+      "requirementId": "REQ-2",
+      "given": "A PR-1 line on CLM-102",
+      "when": "Its claim state is inspected after routing",
+      "then": "The line is not in denied, appeal-ready, or appeal-submitted",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-6",
+      "requirementId": "REQ-3",
+      "given": "The denial specialist opens the detail for a PR-1 line",
+      "when": "The CARC section renders",
+      "then": "It shows 'PR-1', class 'patient-responsibility', meaning 'Deductible amount.', and next action 'Post the amount to patient responsibility. Do not open an appeal.' with the text matching character for character",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-7",
+      "requirementId": "REQ-4",
+      "given": "Claim CLM-103 for PAT-103 has line 1 with CO-50 and line 2 with PR-1",
+      "when": "The denial specialist views the denial worklist and the patient-responsibility group",
+      "then": "Line 1 appears only in the denial worklist and still offers its CO-50 next action, and line 2 appears only in the patient-responsibility group",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-8",
+      "requirementId": "REQ-4",
+      "given": "Claim CLM-103 has line 1 with CO-50 and line 2 with PR-1",
+      "when": "The denial specialist opens CLM-103's line 1 detail",
+      "then": "The appeal checklist is shown for line 1 only, and line 2 is labelled patient responsibility with no appeal control",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-9",
+      "requirementId": "REQ-5",
+      "given": "PR-1 lines exist on CLM-101 and CLM-103",
+      "when": "The patient-responsibility group renders",
+      "then": "Each row shows the CLM-###, the PAT-###, the line number, and the PR-1 amount",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-10",
+      "requirementId": "REQ-6",
+      "given": "The seed data and fixtures for this feature",
+      "when": "The demo PHI scanner runs",
+      "then": "There are no hits, and every identifier matches PAT-###, CLM-###, or DOC-###",
+      "priority": "P0"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "SCN-1",
+      "criterionIds": [
+        "AC-1",
+        "AC-2",
+        "AC-9"
+      ],
+      "role": "Denial specialist",
+      "startingState": "Remit posted for CLM-101 (PAT-101) with one PR-1 line",
+      "steps": [
+        "Open the denial worklist",
+        "Search for CLM-101",
+        "Open the patient-responsibility group",
+        "Find CLM-101"
+      ],
+      "expected": "CLM-101 is absent from the denial worklist and present in the patient-responsibility group, showing PAT-101, the line number, and the PR-1 amount."
+    },
+    {
+      "id": "SCN-2",
+      "criterionIds": [
+        "AC-3",
+        "AC-6"
+      ],
+      "role": "Denial specialist",
+      "startingState": "CLM-102 (PAT-102) has a PR-1 line in the patient-responsibility group",
+      "steps": [
+        "Open the patient-responsibility group",
+        "Select the CLM-102 PR-1 line to open its detail",
+        "Review the CARC section and the available actions"
+      ],
+      "expected": "The detail shows meaning 'Deductible amount.' and next action 'Post the amount to patient responsibility. Do not open an appeal.' No appeal control appears anywhere."
+    },
+    {
+      "id": "SCN-3",
+      "criterionIds": [
+        "AC-3"
+      ],
+      "role": "Revenue-cycle lead (and each other configured role in turn)",
+      "startingState": "CLM-102 has a PR-1 line",
+      "steps": [
+        "Sign in as the role",
+        "Open the CLM-102 PR-1 line in the group and in detail",
+        "Repeat for each configured role"
+      ],
+      "expected": "No role sees an appeal, mark appeal-ready, or submit appeal control."
+    },
+    {
+      "id": "SCN-4",
+      "criterionIds": [
+        "AC-4",
+        "AC-5"
+      ],
+      "role": "Denial specialist (via direct API request)",
+      "startingState": "CLM-102 has a PR-1 line in a non-appeal state",
+      "steps": [
+        "Send a request asking the domain rule to set the PR-1 line to appeal-ready",
+        "Send a request asking the domain rule to set it to appeal-submitted",
+        "Inspect the line state"
+      ],
+      "expected": "Both requests are rejected with a reason naming PR-1 as patient responsibility, and the line is never in denied, appeal-ready, or appeal-submitted."
+    },
+    {
+      "id": "SCN-5",
+      "criterionIds": [
+        "AC-7",
+        "AC-8"
+      ],
+      "role": "Denial specialist",
+      "startingState": "CLM-103 (PAT-103) has line 1 with CO-50 and line 2 with PR-1",
+      "steps": [
+        "Open the denial worklist and find CLM-103 line 1",
+        "Open the line 1 detail and confirm the CO-50 next action and the appeal checklist",
+        "Open the patient-responsibility group and find CLM-103 line 2"
+      ],
+      "expected": "Line 1 is worked as a CO-50 denial with its appeal checklist. Line 2 appears only in the patient-responsibility group with no appeal control."
+    },
+    {
+      "id": "SCN-6",
+      "criterionIds": [
+        "AC-10"
+      ],
+      "role": "Release engineer",
+      "startingState": "Feature seed data and fixtures committed",
+      "steps": [
+        "Run the demo PHI scanner over the seed data, fixtures, and brief"
+      ],
+      "expected": "The scanner reports no hits, and only PAT-###, CLM-###, and DOC-### identifiers are present."
+    }
+  ],
+  "screens": [
+    {
+      "id": "SCR-1",
+      "title": "Denial worklist",
+      "purpose": "The specialist's daily queue of actionable denial lines, with PR-1 lines excluded.",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-5"
+      ]
+    },
+    {
+      "id": "SCR-2",
+      "title": "Patient-responsibility group",
+      "purpose": "A separate list of PR-1 deductible lines showing CLM-###, PAT-###, line number, and amount, with no appeal actions.",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-2",
+        "SCN-3",
+        "SCN-5"
+      ]
+    },
+    {
+      "id": "SCR-3",
+      "title": "Claim line detail",
+      "purpose": "Shows the claim lines, the demo-table CARC meaning, and the only allowed next action. Appeal checklist and actions appear for eligible denial lines only, and never for PR-1.",
+      "scenarioIds": [
+        "SCN-2",
+        "SCN-3",
+        "SCN-4",
+        "SCN-5"
+      ]
+    }
+  ],
+  "openQuestions": [
+    {
+      "id": "OQ-1",
+      "text": "Proposed: The workbench displays the PR-1 next action as guidance only and does not itself post the amount to a patient ledger. Needs sign-off."
+    },
+    {
+      "id": "OQ-2",
+      "text": "Open: Which claim-level state applies when every line on a claim is PR-1? Candidates in pack/claim-states.md are paid or closed."
+    },
+    {
+      "id": "OQ-3",
+      "text": "Proposed: A navigation badge shows the count of lines in the patient-responsibility group, so specialists know it exists without opening it. Needs sign-off."
+    },
+    {
+      "id": "OQ-4",
+      "text": "Proposed: If a line carries PR-1 together with a denial code such as CO-50, the line is split by adjustment, so only the PR-1 portion goes to the patient-responsibility group. Needs sign-off."
+    },
+    {
+      "id": "OQ-5",
+      "text": "Open: Should OA-23 informational lines also get a separate non-denial group, or is that a separate change?"
+    }
+  ],
+  "citations": [
+    "pack/claim-states.md",
+    "pack/carc-demo.md",
+    "pack/patterns/detail-checklist.md",
+    "pack/phi-policy.md",
+    "pack/decisions/ADR-001-patient-and-coverage.md"
+  ],
+  "carcReferences": [
+    {
+      "code": "PR-1",
+      "nextAction": "Post the amount to patient responsibility. Do not open an appeal."
+    },
+    {
+      "code": "CO-50",
+      "nextAction": "Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product."
+    }
+  ]
+}

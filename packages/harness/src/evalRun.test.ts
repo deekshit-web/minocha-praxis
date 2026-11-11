@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { recordedLines, type Completion, type PanelRole, type Prd, type SeatSpec } from "@northwind/orchestrator";
 import { evalBriefs, plantedCases } from "./evalCases.ts";
-import { assertServedModels, gradeBrief, gradePlanted, runBrief, runPlanted, type EvalCall, type EvalModels, type JsonCaller } from "./evalRun.ts";
+import { assertServedModels, gradeBrief, gradePlanted, runBrief, runPlanted, STRICT_SEVERITY, type EvalCall, type EvalModels, type JsonCaller } from "./evalRun.ts";
 import { prdPanel } from "./panels.ts";
 
 const usage = { inputTokens: 1000, outputTokens: 500, cacheReadTokens: 0, cacheWriteTokens: 0 };
@@ -73,6 +73,14 @@ test("each Part B setup makes the calls it claims to, on the models it claims to
     v1: ["claude-opus-5:analystA", "claude-opus-5:critiqueOfA", "claude-opus-5:synthesizer"],
     v2: ["claude-opus-5:analystA", "claude-opus-5:analystB", "claude-opus-5:critiqueOfA", "claude-opus-5:critiqueOfB", "claude-opus-5:synthesizer"],
     v3: ["claude-opus-5:analystA", "grok-4.7:analystB", "grok-4.7:critiqueOfA", "claude-opus-5:critiqueOfB", "claude-opus-5:synthesizer"],
+    v4: [
+      "claude-opus-5:analystA",
+      "claude-opus-5:analystB",
+      "claude-opus-5:critiqueOfA",
+      "claude-opus-5:critiqueOfB",
+      "claude-opus-5:synthesizer",
+      "grok-4.7:critiqueOfA",
+    ],
   };
   for (const [variant, calls] of Object.entries(expected)) {
     const log: string[] = [];
@@ -116,4 +124,25 @@ test("a call served by a different model than it asked for fails the attempt as 
     () => assertServedModels([call("claude-opus-5", "claude-opus-4-8")]),
     (error: Error & { failure_class?: string }) => error.failure_class === "serving_substitution",
   );
+});
+
+test("v4 reviews strictly, and Claude revises only when the final Grok review raises a defect", async () => {
+  const brief = evalBriefs()[0];
+  assert.ok(brief);
+  const defect = { id: "D-A1", severity: "P0", code: "OTHER", point: "AC-2 uses 14 days where the brief says 10" };
+  for (const defects of [[], [defect]]) {
+    const log: string[] = [];
+    const reviewSeats: string[] = [];
+    const answer = (role: PanelRole, _prompt: string, seat: SeatSpec) => {
+      if (role.startsWith("critique")) reviewSeats.push(seat.instructions);
+      return seatAnswer(role);
+    };
+    const grok = fake("grok-4.7", (role, prompt, seat) => (answer(role, prompt, seat), { ...(critiqueOfA as object), defects }), log);
+    const run = await runBrief(brief, "v4", { ...models(() => ({})), claude: fake("claude-opus-5", answer, log), grok });
+    assert.deepEqual(log.slice(5), defects.length ? ["grok-4.7:critiqueOfA", "claude-opus-5:synthesizer"] : ["grok-4.7:critiqueOfA"]);
+    assert.equal(run.calls.length, 5 + 1 + defects.length);
+    assert.ok((run.output as Prd).requirements.length > 0);
+    assert.equal(reviewSeats.length, 3);
+    for (const instructions of reviewSeats) assert.ok(instructions.endsWith(STRICT_SEVERITY));
+  }
 });

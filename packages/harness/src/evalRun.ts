@@ -194,6 +194,7 @@ export const PART_B_SETUPS = {
   v1: "self-review: Claude drafts, reviews, revises",
   v2: "panel, all Claude",
   v3: "panel, Claude + Grok",
+  v4: "panel, all Claude, strict severity + Grok final review",
 } as const;
 
 export type PartBVariant = keyof typeof PART_B_SETUPS;
@@ -209,6 +210,14 @@ function reviseSeat(): SeatSpec {
     schema: synthesisSchema(PrdSchema),
     compiled: false,
   };
+}
+
+/** v4's severity rule for every reviewer: a wrong fact is never a matter of taste. */
+export const STRICT_SEVERITY =
+  "Severity is strict: any wrong figure, date, threshold, code, or rule (one that contradicts the brief, the decisions, the CARC table, or the knowledge pack) is P0, however small it looks.";
+
+function strict(seat: SeatSpec): SeatSpec {
+  return { ...seat, instructions: `${seat.instructions} ${STRICT_SEVERITY}` };
 }
 
 export async function runBrief(brief: EvalBrief, variant: PartBVariant, models: EvalModels): Promise<EvalRun> {
@@ -234,6 +243,26 @@ export async function runBrief(brief: EvalBrief, variant: PartBVariant, models: 
   }
 
   const grok = recorded(models.grok, calls, "grok seat");
+  if (variant === "v4") {
+    // The all-Claude panel with strict reviewers, then one independent Grok review of the merged PRD.
+    // Claude revises only if Grok raised something.
+    const strictSeats = { ...seats, critiqueOfA: strict(seats.critiqueOfA), critiqueOfB: strict(seats.critiqueOfB) };
+    const provider = new SeatRouter(
+      Object.fromEntries((Object.keys(seats) as PanelRole[]).map((role) => [role, asProvider(claude, context, strictSeats)])) as Record<PanelRole, ModelProvider>,
+    );
+    const result = await runLivePrd(provider, brief.brief);
+    for (const call of result.calls) transcript.push({ role: "user", content: `[${call.role}]\n${call.prompt}` });
+    transcript.push({ role: "assistant", content: JSON.stringify({ synthesis: result.panel.synthesis, rationale: result.panel.rationale }) });
+    const merged = result.panel.synthesis;
+    const final = JSON.parse(
+      await ask(grok, "critiqueOfA", buildSeatPrompt("critiqueOfA", brief.brief, { proposalA: merged }), strictSeats.critiqueOfA),
+    ) as PanelCritique;
+    if (!final.defects.length) return { output: merged, calls, transcript };
+    const revised = JSON.parse(
+      await ask(claude, "synthesizer", buildSeatPrompt("synthesizer", brief.brief, { proposalA: merged, critiqueOfA: final }), reviseSeat()),
+    ) as { synthesis: Prd; rationale: SynthesisRationale };
+    return { output: revised.synthesis, calls, transcript };
+  }
   const route: Record<PanelRole, JsonCaller> =
     variant === "v2"
       ? { analystA: claude, analystB: claude, critiqueOfA: claude, critiqueOfB: claude, synthesizer: claude }

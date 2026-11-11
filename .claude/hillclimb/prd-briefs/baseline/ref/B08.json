@@ -1,0 +1,402 @@
+{
+  "problem": "When a claim line is denied with CARC CO-4, the procedure code is inconsistent with the modifier used, or a required modifier is missing. Today nothing stops an unchanged line from being resubmitted, and nothing prevents a tool from guessing a modifier. Northwind's denial workbench must let the coder set the corrected modifier and the biller resubmit it. Resubmission must stay blocked until the modifier has changed, and the product must never suggest, prefill, or invent a modifier value. The denial specialist works this queue every day and needs to recognize CO-4 rows at a glance as coder-then-biller work, not appeal work.",
+  "users": [
+    "Coder: sole role that sets or changes the modifier on a CO-4 line (Q-1, pack/roles.md)",
+    "Biller: sole role that resubmits a corrected CO-4 line (Q-1, pack/roles.md)",
+    "Denial specialist: triages the denial workqueue daily; sees CO-4 rows but does not edit modifiers, resubmit, or appeal them",
+    "PFS lead: sees counts by CARC class only"
+  ],
+  "inScope": [
+    "Display of the exact CO-4 next action and fixture remark N519 on CO-4 lines",
+    "A modifier entry field for the coder with no suggestion, prefill, autocomplete, or ranked list",
+    "Role gating: only the coder edits the modifier and only the biller resubmits",
+    "A resubmission block until the modifier differs from the modifier on the denied line",
+    "The claim state transition from denied to submitted on a valid resubmission",
+    "Workqueue presentation of CO-4 rows for the denial specialist: CARC class filter, sort by days remaining, deadline risk visible without opening the row",
+    "Excluding CO-4 lines from appeal and appeal-ready",
+    "Synthetic-only fixtures (PAT-###, CLM-###, DOC-###) subject to the demo PHI scanner"
+  ],
+  "outOfScope": [
+    "Suggesting, recommending, inferring, or generating any modifier, CPT, or ICD value",
+    "Appeals for CO-4 lines",
+    "Diagnosis code changes and balance write-offs by any role",
+    "Handling of CO-16, CO-197, PR-1, and OA-23 beyond their existing workqueue grouping",
+    "Decisions on CO-50 medical necessity",
+    "Production X12 code-list validation",
+    "HIPAA determinations or a business associate agreement"
+  ],
+  "assumptions": [
+    {
+      "answerId": "Q-1",
+      "text": "The coder sets the corrected modifier; the biller resubmits the claim."
+    },
+    {
+      "answerId": "Q-2",
+      "text": "The product never suggests a modifier."
+    },
+    {
+      "answerId": "Q-3",
+      "text": "A CO-4 line cannot be resubmitted unchanged; the modifier must change first."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "statement": "Every CO-4 line shows its CARC code, its fixture remark, and the next action copied exactly from the CARC table: \"Correct the modifier and resubmit. Do not invent a modifier in this product.\"",
+      "rationale": "The CARC table is the only source of next actions, and the product must not invent meanings (pack/carc-demo.md)."
+    },
+    {
+      "id": "REQ-2",
+      "statement": "The product never suggests, prefills, autocompletes, ranks, defaults, or generates a modifier value on a CO-4 line. The only modifier values the product shows are the value on the denied line and a value the coder typed.",
+      "rationale": "The brief, Q-2, and the CO-4 next action all forbid inventing a modifier, and the product does not suggest CPT or ICD changes (pack/roles.md)."
+    },
+    {
+      "id": "REQ-3",
+      "statement": "Only the coder can edit the modifier on a CO-4 line. For every other role, the modifier is read-only.",
+      "rationale": "Q-1 assigns this to the coder, and the coder owns modifiers (pack/roles.md)."
+    },
+    {
+      "id": "REQ-4",
+      "statement": "A CO-4 line cannot be resubmitted while its current modifier equals the modifier on the denied line.",
+      "rationale": "Q-3 requires the modifier to change before resubmission."
+    },
+    {
+      "id": "REQ-5",
+      "statement": "Only the biller can resubmit a CO-4 line. A valid resubmission moves the line from denied to submitted.",
+      "rationale": "Q-1 and pack/roles.md assign resubmission to the biller, and the transition uses only the states in pack/claim-states.md."
+    },
+    {
+      "id": "REQ-6",
+      "statement": "The denial workqueue shows CO-4 rows that can be filtered by CARC class and sorted by days remaining to the filing deadline. Deadline risk is visible without opening the row. Patient-responsibility lines appear in a separate group.",
+      "rationale": "The denial specialist's daily triage follows the workqueue pattern (pack/patterns/workqueue.md)."
+    },
+    {
+      "id": "REQ-7",
+      "statement": "A CO-4 line can never be appealed or moved to appeal-ready.",
+      "rationale": "Appeal-ready is allowed only for a CO-50 line after the readiness gate passes (pack/claim-states.md). CO-4's next action is correct and resubmit."
+    },
+    {
+      "id": "REQ-8",
+      "statement": "No role can write off a balance or change a diagnosis code from a CO-4 line.",
+      "rationale": "Nobody in this demo may write off a balance or change a diagnosis code (pack/roles.md)."
+    },
+    {
+      "id": "REQ-9",
+      "statement": "CO-4 fixtures and seed data use only PAT-###, CLM-###, and DOC-### identifiers and pass the demo PHI scanner before a run proceeds.",
+      "rationale": "pack/phi-policy.md requires synthetic identifiers and blocks a run when the scanner finds a hit."
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "requirementId": "REQ-1",
+      "given": "CLM-101 has a line in state denied with CARC CO-4 and remark N519",
+      "when": "any permitted role opens the line",
+      "then": "the line shows CO-4, remark N519, and the next action text exactly \"Correct the modifier and resubmit. Do not invent a modifier in this product.\"",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-2",
+      "requirementId": "REQ-2",
+      "given": "a coder opens the CO-4 line on CLM-101",
+      "when": "the coder focuses or types in the new-modifier field",
+      "then": "no suggested, prefilled, autocompleted, ranked, or default modifier value appears; the denied modifier is shown separately as read-only, and the new-modifier field starts blank",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-3",
+      "requirementId": "REQ-2",
+      "given": "any CO-4 line in the seed data",
+      "when": "an observer inspects the screen, the export, and the line's stored data",
+      "then": "every modifier value present is either the value on the denied line or a value a coder entered",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-4",
+      "requirementId": "REQ-3",
+      "given": "a biller, denial specialist, or PFS lead opens the CO-4 line on CLM-101",
+      "when": "they view the modifier",
+      "then": "the modifier is read-only and no edit control is present",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-5",
+      "requirementId": "REQ-3",
+      "given": "a coder opens the CO-4 line on CLM-101",
+      "when": "the coder enters a modifier different from the denied value and saves",
+      "then": "the line shows the new modifier, and the denied modifier remains visible as the prior value",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-6",
+      "requirementId": "REQ-4",
+      "given": "the CO-4 line on CLM-102 still carries the denied modifier",
+      "when": "a biller opens the line to resubmit",
+      "then": "the resubmit control is disabled with a message that the modifier must change first, and the line stays in denied",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-7",
+      "requirementId": "REQ-4",
+      "given": "a coder changed the CO-4 modifier on CLM-103 and then changed it back to the denied value",
+      "when": "a biller opens the line",
+      "then": "resubmission is blocked exactly as in AC-6",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-8",
+      "requirementId": "REQ-5",
+      "given": "a coder has saved a changed modifier on the CO-4 line of CLM-101",
+      "when": "a biller resubmits the line",
+      "then": "the line moves from denied to submitted and carries the coder-entered modifier",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-9",
+      "requirementId": "REQ-5",
+      "given": "a coder has saved a changed modifier on the CO-4 line of CLM-101",
+      "when": "a coder, denial specialist, or PFS lead views the line",
+      "then": "no resubmit control is available to them",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-10",
+      "requirementId": "REQ-6",
+      "given": "the workqueue holds CO-4 lines on CLM-101 and CLM-102, a CO-50 line on CLM-104, and a PR-1 line on CLM-105",
+      "when": "a denial specialist filters by CARC class denial and sorts by days remaining",
+      "then": "the CO-4 and CO-50 rows appear in ascending days-remaining order with deadline risk visible on each row, and the PR-1 line appears only in the separate patient-responsibility group",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-11",
+      "requirementId": "REQ-6",
+      "given": "a CO-4 row in the workqueue",
+      "when": "a denial specialist scans the row without opening it",
+      "then": "the row shows that the coder sets the modifier and the biller resubmits",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-12",
+      "requirementId": "REQ-7",
+      "given": "a denial specialist opens the CO-4 line on CLM-101",
+      "when": "they look for appeal actions",
+      "then": "no open-appeal or mark-appeal-ready control exists, and the line cannot enter appeal-ready by any path",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-13",
+      "requirementId": "REQ-8",
+      "given": "any role opens a CO-4 line",
+      "when": "they review the available actions",
+      "then": "no write-off action and no diagnosis-code edit control are present",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-14",
+      "requirementId": "REQ-9",
+      "given": "a CO-4 seed fixture contains a value labelled as a date of birth",
+      "when": "a run starts",
+      "then": "the scanner blocks the run before a requirement document is written, and all other fixtures use only PAT-###, CLM-###, and DOC-### identifiers",
+      "priority": "P1"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "SCN-1",
+      "criterionIds": [
+        "AC-10",
+        "AC-11",
+        "AC-1",
+        "AC-12"
+      ],
+      "role": "Denial specialist",
+      "startingState": "The workqueue holds denied CO-4 lines on CLM-101 (PAT-201) and CLM-102 (PAT-202), a denied CO-50 line on CLM-104, and a PR-1 line on CLM-105",
+      "steps": [
+        "Open the denial workqueue",
+        "Filter by CARC class denial",
+        "Sort by days remaining",
+        "Scan the CO-4 rows for deadline risk and owner",
+        "Open the CO-4 line on CLM-101",
+        "Look for appeal actions"
+      ],
+      "expected": "Rows are sorted by days remaining, with deadline risk and the coder-then-biller owner visible on each row. PR-1 sits in its own group. The CLM-101 line shows remark N519 and the exact CO-4 next action, and it offers no appeal or appeal-ready control."
+    },
+    {
+      "id": "SCN-2",
+      "criterionIds": [
+        "AC-2",
+        "AC-3",
+        "AC-5"
+      ],
+      "role": "Coder",
+      "startingState": "The CO-4 line on CLM-101 is in denied and carries the denied modifier",
+      "steps": [
+        "Open the CO-4 line on CLM-101",
+        "Focus the new-modifier field",
+        "Type a modifier different from the denied value",
+        "Save"
+      ],
+      "expected": "No modifier value is ever suggested, prefilled, or autocompleted. After save, the line shows the coder-entered modifier with the denied value still visible as the prior value. No other modifier value exists anywhere on the line."
+    },
+    {
+      "id": "SCN-3",
+      "criterionIds": [
+        "AC-6",
+        "AC-4"
+      ],
+      "role": "Biller",
+      "startingState": "The CO-4 line on CLM-102 is in denied with its modifier unchanged",
+      "steps": [
+        "Open the CO-4 line on CLM-102",
+        "Try to edit the modifier",
+        "Try to resubmit"
+      ],
+      "expected": "The modifier is read-only, the resubmit control is disabled with a message that the modifier must change first, and the line remains in denied."
+    },
+    {
+      "id": "SCN-4",
+      "criterionIds": [
+        "AC-8",
+        "AC-1"
+      ],
+      "role": "Biller",
+      "startingState": "The coder has saved a changed modifier on the CO-4 line of CLM-101 in SCN-2",
+      "steps": [
+        "Open the CO-4 line on CLM-101",
+        "Confirm the next action text",
+        "Resubmit"
+      ],
+      "expected": "The next action reads exactly as in the CARC table, and the line moves from denied to submitted with the coder-entered modifier."
+    },
+    {
+      "id": "SCN-5",
+      "criterionIds": [
+        "AC-9",
+        "AC-4",
+        "AC-13"
+      ],
+      "role": "Denial specialist",
+      "startingState": "The CO-4 line on CLM-101 has a coder-changed modifier and is still in denied",
+      "steps": [
+        "Open the CO-4 line",
+        "Look for modifier edit, resubmit, write-off, and diagnosis edit controls"
+      ],
+      "expected": "The modifier is read-only, and no resubmit, write-off, or diagnosis-edit control is available."
+    },
+    {
+      "id": "SCN-6",
+      "criterionIds": [
+        "AC-7"
+      ],
+      "role": "Biller",
+      "startingState": "A coder changed the CO-4 modifier on CLM-103 and then reverted it to the denied value",
+      "steps": [
+        "Open the CO-4 line on CLM-103",
+        "Try to resubmit"
+      ],
+      "expected": "Resubmission is blocked and the line stays in denied."
+    },
+    {
+      "id": "SCN-7",
+      "criterionIds": [
+        "AC-14"
+      ],
+      "role": "Biller",
+      "startingState": "A CO-4 seed fixture for DOC-301 includes a field labelled DOB",
+      "steps": [
+        "Start a run with the fixture"
+      ],
+      "expected": "The PHI scanner blocks the run before a requirement document is written."
+    }
+  ],
+  "screens": [
+    {
+      "id": "SCR-1",
+      "title": "Denial workqueue",
+      "purpose": "The denial specialist's daily triage table. It filters by CARC class, sorts by days remaining, shows deadline risk on each row, keeps patient responsibility in a separate group, and marks CO-4 rows as coder-then-biller work.",
+      "scenarioIds": [
+        "SCN-1"
+      ]
+    },
+    {
+      "id": "SCR-2",
+      "title": "CO-4 line detail and modifier correction",
+      "purpose": "Shows the CO-4 code, remark N519, the exact next action, and the denied modifier. Gives the coder a blank, suggestion-free modifier field and shows it read-only to every other role. Offers no appeal, write-off, or diagnosis controls.",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-2",
+        "SCN-5"
+      ]
+    },
+    {
+      "id": "SCR-3",
+      "title": "Resubmit review",
+      "purpose": "Shows the biller the denied and current modifier side by side and enables resubmission only when they differ. A valid resubmission moves the line from denied to submitted.",
+      "scenarioIds": [
+        "SCN-3",
+        "SCN-4",
+        "SCN-6",
+        "SCN-7"
+      ]
+    }
+  ],
+  "openQuestions": [
+    {
+      "id": "OQ-1",
+      "text": "Open: The brief says the biller corrects the modifier, but Q-1 and pack/roles.md say the coder sets it. Confirm that Q-1 supersedes the brief wording."
+    },
+    {
+      "id": "OQ-2",
+      "text": "Proposed: Removing a modifier, or adding one where none existed, counts as a change for the resubmission block. Needs sign-off."
+    },
+    {
+      "id": "OQ-3",
+      "text": "Proposed: The line stays in denied after the coder saves a modifier and moves to submitted only when the biller resubmits; no new claim state is added. Needs sign-off."
+    },
+    {
+      "id": "OQ-4",
+      "text": "Proposed: CO-4 rows appear in the workqueue's denial table alongside appealable denials and are labelled as correct-and-resubmit work, not appeal work. Needs sign-off."
+    },
+    {
+      "id": "OQ-5",
+      "text": "Open: How does a CO-4 line reach the coder from the workqueue: an explicit route action by the denial specialist or biller, or a shared coder queue?"
+    },
+    {
+      "id": "OQ-6",
+      "text": "Proposed: Record who changed the modifier, the prior and new values, the time, and who resubmitted. Needs sign-off."
+    },
+    {
+      "id": "OQ-7",
+      "text": "Open: When a claim has several CO-4 lines, must every CO-4 line have a changed modifier before the biller can resubmit the claim?"
+    },
+    {
+      "id": "OQ-8",
+      "text": "Open: How should a CO-4 line display when it arrives with a remark other than N519, or with no remark?"
+    },
+    {
+      "id": "OQ-9",
+      "text": "Open: What happens when a resubmitted line is denied again with CO-4? Should the comparison baseline become the most recently denied modifier?"
+    }
+  ],
+  "citations": [
+    "pack/carc-demo.md",
+    "pack/roles.md",
+    "pack/claim-states.md",
+    "pack/patterns/workqueue.md",
+    "pack/phi-policy.md"
+  ],
+  "carcReferences": [
+    {
+      "code": "CO-4",
+      "nextAction": "Correct the modifier and resubmit. Do not invent a modifier in this product."
+    },
+    {
+      "code": "CO-50",
+      "nextAction": "Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product."
+    },
+    {
+      "code": "PR-1",
+      "nextAction": "Post the amount to patient responsibility. Do not open an appeal."
+    }
+  ]
+}

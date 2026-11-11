@@ -1,0 +1,97 @@
+{
+  "problem": "On CO-197 denials (precertification, authorization, or notification absent), a line can currently be resubmitted without any authorization reference, which invites a repeat denial. The workbench must require a valid AUTH-#### reference before a CO-197 line can be resubmitted. A CO-197 line with no reference must go to the authorization desk for a retro request instead of being resubmitted.",
+  "users": [
+    "Denial specialist: works CO-197 lines day to day, attaches authorization references, resubmits, or routes lines to the authorization desk.",
+    "Authorization desk: receives routed CO-197 lines for a retro authorization request. This role is not defined in pack/roles.md; see open questions.",
+    "Biller: resubmits corrected CO-16 and CO-4 claims, and must see no change to that workflow.",
+    "PFS lead: sees counts by CARC class and does not act on lines."
+  ],
+  "inScope": [
+    "A gate on the resubmit action for CO-197 lines that requires an attached AUTH-#### reference.",
+    "Format validation of the authorization reference: a non-empty AUTH-#### id, with free text rejected.",
+    "A route-to-authorization-desk action for CO-197 lines with no reference, labelled as a retro request.",
+    "Showing the CO-197 meaning and next action exactly as written in the CARC table.",
+    "An authorization-status indicator for CO-197 lines in the workqueue, visible without opening the row.",
+    "An audit trail of attach, resubmit, and route actions on CO-197 lines.",
+    "Regression protection so that all other CARC codes behave as they do today."
+  ],
+  "outOfScope": [
+    "Any change to CO-16, CO-50, CO-4, PR-1, or OA-23 handling.",
+    "Creating, requesting, or obtaining authorizations inside this product. The retro request itself is worked by the authorization desk.",
+    "Verifying an AUTH id against a payer or an external authorization system (pending an open question).",
+    "Writing off balances or changing diagnosis codes.",
+    "Suggesting CPT or ICD changes.",
+    "Real patient data of any kind."
+  ],
+  "assumptions": [
+    {
+      "answerId": "Q-1",
+      "text": "An authorization reference counts only if it is a non-empty AUTH-#### id. Free text does not count."
+    },
+    {
+      "answerId": "Q-2",
+      "text": "The specialist cannot resubmit a CO-197 line without an authorization reference. That line is routed to the authorization desk for a retro request."
+    },
+    {
+      "answerId": "Q-3",
+      "text": "No other denial code changes. Only CO-197 lines are affected."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "statement": "The resubmit action on a CO-197 line must be unavailable until a valid authorization reference is attached to that line.",
+      "rationale": "The brief requires an existing authorization reference before resubmitting. The CO-197 next action is to attach the authorization reference if one exists."
+    },
+    {
+      "id": "REQ-2",
+      "statement": "The product must accept as an authorization reference only a non-empty id shaped AUTH-####. It must reject free text, empty or whitespace-only input, and malformed ids, and must not store a rejected value.",
+      "rationale": "Q-1 defines a reference as a non-empty AUTH-#### id and says free text does not count."
+    },
+    {
+      "id": "REQ-3",
+      "statement": "A CO-197 line with no authorization reference must be routable to the authorization desk as a retro request. A routed line must not be resubmitted from the denial workbench.",
+      "rationale": "Q-2 and the CO-197 next action both say to route to the authorization desk for a retro request when no reference exists."
+    },
+    {
+      "id": "REQ-4",
+      "statement": "Wherever a CO-197 line is shown in detail, the product must display the CARC meaning and next action exactly as written in the CARC table.",
+      "rationale": "Next actions must be copied exactly, and the product must not invent meanings (pack/carc-demo.md)."
+    },
+    {
+      "id": "REQ-5",
+      "statement": "The authorization gate and the routing action must apply only to CO-197 lines. Lines with any other CARC code must keep their current actions and next-action text.",
+      "rationale": "Q-3 limits the change to CO-197 lines."
+    },
+    {
+      "id": "REQ-6",
+      "statement": "The workqueue must show each CO-197 line's authorization status (none, attached with its AUTH id, or routed to the authorization desk) without opening the row. The workqueue must stay sortable by days remaining to the filing deadline.",
+      "rationale": "This supports the specialist's daily triage and follows the workqueue pattern (pack/patterns/workqueue.md)."
+    },
+    {
+      "id": "REQ-7",
+      "statement": "Each attach, resubmit, and route action on a CO-197 line must be recorded in the line history with the acting role, the action, the AUTH id if any, and a timestamp.",
+      "rationale": "This lets specialists and leads confirm that a CO-197 line was resubmitted only with a reference or was routed instead."
+    },
+    {
+      "id": "REQ-8",
+      "statement": "All seed data, fixtures, and examples for this feature must use only synthetic identifiers shaped PAT-###, CLM-###, and DOC-###, plus AUTH-#### references. A PHI scanner hit must block the run.",
+      "rationale": "Only synthetic patients are allowed (pack/phi-policy.md)."
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "requirementId": "REQ-1",
+      "given": "CO-197 line CLM-101 for PAT-001 has no authorization reference attached",
+      "when": "the denial specialist opens the line detail",
+      "then": "the Resubmit action is disabled and a visible reason states that an AUTH-#### authorization reference is required",
+      "priority": "P0"
+    }
+  ],
+  "scenarios": [],
+  "screens": [],
+  "openQuestions": [],
+  "citations": [],
+  "carcReferences": []
+}
