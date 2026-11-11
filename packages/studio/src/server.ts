@@ -64,7 +64,15 @@ export function createStudioServer(options: StudioOptions = {}): Server {
         return;
       }
       if (req.method === "GET" && url.pathname === "/api/status") {
-        send(res, 200, { decisionsLive: decider.live });
+        const recorded = loadSpecs().flatMap((spec) => (spec.recording ? [spec.recording] : []));
+        send(res, 200, {
+          decisionsLive: decider.live,
+          recordings: {
+            count: recorded.length,
+            calls: recorded.reduce((total, recording) => total + recording.calls.length, 0),
+            costUsd: recorded.reduce((total, recording) => total + recording.calls.reduce((sum, call) => sum + call.costUsd, 0), 0),
+          },
+        });
         return;
       }
       const decide = url.pathname.match(/^\/api\/decide\/([a-z0-9-]+)\/([a-zA-Z]+)$/);

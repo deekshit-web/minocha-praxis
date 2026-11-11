@@ -3,7 +3,7 @@ import test from "node:test";
 import { createDecider } from "./jev.ts";
 import { loadSpecs } from "./workflows.ts";
 
-const spec = loadSpecs().find((item) => item.id === "healthcare-build")!;
+const spec = loadSpecs(undefined, { recordings: false }).find((item) => item.id === "healthcare-build")!;
 
 function fakeJev(reply: (body: { model: string; state: string; questions: Record<string, { type: string }> }) => unknown, status = 200) {
   const calls: Array<{ headers: Record<string, string>; body: { model: string; state: string; questions: Record<string, { type: string }> } }> = [];

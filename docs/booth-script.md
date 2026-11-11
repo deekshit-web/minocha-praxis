@@ -56,7 +56,7 @@ it: Draft A used **age** to tighten the lending limit. That is unlawful.
 
 ## 6. Break it yourself (40 s)
 
-Scroll to **Try to break it**. Click **Use draft A's version**. The check fails: "age" is a protected
+Scroll to **Try to break it**. Click **Try a common mistake** (it loads the classic wrong figure, here "age" as an input). The check fails: "age" is a protected
 attribute. When the run reaches **Code checks** it stops, and nothing goes to a person.
 
 > "These checks are code, not a model grading a model."

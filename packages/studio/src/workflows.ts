@@ -2,6 +2,7 @@ import { callCost, findPhi, repoRoot } from "@northwind/orchestrator";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import * as z from "zod/v4";
+import { type Recording, recordingFor, renderMerge, renderReview } from "./record.ts";
 
 /**
  * A simulated workflow. Nothing here calls a model: every output was written in advance, so a demo shows how
@@ -78,10 +79,39 @@ const SpecSchema = z.object({
    * What one model alone would have handed over, next to what the panel delivers: a passage from the draft a
    * review flagged, the passage that replaced it in the output, and why it mattered, in plain words.
    */
-  contrast: z.object({ draft: z.enum(["A", "B"]), before: Text, after: Text, why: Text }),
+  contrast: z.object({ draft: z.enum(["A", "B"]), before: Text, after: Text, why: Text }).nullable(),
 });
 
-export type WorkflowSpec = z.infer<typeof SpecSchema>;
+let calibrationCache: Record<string, { cost: number; seconds: number; input: number; output: number }> | null = null;
+
+/**
+ * Per model, real recorded calls divided by what the estimates said for the same panel steps. Empty when
+ * nothing is recorded, so estimates stand as they are.
+ */
+export function calibration(): Record<string, { cost: number; seconds: number; input: number; output: number }> {
+  if (calibrationCache) return calibrationCache;
+  const sums: Record<string, { real: [number, number, number, number]; guess: [number, number, number, number] }> = {};
+  const stepOf: Record<string, string> = { analystA: "draftA", analystB: "draftB", critiqueOfA: "reviewOfA", critiqueOfB: "reviewOfB", synthesizer: "merge" };
+  for (const authored of loadSpecs(undefined, { recordings: false })) {
+    const recording = recordingFor(authored.id);
+    if (!recording) continue;
+    const estimate = expandEstimates(authored);
+    for (const call of recording.calls) {
+      const step = estimate.find((item) => item.id === stepOf[call.role]);
+      if (!step?.tokens) continue;
+      const entry = (sums[step.actor] ??= { real: [0, 0, 0, 0], guess: [0, 0, 0, 0] });
+      entry.real = [entry.real[0] + call.costUsd, entry.real[1] + call.seconds, entry.real[2] + call.inputTokens, entry.real[3] + call.outputTokens];
+      entry.guess = [entry.guess[0] + (step.estimatedCostUsd ?? 0), entry.guess[1] + step.seconds, entry.guess[2] + step.tokens.input, entry.guess[3] + step.tokens.output];
+    }
+  }
+  calibrationCache = Object.fromEntries(
+    Object.entries(sums).map(([model, { real, guess }]) => [model, { cost: real[0] / guess[0], seconds: real[1] / guess[1], input: real[2] / guess[2], output: real[3] / guess[3] }]),
+  );
+  return calibrationCache;
+}
+
+/** A workflow as authored, plus the real recording of its panel when one has been made. */
+export type WorkflowSpec = z.infer<typeof SpecSchema> & { recording?: Recording };
 
 export type StepKind = "input" | "llm" | "tool" | "check" | "human";
 
@@ -107,6 +137,10 @@ export interface Step {
   verdict?: "pass" | "flagged";
   /** The software-development stage a build step belongs to. */
   stage?: string;
+  /** Replayed from a real recorded call, with its real time, tokens and cost. */
+  recorded?: boolean;
+  /** An estimate scaled by how real recorded calls on the same model compared with the estimates. */
+  calibrated?: boolean;
 }
 
 /** The stages of software development a build workflow walks through, in order. */
@@ -125,7 +159,9 @@ export interface Workflow {
   requester: string;
   brief: string;
   output: string;
-  contrast: { draft: "A" | "B"; before: string; after: string; why: string };
+  contrast: { draft: "A" | "B"; before: string; after: string; why: string } | null;
+  /** When the panel is replayed from a real recording: when it was made, what it cost, how long it took. */
+  recording: { recordedAt: string; costUsd: number; seconds: number; calls: number } | null;
   phases: string[];
   /** What each model's role is, keyed by model id. */
   models: typeof MODELS;
@@ -425,7 +461,12 @@ function buildOutput(spec: WorkflowSpec): string {
   ].join("\n");
 }
 
-export function expand(spec: WorkflowSpec): Workflow {
+/** The uncalibrated estimate for each step, used to measure how far estimates are from recorded reality. */
+function expandEstimates(spec: WorkflowSpec): Step[] {
+  return expand(spec, { raw: true }).steps;
+}
+
+export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Workflow {
   const brief = step({ id: "brief", kind: "input", phase: 0, col: 0, row: 1, title: "The brief", actor: "Requester", caption: "Everything starts from one short brief.", given: "What the requester asked for.", output: spec.brief, after: [], seconds: 0 });
   let steps: Step[];
   let phases: string[];
@@ -491,6 +532,28 @@ export function expand(spec: WorkflowSpec): Workflow {
   // Real calls vary in size from one task to the next. Scale each call by a factor fixed per workflow and step
   // (0.75 to 1.3), so estimates differ between workflows but never change between page loads.
   steps = steps.map((item) => (item.kind === "llm" ? resize(item, spread(`${spec.id}:${item.id}`)) : item));
+  // Steps with no recording are estimates. Scale them by how far the estimates were off for the same model on
+  // the calls that were recorded, so "would cost if live" reflects real usage.
+  const scale = options.raw ? {} : calibration();
+  steps = steps.map((item) => {
+    const ratio = item.kind === "llm" ? scale[item.actor] : undefined;
+    if (!ratio) return item;
+    return {
+      ...item,
+      calibrated: true,
+      seconds: Math.max(1, Math.round(item.seconds * ratio.seconds)),
+      tokens: item.tokens ? { input: Math.round(item.tokens.input * ratio.input), output: Math.round(item.tokens.output * ratio.output) } : item.tokens,
+      estimatedCostUsd: (item.estimatedCostUsd ?? 0) * ratio.cost,
+    };
+  });
+  const recording = options.raw ? undefined : spec.recording;
+  if (recording) {
+    const stepOf: Record<string, string> = { analystA: "draftA", analystB: "draftB", critiqueOfA: "reviewOfA", critiqueOfB: "reviewOfB", synthesizer: "merge" };
+    steps = steps.map((item) => {
+      const call = recording.calls.find((entry) => stepOf[entry.role] === item.id);
+      return call ? { ...item, recorded: true, seconds: call.seconds, tokens: { input: call.inputTokens, output: call.outputTokens }, estimatedCostUsd: call.costUsd } : item;
+    });
+  }
   const models = steps.filter((item) => item.kind === "llm");
   return {
     id: spec.id,
@@ -500,6 +563,14 @@ export function expand(spec: WorkflowSpec): Workflow {
     summary: spec.summary,
     deliverable: spec.deliverable,
     contrast: spec.contrast,
+    recording: recording
+      ? {
+          recordedAt: recording.recordedAt,
+          costUsd: recording.calls.reduce((total, call) => total + call.costUsd, 0),
+          seconds: recording.calls.reduce((total, call) => total + call.seconds, 0),
+          calls: recording.calls.length,
+        }
+      : null,
     project: spec.project,
     requester: spec.requester,
     brief: spec.brief,
@@ -532,15 +603,59 @@ export function workflowIssues(spec: WorkflowSpec): string[] {
 
 const WORKFLOW_DIR = () => join(repoRoot(), "packages/studio/workflows");
 
-export function loadSpecs(dir = WORKFLOW_DIR()): WorkflowSpec[] {
-  return readdirSync(dir)
+export function loadSpecs(dir = WORKFLOW_DIR(), options: { recordings?: boolean } = {}): WorkflowSpec[] {
+  const authored = readdirSync(dir)
     .filter((name) => name.endsWith(".json"))
     .sort()
     .map((name) => {
       const parsed = SpecSchema.safeParse(JSON.parse(readFileSync(join(dir, name), "utf8")));
       if (!parsed.success) throw new Error(`${name}: ${parsed.error.issues.map((issue) => `${issue.path.join(".")} ${issue.message}`).join("; ")}`);
-      return parsed.data;
+      return parsed.data as WorkflowSpec;
     });
+  if (options.recordings === false) return authored;
+  return authored.map((spec) => {
+    const recording = recordingFor(spec.id);
+    return recording ? applyRecording(spec, recording) : spec;
+  });
+}
+
+/**
+ * Puts a real recording in place of the prepared panel: the drafts, reviews and merge the models actually
+ * wrote. The before-and-after comes from the most serious finding whose quote is in its draft, or is left
+ * out when the reviews found nothing to contrast.
+ */
+export function applyRecording(spec: WorkflowSpec, recording: Recording): WorkflowSpec {
+  const ids = (text: string) => text.match(/D-[AB]\d+/)?.[0];
+  const resolutions = recording.merge.resolutions.flatMap((item) => {
+    const id = ids(item.finding);
+    return id ? [{ ...item, finding: id }] : [];
+  });
+  const total = recording.reviewOfA.findings.length + recording.reviewOfB.findings.length;
+  const rank = { P0: 0, P1: 1, P2: 2 };
+  const candidates = [
+    ...recording.reviewOfA.findings.map((finding) => ({ finding, draft: "A" as const, text: recording.draftA })),
+    ...recording.reviewOfB.findings.map((finding) => ({ finding, draft: "B" as const, text: recording.draftB })),
+  ]
+    .filter((item) => item.finding.severity !== "P2" && item.finding.quote && item.text.includes(item.finding.quote))
+    .sort((a, b) => rank[a.finding.severity] - rank[b.finding.severity]);
+  const pick = candidates.find((item) => resolutions.some((resolution) => resolution.finding === item.finding.id && resolution.outcome === "fixed"));
+  const fix = pick ? resolutions.find((resolution) => resolution.finding === pick.finding.id) : undefined;
+  const merged = recording.merge.document.trim();
+  const output =
+    spec.kind === "document"
+      ? `## ${spec.deliverable}\n${merged}`
+      : spec.output.replace(/## Approved requirements\n[\s\S]*?(?=\n## )/, `## Approved requirements\n${merged.split("\n").filter(Boolean).map((line) => `- ${line}`).join("\n")}`);
+  return {
+    ...spec,
+    draftA: recording.draftA,
+    draftB: recording.draftB,
+    reviewOfA: renderReview(recording.reviewOfA, "D-A"),
+    reviewOfB: renderReview(recording.reviewOfB, "D-B"),
+    synthesis: renderMerge({ ...recording.merge, resolutions }, total),
+    output,
+    contrast: pick && fix ? { draft: pick.draft, before: pick.finding.quote, after: fix.note, why: pick.finding.detail } : null,
+    recording,
+  };
 }
 
 /** The catalog the page shows: domains with their workflows, without the long texts. */
