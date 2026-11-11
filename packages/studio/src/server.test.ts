@@ -52,3 +52,13 @@ test("hosted, the studio answers any host name but stays read-only", async () =>
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });
+
+test("the container image ships every folder the server reads at runtime", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const { repoRoot } = await import("@northwind/orchestrator");
+  const dockerfile = readFileSync(join(repoRoot(), "Dockerfile"), "utf8");
+  for (const folder of ["public", "workflows", "evidence", "recordings"]) {
+    assert.match(dockerfile, new RegExp(`COPY --from=build /app/packages/studio/${folder} `), `Dockerfile does not copy packages/studio/${folder}`);
+  }
+});

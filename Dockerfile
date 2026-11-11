@@ -15,5 +15,6 @@ COPY --from=build /app/runs/studio/server.mjs ./runs/studio/server.mjs
 COPY --from=build /app/packages/studio/public ./packages/studio/public
 COPY --from=build /app/packages/studio/workflows ./packages/studio/workflows
 COPY --from=build /app/packages/studio/evidence ./packages/studio/evidence
+COPY --from=build /app/packages/studio/recordings ./packages/studio/recordings
 USER node
 CMD ["node", "runs/studio/server.mjs"]
