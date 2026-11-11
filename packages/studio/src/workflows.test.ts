@@ -24,7 +24,9 @@ test("each workflow shows its model calls without making them, and estimates wha
     const flow = expand(spec);
     const calls = flow.steps.filter((step) => step.kind === "llm");
     assert.ok(calls.length >= 5, spec.id);
-    assert.deepEqual([...new Set(calls.map((call) => call.actor))].sort(), ["claude-opus-5", "grok-4.7"], spec.id);
+    assert.deepEqual([...new Set(calls.map((call) => call.actor))].sort(), ["claude-opus-5", "grok-4.7", "jev-1.14.0"], spec.id);
+    // Every model is named by its role on the page; each role is described.
+    for (const id of new Set(calls.map((call) => call.actor))) assert.ok(flow.models[id]?.label && flow.models[id]?.qualities, `${spec.id}:${id}`);
     assert.ok(flow.estimatedCostUsd > 0.5 && flow.estimatedCostUsd < 5, `${spec.id} costs ${flow.estimatedCostUsd}`);
     // The two drafts never depend on each other: that is the wall.
     const draftA = flow.steps.find((step) => step.id === "draftA");
@@ -174,5 +176,29 @@ test("a document walks its own stages in order", () => {
     assert.deepEqual(flow.stages, DOCUMENT_STAGES, spec.id);
     const order = flow.steps.map((item) => DOCUMENT_STAGES.indexOf(item.stage ?? ""));
     assert.deepEqual([...new Set(order)], DOCUMENT_STAGES.map((_, index) => index), spec.id);
+  }
+});
+
+test("the decision model routes every request, triages findings in line with what follows, and costs a fraction of a cent", () => {
+  for (const spec of loadSpecs()) {
+    const flow = expand(spec);
+    const decisions = flow.steps.filter((item) => item.actor === "jev-1.14.0");
+    assert.ok(decisions.some((item) => item.id === "route") && decisions.some((item) => item.id === "triage"), spec.id);
+    for (const item of decisions) {
+      assert.ok(item.seconds < 1, `${spec.id}:${item.id} seconds`);
+      assert.ok((item.estimatedCostUsd ?? 1) < 0.001, `${spec.id}:${item.id} cost`);
+      assert.match(item.output, /· 0\.\d\d/, `${spec.id}:${item.id} confidence`);
+    }
+    // Triage marks every finding the merge goes on to resolve.
+    const triage = flow.steps.find((item) => item.id === "triage")?.output ?? "";
+    const resolved = Number(spec.synthesis.match(/Defects resolved: (\d+)/)?.[1]);
+    assert.equal((triage.match(/→ yes/g) ?? []).length, resolved, spec.id);
+    if (spec.kind === "build") {
+      // Model C's apply/decline calls match what Model A then applies and declines.
+      const apply = flow.steps.find((item) => item.id === "reviewTriage")?.output ?? "";
+      const revise = spec.codeReview?.revise ?? "";
+      assert.equal((apply.match(/→ yes/g) ?? []).length, (revise.match(/ applied/g) ?? []).length, spec.id);
+      assert.equal((apply.match(/→ no/g) ?? []).length, (revise.match(/ declined/g) ?? []).length, spec.id);
+    }
   }
 });

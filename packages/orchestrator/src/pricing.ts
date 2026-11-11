@@ -22,6 +22,8 @@ const PRICES: Record<string, Price> = {
   "claude-opus-5": { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
   "claude-opus-4-8": { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
   "grok-4.7": { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0, longContextFrom: 200_000 },
+  // TypeSafe's Jev decision model: input billed, typed answers free.
+  "jev-1.14.0": { input: 0.042, output: 0, cacheRead: 0, cacheWrite: 0 },
 };
 
 /** The cost of one call, or null when the table has no price for it. A missing price is shown, never guessed. */

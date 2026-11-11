@@ -115,7 +115,7 @@
       }
       #approve { border: 0; border-radius: 999px; padding: 10px 20px; font: inherit; font-weight: 650; cursor: pointer; white-space: nowrap; }
       .pipe-scroll { overflow-x: auto; }
-      .pipe { position: relative; display: grid; grid-template-rows: auto 26px auto; column-gap: 34px; padding: 6px 2px; min-width: 980px; }
+      .pipe { position: relative; display: grid; grid-template-rows: auto 26px auto; column-gap: 22px; padding: 6px 2px; min-width: 980px; }
       .pipe svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
       .pipe path { fill: none; stroke: var(--line); stroke-width: 2; }
       .pipe path.lit { stroke: var(--teal); }
@@ -219,6 +219,13 @@
       .yourturn { margin: 10px 0 2px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
       .yourturn button { border: 0; border-radius: 999px; padding: 10px 20px; background: var(--teal); color: #f7fffe; font: inherit; font-weight: 650; cursor: pointer; }
       .approving { margin: 6px 0; padding: 10px 14px; border-left: 3px solid var(--teal); background: var(--sky); white-space: pre-wrap; font-size: 14.5px; }
+      .models { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0 0; }
+      .models > div { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-2); }
+      .models .who { font-weight: 650; }
+      .models .who span { font-weight: 500; color: var(--muted); }
+      .models p { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+      .models .real { margin-top: 6px; font-size: 13px; color: var(--teal-deep); }
+      @media (max-width: 760px) { .models { grid-template-columns: 1fr; } }
       .testlab { margin-top: 14px; }
       .testlab h2 { margin: 2px 0 4px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
       .testlab .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
@@ -310,6 +317,7 @@
       <div class="workflows" id="workflows"></div>
 
       <section id="run" hidden>
+        <div class="models" id="models"></div>
         <div class="runhead" id="runhead"></div>
         <div class="stages" id="stages" role="list" aria-label="Stages of software development" hidden></div>
         <div class="scoreboard">
@@ -354,7 +362,8 @@
     </div>
 
     <script>
-      const MODEL_LABEL = { "claude-opus-5": "Claude Opus 5", "grok-4.7": "Grok 4.7" };
+      // The real model behind each role in this replay. The page names roles (Model A, B, C); vendors show only in the technical view.
+      const MODEL_LABEL = { "claude-opus-5": "Claude Opus 5", "grok-4.7": "Grok 4.7", "jev-1.14.0": "Jev 1.14" };
       const KIND_BADGE = { llm: "Simulated model call", tool: "Tool", check: "Code check · no model", human: "Person", input: "Input" };
       const MIN_DISPLAY_MS = 1400;
 
@@ -415,14 +424,21 @@
       const VENDOR = {
         "claude-opus-5": { api: "Anthropic Messages API, streamed", id: "msg_sim_", stop: "end_turn", limit: "64,000" },
         "grok-4.7": { api: "xAI Chat Completions", id: "chatcmpl-sim-", stop: "stop", limit: null },
+        "jev-1.14.0": { api: "TypeSafe decision API", id: "dec_sim_", stop: "typed answers", limit: null },
       };
-      function money(value) { return "$" + (value || 0).toFixed(2); }
+      function money(value) { return value > 0 && value < 0.005 ? "<$0.01" : "$" + (value || 0).toFixed(2); }
       function duration(seconds) {
+        if (seconds >= 0.05 && seconds < 1) return seconds.toFixed(1) + " s";
         if (seconds < 60) return Math.round(seconds) + " s";
         const minutes = Math.floor(seconds / 60);
         return minutes + " min " + String(Math.round(seconds % 60)).padStart(2, "0") + " s";
       }
-      function modelLabel(id) { return MODEL_LABEL[id] || id; }
+      function technical() { return !document.body.classList.contains("plain"); }
+      function modelLabel(id) {
+        const role = flow && flow.models && flow.models[id];
+        if (!role) return MODEL_LABEL[id] || id;
+        return technical() ? role.label + " · " + (MODEL_LABEL[id] || id) : role.label;
+      }
 
       function renderDomains() {
         const nav = byId("domains");
@@ -484,6 +500,7 @@
         labKey = "";
         stagesKey = "";
         recapKey = "";
+        modelsKey = "";
         testRuns = {};
         play.blocked = false;
         history.replaceState(null, "", "#" + flow.id);
@@ -509,7 +526,7 @@
         for (const node of [...pipe.querySelectorAll(".node, .wall")]) node.remove();
         const steps = flow.steps.filter((step) => step.phase === phase);
         const cols = Math.max(...steps.map((step) => step.col)) + 1;
-        pipe.style.gridTemplateColumns = "repeat(" + cols + ", minmax(118px, 1fr))";
+        pipe.style.gridTemplateColumns = "repeat(" + cols + ", minmax(" + (cols > 8 ? 100 : 118) + "px, 1fr))";
         for (const step of steps) {
           const node = document.createElement("button");
           node.type = "button";
@@ -600,6 +617,7 @@
         renderTestLab();
         renderStages();
         renderRecap();
+        renderModels();
         byId("play").textContent = play.playing ? "❚❚ Pause" : play.index >= flow.steps.length ? "▶ Replay" : play.index > 0 || play.progress > 0 ? "▶ Resume" : "▶ Play";
       }
 
@@ -646,7 +664,7 @@
         return { answers: "Accept these answers", approve: flow.kind === "build" ? "Approve the PRD" : "Approve the result", archApprove: "Approve the design", deployApprove: "Approve for production" }[step.id] || "Approve";
       }
       function waitingCaption(step) {
-        if (step.id === "answers") return "Your turn: Claude has " + questionsAndAnswers().length + " questions before it writes anything. Read them below, then accept the answers.";
+        if (step.id === "answers") return "Your turn: Model A has " + questionsAndAnswers().length + " questions before it writes anything. Read them below, then accept the answers.";
         if (step.id === "approve") return flow.kind === "build" ? "Your turn: the requirements are merged and checked. Read what you are approving below, then approve." : "Your turn: the result is merged and checked. Read it below, then approve.";
         if (step.id === "archApprove") return "Your turn: the design has been reviewed and checked. Approve it, and code can start.";
         if (step.id === "deployApprove") return "Your turn: tests and smoke tests passed on staging. Approve the move to production.";
@@ -721,7 +739,7 @@
         const heading = document.createElement("h3");
         const badge = document.createElement("span");
         badge.className = "badge" + (step.kind === "llm" ? " llm" : "");
-        badge.textContent = KIND_BADGE[step.kind];
+        badge.textContent = step.actor === "jev-1.14.0" ? "Simulated decision" : KIND_BADGE[step.kind];
         heading.append(badge, document.createTextNode(step.title + (step.kind === "llm" ? " · " + modelLabel(step.actor) : "")));
         const meta = document.createElement("p");
         meta.className = "meta";
@@ -783,7 +801,7 @@
           if (step.id === "answers") {
             const title = document.createElement("p");
             title.className = "label";
-            title.textContent = "Claude's questions";
+            title.textContent = "Model A's questions";
             const list = document.createElement("ol");
             list.className = "qa";
             for (const item of questionsAndAnswers()) {
@@ -821,7 +839,7 @@
         }
         else {
           const realUnit = TESTS && TESTS.LIVE_TESTS.includes(flow.id) && step.id === "unitRun";
-          if (realUnit) meta.textContent = "These unit tests really ran, in your browser, against Claude's code as first written. They pass: the author did not think to test the case with the bug.";
+          if (realUnit) meta.textContent = "These unit tests really ran, in your browser, against Model A's code as first written. They pass: the author did not think to test the case with the bug.";
           const realTests = TESTS && TESTS.LIVE_TESTS.includes(flow.id) && (step.id === "testsRed" || step.id === "testsGreen");
           if (realTests) {
             const run = testRun(step.id === "testsRed" ? "first" : "fixed");
@@ -932,7 +950,7 @@
         }
         if (name === "Unit tests") {
           const passing = TESTS && TESTS.LIVE_TESTS.includes(flow.id) ? TESTS.runTests(flow.id, "first", "unit").filter((result) => result.pass).length : count(out("unitRun"), /^✓/gm);
-          return passing + " passing (Claude's own)";
+          return passing + " passing (Model A's own)";
         }
         if (name === "Test cases") return count(out("testCases"), /^TC-/gm) + " cases, from the PRD";
         if (name === "Testing") {
@@ -1019,38 +1037,67 @@
         const caught = serious(out("reviewOfA") + "\n" + out("reviewOfB"));
         const fixed = (out("merge").match(/Defects resolved: (\d+)/) || [0, "all"])[1];
         if (name === "PRD")
-          return "Claude and Grok each wrote the requirements without seeing the other's, then reviewed each other's. " + (caught.length ? "The review caught a serious problem: " + listOf(caught) + ". " : "") + "Claude merged both and fixed " + fixed + " defects, and code checks passed. " + out("approve");
+          return "Model C routed the request to the full panel in a fraction of a second. Model A asked " + questionsAndAnswers().length + " questions, then Model A and Model B each wrote the requirements without seeing the other's and reviewed each other's. " + (caught.length ? "The review caught a serious problem: " + listOf(caught) + ". " : "") + "Model C triaged the findings, and Model A merged both and fixed " + fixed + " defects, and code checks passed. " + out("approve");
         if (name === "Architecture") {
           const found = titles(out("archReview"));
-          return "Claude designed the components, data and the files it may change. Grok's review found " + found.length + " issue" + (found.length === 1 ? "" : "s") + " (" + listOf(found) + ")" + (serious(out("archReview")).length ? ", one of them serious," : "") + " and Claude revised the design to fix them. Design checks passed. " + out("archApprove");
+          return "Model A designed the components, data and the files it may change. Model B's review found " + found.length + " issue" + (found.length === 1 ? "" : "s") + " (" + listOf(found) + ")" + (serious(out("archReview")).length ? ", one of them serious," : "") + " and Model A revised the design to fix them. Design checks passed. " + out("archApprove");
         }
-        if (name === "Code") return "Claude wrote the code, touching only the files the approved design allows: " + listOf([...new Set(out("code").match(/(?:src|packages|migrations)\/[\w./*-]+\.(?:ts|tsx|sql)/g) || [])]) + ".";
+        if (name === "Code") return "Model A wrote the code, touching only the files the approved design allows: " + listOf([...new Set(out("code").match(/(?:src|packages|migrations)\/[\w./*-]+\.(?:ts|tsx|sql)/g) || [])]) + ".";
         if (name === "Code review") {
           const found = titles(out("codeReview"));
           const declined = (out("codeRevise").match(/^CR-\d declined: (.+)$/m) || [0, ""])[1];
-          return "Grok reviewed the code like a second engineer and raised " + found.length + " points (" + listOf(found) + "). Claude applied " + (out("codeRevise").match(/ applied/g) || []).length + (declined ? " and declined one, saying: " + declined : ".");
+          return "Model B reviewed the code like a second engineer and raised " + found.length + " points (" + listOf(found) + "). Model C decided which were worth applying, and Model A applied " + (out("codeRevise").match(/ applied/g) || []).length + (declined ? " and declined one, saying: " + declined : ".");
         }
         if (name === "Unit tests") {
           const total = (out("unitRun").match(/^✓/gm) || []).length;
-          return "Claude wrote " + total + " unit tests for its own code, and they really ran here: all " + total + " pass. But the code still has a bug: an author tests what they thought of.";
+          return "Model A wrote " + total + " unit tests for its own code, and they really ran here: all " + total + " pass. But the code still has a bug: an author tests what they thought of.";
         }
-        if (name === "Test cases") return "Grok wrote " + (out("testCases").match(/^TC-/gm) || []).length + " test cases from the PRD, without ever seeing the code, then turned them into a runnable test script.";
+        if (name === "Test cases") return "Model B wrote " + (out("testCases").match(/^TC-/gm) || []).length + " test cases from the PRD, without ever seeing the code, then turned them into a runnable test script.";
         if (name === "Testing") {
           const red = out("testsRed");
           const failed = (red.match(/^✗ (.+)$/m) || [0, "a test"])[1];
           const why = (red.match(/^✗ .+\n {2}(.+)$/m) || [0, ""])[1];
           const passing = (out("testsGreen").match(/(\d+) passing/) || [0, "all"])[1];
-          return "Grok's tests really ran against Claude's code, and one failed: \"" + failed + "\"" + (why ? " (" + why + ")" : "") + ". That bug had passed code review and Claude's own unit tests. Claude fixed it (" + firstLine(out("fix")).toLowerCase() + "), and all " + passing + " tests pass.";
+          return "Model B's tests really ran against Model A's code, and one failed: \"" + failed + "\"" + (why ? " (" + why + ")" : "") + ". That bug had passed code review and Model A's own unit tests. Model A fixed it (" + firstLine(out("fix")).toLowerCase() + "), and all " + passing + " tests pass.";
         }
-        if (name === "Deployment") return "The release gate re-checked approvals, tests and data rules. The build went to staging and passed its smoke tests. " + out("deployApprove") + " " + out("production").split("\n").slice(0, 2).join(" ");
-        if (name === "Research") return "The relevant policies and records were looked up first, so both drafts work from the same facts: " + (out("sources").match(/^.+$/gm) || []).length + " sources.";
-        if (name === "Drafts") return "Claude and Grok each wrote a draft without seeing the other's, so they could not copy each other's mistakes.";
-        if (name === "Cross-review") return "Each AI reviewed the other's draft. " + (caught.length ? "Caught: " + listOf(caught) + "." : "Both found smaller issues.");
-        if (name === "Merge") return "Claude merged the two drafts and had to resolve every defect either review raised: " + fixed + " resolved.";
+        if (name === "Deployment") return "The release gate re-checked approvals, tests and data rules. The build went to staging and passed its smoke tests, and Model C recommended go. " + out("deployApprove") + " " + out("production").split("\n").slice(0, 2).join(" ");
+        if (name === "Research") return "Model C routed the request to the full panel in a fraction of a second. The relevant policies and records were looked up first, so both drafts work from the same facts: " + (out("sources").match(/^.+$/gm) || []).length + " sources.";
+        if (name === "Drafts") return "Model A and Model B each wrote a draft without seeing the other's, so they could not copy each other's mistakes.";
+        if (name === "Cross-review") return "Each model reviewed the other's draft. " + (caught.length ? "Caught: " + listOf(caught) + ". " : "") + "Model C triaged every finding and marked which ones the merge must fix.";
+        if (name === "Merge") return "Model A merged the two drafts and had to resolve every defect either review raised: " + fixed + " resolved.";
         if (name === "Checks") return "Plain code checks, with no AI involved, recomputed the figures: " + (liveResults().map((check) => check.name.toLowerCase()).join("; ") || "all passed") + ".";
         if (name === "Approval") return out("approve");
         if (name === "Delivery") return out("deliver");
         return "";
+      }
+
+      let modelsKey = "";
+      function renderModels() {
+        const box = byId("models");
+        const key = flow.id + "|" + technical();
+        if (key === modelsKey) return;
+        modelsKey = key;
+        clear(box);
+        const used = [...new Set(flow.steps.filter((step) => step.kind === "llm").map((step) => step.actor))].sort((a, b) => flow.models[a].label.localeCompare(flow.models[b].label));
+        for (const id of used) {
+          const role = flow.models[id];
+          const card = document.createElement("div");
+          const who = document.createElement("div");
+          who.className = "who";
+          const kind = document.createElement("span");
+          kind.textContent = " · " + role.role;
+          who.append(document.createTextNode(role.label), kind);
+          const qualities = document.createElement("p");
+          qualities.textContent = role.qualities;
+          card.append(who, qualities);
+          if (technical()) {
+            const real = document.createElement("div");
+            real.className = "real";
+            real.textContent = "This replay assumes " + (MODEL_LABEL[id] || id) + ". Any model with these qualities can fill the role.";
+            card.appendChild(real);
+          }
+          box.appendChild(card);
+        }
       }
 
       let recapKey = "";
@@ -1113,13 +1160,13 @@
         };
         card.append(
           add("p", "Run the tests yourself", "eyebrow"),
-          add("h2", "Grok's test script is real code. Run it against the first version of the feature, then against Claude's fix."),
+          add("h2", "Model B's test script is real code. Run it against the first version of the feature, then against Model A's fix."),
           add("p", "Nothing here is recorded: the tests run in your browser each time you press a button, against working code.", "meta"),
         );
         const buttons = add("div", undefined, "buttons");
         const first = add("button", "▶ Run against the first version", "primary");
         const fixed = add("button", "▶ Run against the fixed version");
-        const unit = add("button", "▶ Run Claude's own unit tests");
+        const unit = add("button", "▶ Run Model A's own unit tests");
         first.type = fixed.type = unit.type = "button";
         buttons.append(first, fixed, unit);
         const out = add("div", undefined, "runout");
@@ -1136,7 +1183,7 @@
           out.appendChild(
             add(
               "div",
-              (failing ? failing + " failing, " + (results.length - failing) + " passing" : results.length + " passing") + " · ran just now in " + ms.toFixed(1) + " ms · " + (suite === "unit" ? "Claude's own unit tests, on the first version. They pass, bug and all: only Grok's independent tests catch it." : version === "first" ? "the first version of the code" : "the code after Claude's fix"),
+              (failing ? failing + " failing, " + (results.length - failing) + " passing" : results.length + " passing") + " · ran just now in " + ms.toFixed(1) + " ms · " + (suite === "unit" ? "Model A's own unit tests, on the first version. They pass, bug and all: only Model B's independent tests catch it." : version === "first" ? "the first version of the code" : "the code after Model A's fix"),
               "sum " + (failing ? "bad" : "ok"),
             ),
           );
@@ -1293,7 +1340,7 @@
             return box;
           };
           vs.append(
-            side("before", "One AI alone would have handed you", contrast.before, "From draft " + contrast.draft + " (" + (contrast.draft === "A" ? "Claude" : "Grok") + "), before review."),
+            side("before", "One AI alone would have handed you", contrast.before, "From draft " + contrast.draft + " (Model " + contrast.draft + "), before review."),
             side("after", "What you get instead", contrast.after, "After the other AI's review, the merge, the code checks and a person's approval."),
           );
           const why = document.createElement("p");
@@ -1477,8 +1524,8 @@
           "On " + new Date(run.date + "T12:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + " the requirements panel ran live on Claude Opus 5 and Grok 4.7: " + total.calls + " model calls, " + duration(total.modelSeconds) + " of model time, " + money(total.costUsd) + " (" + money(total.costIncludingRetryUsd) + " including one call that hit its output limit and was retried). Grok found " + grok + " defects in Claude's draft and Claude found " + claude + " in Grok's. The merge resolved all " + (grok + claude) + ", and every code gate passed.",
         );
         const quote = add("blockquote");
-        quote.append(add("span", "Grok 4.7, reviewing Claude's draft · " + run.highlight.severity, "who"), document.createTextNode(run.highlight.point));
-        const plainly = add("p", "In plain words: Claude's draft called a deadline 17 days away \"within 14 days\", which would have marked it urgent by mistake. Grok caught it, and the error never reached a person.");
+        quote.append(add("span", "Model B (Grok 4.7), reviewing Model A's (Claude Opus 5) draft · " + run.highlight.severity, "who"), document.createTextNode(run.highlight.point));
+        const plainly = add("p", "In plain words: in this run Model A was Claude Opus 5 and Model B was Grok 4.7. Model A's draft called a deadline 17 days away \"within 14 days\", which would have marked it urgent by mistake. Model B caught it, and the error never reached a person.");
         const why = add("ul", undefined, "why");
         ["Two vendors' models, not one", "Drafts written apart", "Each reviews the other", "Checks run as code, not AI", "Tests written apart from the code", "Nothing ships without a person"].forEach((item) => why.appendChild(add("li", item)));
         const details = add("details", undefined, "tech");
