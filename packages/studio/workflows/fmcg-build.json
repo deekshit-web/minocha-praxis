@@ -47,5 +47,37 @@
     "before": "AC-1 DIST-12 holds 840 units of SKU-4471 and sells 420 a week: cover is 2 days, so the manager is alerted.",
     "after": "AC-1 DIST-12 holds 840 units of SKU-4471 and sells 60 a day: 14 days of cover, no alert.",
     "why": "Weeks were counted as days, so almost every product would have raised an alert: 412 alerts a month instead of 37."
-  }
+  },
+  "architecture": {
+    "draft": "Components:\n- src/stock/daysOfCover.ts: daysOfCover(stock, sellOut4Weeks, weeksOfHistory).\n- src/stock/stockOutAlert.ts: runs after each sell-out upload and raises an alert below 7 days of cover.\n- Notifications: the portal inbox and an email to the area sales manager.\nData: reads distributor stock and sell-out uploads; writes an alerts table.\nFile fence: src/stock/*, src/jobs/afterUpload.ts and their tests.",
+    "review": "AR-1 · P1 · Duplicate alerts across uploads\n  Distributors upload several times a day, so the job would alert on each upload. Deduplicate per distributor, product and day.\nAR-2 · P1 · Stale data\n  If a distributor has not uploaded for 3 days, cover is computed on stale stock. Say \"data stale\" instead of raising an alert.\nStrengths: cover is computed in one place; the alert reuses the existing inbox.",
+    "final": "Kept: daysOfCover() and the after-upload job.\nFixed AR-1: one alert per distributor, product and day, enforced by a unique key in the alerts table.\nFixed AR-2: uploads older than 3 days produce a \"data stale\" notice, not a stock-out alert.\nFile fence: src/stock/*, src/jobs/afterUpload.ts, migrations/0017_stock_alerts.sql and their tests.",
+    "checks": [
+      {
+        "name": "Every requirement has a home",
+        "detail": "REQ-1 to REQ-4 each map to a component."
+      },
+      {
+        "name": "Units are consistent",
+        "detail": "Stock in units, sales in units per day, cover in days."
+      },
+      {
+        "name": "Alert volume is bounded",
+        "detail": "At most one per distributor, product and day."
+      }
+    ],
+    "approval": "Approved by the engineering lead and national sales operations."
+  },
+  "codeReview": {
+    "review": "CR-1 · P1 · Silent division by zero\n  A product with no sales gives Infinity with no explanation. Make the no-sales case explicit.\nCR-2 · P2 · Hard-coded threshold\n  7 is hard-coded in stockOutAlert.ts; read it from config.\nCR-3 · P2 · Naming\n  Rename sellOut to sellOut4Weeks everywhere.",
+    "revise": "CR-1 applied: no sales means unlimited cover by design and never alerts; a comment and a test say so.\nCR-2 applied: STOCK_OUT_DAYS comes from config, default 7.\nCR-3 declined: the public function already says sellOut4Weeks; internal names stay short."
+  },
+  "deploy": {
+    "staging": "Build 2026.11.11-1 deployed to staging.\nMigration 0017 applied: the alerts table with its unique key.",
+    "smoke": "✓ Replayed yesterday's 212 uploads: 4 alerts, no duplicates\n✓ DIST-12 / SKU-4471 at 14 days of cover: no alert\n✓ A 4-day-old upload produces \"data stale\", not an alert",
+    "approval": "Approved for production by national sales operations.",
+    "production": "Rolled out to the North region first (38 distributors) for one day: 3 alerts, all confirmed by the area sales manager.\nRolled out to all regions.\nRollback plan: turn off the after-upload job; alerts already sent stay in the inbox."
+  },
+  "unitScript": "const { daysOfCover, createAlerter } = code;\n\ntest(\"840 units at 60 a day is 14 days\", () => {\n  assert.equal(daysOfCover(840, 1680, 4), 14);\n});\ntest(\"300 units at 60 a day is 5 days\", () => {\n  assert.equal(daysOfCover(300, 1680, 4), 5);\n});\ntest(\"a new product uses the weeks it has\", () => {\n  assert.equal(daysOfCover(840, 840, 2), 14);\n});\ntest(\"no sales means unlimited cover\", () => {\n  assert.equal(daysOfCover(300, 0, 4), Infinity);\n});\ntest(\"sends one alert per day\", () => {\n  const alerter = createAlerter();\n  const order = { distributor: \"DIST-27\", sku: \"SKU-4471\", stock: 300, sellOut: 1680, weeks: 4, date: \"2026-11-10\" };\n  assert.ok(alerter.check(order));\n  assert.equal(alerter.check(order), null);\n});",
+  "unitRun": "✓ 840 units at 60 a day is 14 days\n✓ 300 units at 60 a day is 5 days\n✓ a new product uses the weeks it has\n✓ no sales means unlimited cover\n✓ sends one alert per day\n5 passing"
 }

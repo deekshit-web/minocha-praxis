@@ -47,5 +47,37 @@
     "before": "REQ-2 Applicants over 60 need a debt-to-income of 35% or less, to reflect retirement risk.",
     "after": "REQ-3 Only DTI and credit score are used. Age, gender, marital status and postcode are never inputs.",
     "why": "Tightening credit for older applicants is age discrimination under fair-lending law. One AI alone wrote it into the requirements."
-  }
+  },
+  "architecture": {
+    "draft": "Components:\n- src/lending/prequalify.ts: prequalify(input) -> { prequalified, dti, reasons[] }. A pure function.\n- The pre-qualification screen in the loan app: income, monthly debts, loan amount and term.\n- Credit score: a soft pull through the bureau adapter.\nData: nothing stored beyond the session; the result is shown, not saved.\nFile fence: src/lending/prequalify.ts, src/app/prequalifyScreen.tsx, src/bureau/softPull.ts and their tests.",
+    "review": "AR-1 · P0 · No recorded consent\n  Even a soft credit pull needs the applicant's consent, recorded before the call. Add a consent step and keep the record.\nAR-2 · P1 · No decision record\n  \"Nothing stored\" conflicts with fair-lending audit duties. Keep the inputs and reasons for 25 months, with no protected attributes.\nStrengths: a pure decision function whose input type cannot carry a protected attribute.",
+    "final": "Kept: one pure prequalify() with no protected attributes in its input type.\nFixed AR-1: a consent step before the soft pull; consent stored with a timestamp.\nFixed AR-2: decision records (inputs, DTI, reasons) kept for 25 months, with no protected attributes.\nFile fence: src/lending/prequalify.ts, src/app/prequalifyScreen.tsx, src/bureau/softPull.ts, src/records/decisions.ts and their tests.",
+    "checks": [
+      {
+        "name": "Every requirement has a home",
+        "detail": "REQ-1 to REQ-4 each map to a component."
+      },
+      {
+        "name": "No protected attribute can reach the decision",
+        "detail": "The input type has no field for one."
+      },
+      {
+        "name": "Consent comes first",
+        "detail": "Consent is recorded before any bureau call."
+      }
+    ],
+    "approval": "Approved by the credit risk lead and the compliance officer."
+  },
+  "codeReview": {
+    "review": "CR-1 · P1 · Raw errors shown to applicants\n  A bureau timeout shows the raw error. Show \"We could not check your credit score right now\" and log the detail.\nCR-2 · P2 · Rounding\n  dti is returned as a long float; round it to basis points.\nCR-3 · P2 · Comments\n  Add JSDoc to every function in the screen.",
+    "revise": "CR-1 applied: a plain message; the error goes to the log.\nCR-2 applied: dti is rounded to basis points before it is returned.\nCR-3 declined: the screen's functions are short and named for what they do; JSDoc would repeat them."
+  },
+  "deploy": {
+    "staging": "Build 2026.11.11-1 deployed to staging.\nBureau adapter pointed at the bureau's test environment.",
+    "smoke": "✓ Test applicant APP-101 (DTI 32%, score 700): likely to qualify\n✓ Test applicant APP-102 (DTI 45%): not likely, with the reason and \"not a final decision\"\n✓ Consent recorded before the soft pull\n✓ Decision record stored with no protected attributes",
+    "approval": "Approved for production by the credit risk lead and the compliance officer.",
+    "production": "Released to 5% of app users for 2 days: 1,214 checks, 0 errors, decline reasons reviewed by compliance.\nReleased to all users.\nRollback plan: hide the pre-qualification entry point; records already kept stay for audit."
+  },
+  "unitScript": "const { prequalify } = code;\nconst input = (over = {}) => ({ grossMonthlyIncome: 7500, monthlyDebt: 1500, newPayment: 900, creditScore: 700, ...over });\n\ntest(\"45% is not pre-qualified\", () => {\n  assert.equal(prequalify(input({ grossMonthlyIncome: 6000, monthlyDebt: 1800 })).prequalified, false);\n});\ntest(\"32% is pre-qualified\", () => {\n  assert.equal(prequalify(input()).prequalified, true);\n});\ntest(\"credit score 639 is declined\", () => {\n  assert.equal(prequalify(input({ creditScore: 639 })).prequalified, false);\n});\ntest(\"reasons say it is not a final decision\", () => {\n  assert.match(prequalify(input({ creditScore: 639 })).reasons.join(\" \"), /not a final decision/);\n});\ntest(\"dti is rounded to basis points\", () => {\n  assert.equal(prequalify(input({ grossMonthlyIncome: 6000, monthlyDebt: 1800 })).dti, 0.45);\n});",
+  "unitRun": "✓ 45% is not pre-qualified\n✓ 32% is pre-qualified\n✓ credit score 639 is declined\n✓ reasons say it is not a final decision\n✓ dti is rounded to basis points\n5 passing"
 }

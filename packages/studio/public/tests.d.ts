@@ -5,5 +5,5 @@ export interface TestResult {
   ms: number;
 }
 export const LIVE_TESTS: string[];
-export function runTests(id: string, version?: "first" | "fixed"): TestResult[];
+export function runTests(id: string, version?: "first" | "fixed", suite?: "acceptance" | "unit"): TestResult[];
 export function report(results: TestResult[]): string;

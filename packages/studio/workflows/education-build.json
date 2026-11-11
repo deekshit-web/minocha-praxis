@@ -47,5 +47,37 @@
     "before": "REQ-2 The flag appears as an amber dot beside the student's name on the class roster, so teachers notice it at a glance.",
     "after": "REQ-2 Only the student's counsellor and the head of year can see the flag. It never appears on rosters, class lists or anything students or parents can view.",
     "why": "Rosters are projected in class and printed for substitutes, so classmates would have seen who is 'at risk'. One AI alone designed that in."
-  }
+  },
+  "architecture": {
+    "draft": "Components:\n- src/support/riskFlag.ts: the rule, riskFlag(student, today) -> { flagged, reasons[] }.\n- Nightly job: computes flags for every student from attendance and term grades.\n- src/support/counsellorView.ts: the counsellor's follow-up list.\n- A weekly digest email to each counsellor.\nData: a student_flags table (student id, reasons, flagged since, cleared on).\nFile fence: src/support/*, src/jobs/riskFlags.ts, migrations/0042_student_flags.sql and their tests.",
+    "review": "AR-1 · P0 · Access not enforced where the data lives\n  The flag is hidden in the counsellor screen, but student_flags is readable by any staff account through the reports module. Restrict the table itself to the counsellor and head-of-year roles.\nAR-2 · P1 · Digest content\n  A forwarded email would expose why a student is flagged. The digest should carry student ids and a link, not reasons.\nStrengths: one rule, computed nightly; the clearing rule is built in.",
+    "final": "Kept: one rule in riskFlag.ts, the nightly job and the counsellor list.\nFixed AR-1: student_flags gets row-level security; only the counsellor and head-of-year roles can read it, and the reports module is denied.\nFixed AR-2: the digest lists student ids with a link; reasons stay behind sign-in.\nFile fence: src/support/*, src/jobs/riskFlags.ts, migrations/0042_student_flags.sql and their tests.",
+    "checks": [
+      {
+        "name": "Every requirement has a home",
+        "detail": "REQ-1 to REQ-4 each map to a component."
+      },
+      {
+        "name": "Access enforced in the database",
+        "detail": "A teacher role reading student_flags is refused."
+      },
+      {
+        "name": "No student personal data in logs",
+        "detail": "Ids only, never reasons."
+      }
+    ],
+    "approval": "Approved by the head of IT and the data protection lead."
+  },
+  "codeReview": {
+    "review": "CR-1 · P1 · Logs reveal reasons\n  riskFlags.ts logs \"STU-104 flagged: attendance\". Log counts only.\nCR-2 · P2 · Magic number\n  0.9 appears twice; name it ATTENDANCE_THRESHOLD.\nCR-3 · P2 · Style\n  Prefer a class for the digest builder.",
+    "revise": "CR-1 applied: the job logs counts only.\nCR-2 applied: one ATTENDANCE_THRESHOLD constant.\nCR-3 declined: a plain function is simpler and matches the rest of src/support."
+  },
+  "deploy": {
+    "staging": "Build 2026.11.11-1 deployed to staging.\nMigration 0042 applied: student_flags with row-level security.\nNightly job scheduled for 02:00.",
+    "smoke": "✓ Nightly job on last term's anonymised data: 31 students flagged\n✓ A teacher account cannot read student_flags (refused by the database)\n✓ Each counsellor sees only their own students\n✓ The digest shows ids and a link, no reasons",
+    "approval": "Approved for production by the head of year and the data protection lead.",
+    "production": "Released before the school day: visible to 6 counsellors and 2 heads of year.\nFirst nightly run: 29 students flagged, 0 errors.\nRollback plan: disable the job and hide the list; migration 0042 is reversible."
+  },
+  "unitScript": "const { riskFlag, canSeeFlag } = code;\nconst student = (over = {}) => ({ present: 20, schoolDays: 20, failingGrades: 0, clearDays: 0, ...over });\n\ntest(\"flags 17 of 20 days\", () => {\n  assert.equal(riskFlag(student({ present: 17 })).flagged, true);\n});\ntest(\"flags two failing grades\", () => {\n  assert.equal(riskFlag(student({ failingGrades: 2 })).flagged, true);\n});\ntest(\"one failing grade alone is not flagged\", () => {\n  assert.equal(riskFlag(student({ failingGrades: 1 })).flagged, false);\n});\ntest(\"clears after 10 school days\", () => {\n  assert.equal(riskFlag(student({ present: 17, clearDays: 10 })).flagged, false);\n});\ntest(\"the counsellor can see the flag\", () => {\n  assert.equal(canSeeFlag(\"counsellor\"), true);\n});",
+  "unitRun": "✓ flags 17 of 20 days\n✓ flags two failing grades\n✓ one failing grade alone is not flagged\n✓ clears after 10 school days\n✓ the counsellor can see the flag\n5 passing"
 }
