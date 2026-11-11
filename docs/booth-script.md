@@ -34,8 +34,12 @@ Point at the three cards: Model A builds, Model B checks and comes from a differ
 
 Press **Space**. Route lights up: **Live decision · ~100 ms · $0.00002**.
 
-> "That call just happened. A decision model, not an LLM: typed answers with calibrated confidence. It
-> routes by risk, so a typo fix wouldn't pay for two models."
+> "That call just happened. A decision model, not an LLM: typed answers with calibrated confidence."
+
+Click the Route step, then **Now try the router on a low-risk request**. The same live model gets a footer
+typo fix and says **low · 0.97 → one model and a person**.
+
+> "It isn't decoration: it tells risky work from trivial work, and only the risky work pays for two models."
 
 ## 4. Their turn (15 s)
 
@@ -67,6 +71,9 @@ Architecture: Model B's review raises a **P0**. A soft credit pull needs recorde
 
 ## 8. Code, review, and the unit-test trap (40 s)
 
+Click **Write code**: the real code, as first written. The bug in it was planted to show the mechanism, and the
+page says so. The code and the tests are real.
+
 Code review: three points. Model C decides which to apply, and Model A declines one with a reason. If the live
 answer differs from what Model A did, the page says so. Leave it on screen; it is honest.
 
@@ -79,7 +86,14 @@ Unit tests: Model A's own five tests **pass**, on code that still has a bug.
 Model B wrote the test cases from the PRD without seeing the code. **Run tests: 1 failing**. "Exactly 43% is
 pre-qualified": the code added 0.28 + 0.15 and got 0.43000000000000005. Claude fixes it; all pass.
 
-Scroll to **Run the tests yourself** and press both buttons. Real tests, real code, in about a millisecond.
+Click **Fix** to see the real diff. Then scroll to **Run the tests yourself** and press both buttons: real
+tests, real code, about a millisecond.
+
+Then press **Measure the tests: break the code on purpose**. Mutation testing breaks the fixed code in every
+small way (`<` to `<=`, `&&` to `||`, each number nudged by one) and reruns every test: "caught 7 of 9". Point
+at the survivors it lists.
+
+> "We show you where the tests are weak, too."
 
 ## 10. Ship it safely (25 s)
 
@@ -97,7 +111,14 @@ handed you** next to **What you get instead**.
 ## Hard questions, straight answers
 
 - **"Is this real?"** Partly, and the page says which parts. The proof run, the Jev decisions, the checks and
-  the tests are real. Drafts and reviews are replayed so the booth costs nothing.
+  the tests are real; the diagram marks steps as **real code**, **live** or **replay**. Drafts and reviews are
+  replayed so the booth costs nothing, and the bugs in them were planted. The proof box links the full
+  transcript of the real run.
+- **"You wrote both the mistake and the catch."** In the replay, yes. Say so. The real evidence is the proof
+  run, where a model caught a mistake nobody planted, and the full transcript is downloadable. Recording real
+  runs for every workflow is the next step.
+- **"Model C's triage just reads the labels."** Here, yes, and the caption says a plain rule would decide the
+  same. Model C earns its keep on calls with no labels, like routing.
 - **"How often does cross-review actually catch things?"** The proof is one run. A measured evaluation across
   many cases, against a single-model baseline, is built and pending. Don't claim a rate we haven't measured.
 - **"What stops the models colluding?"** They are different vendors, they never see each other's drafts, the

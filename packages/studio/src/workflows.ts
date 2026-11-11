@@ -129,6 +129,8 @@ export interface Workflow {
   phases: string[];
   /** What each model's role is, keyed by model id. */
   models: typeof MODELS;
+  /** A trivial request in this domain, for showing the router choose the cheap path. */
+  lowRiskRequest: string;
   /** The stages this workflow walks through, in order: software development for a build. */
   stages: string[];
   /** Where two steps are walled off from each other: the two drafts, and in a build the tests and the code. */
@@ -149,7 +151,7 @@ const JEV = "jev-1.14.0";
 export const MODELS: Record<string, { label: string; role: string; qualities: string }> = {
   [CLAUDE]: { label: "Model A", role: "Builder", qualities: "Deep reasoning. Writes the PRD, the design, the code and the fixes." },
   [GROK]: { label: "Model B", role: "Checker", qualities: "An independent model from a different vendor, fast and low-cost. Reviews the builder's work and writes the tests." },
-  [JEV]: { label: "Model C", role: "Decider", qualities: "A decision model. Answers yes/no and multiple-choice questions with a confidence score in about 0.1 s, for a fraction of a cent. It cannot write text, so it cannot make things up." },
+  [JEV]: { label: "Model C", role: "Decider", qualities: "A decision model. Answers yes/no and multiple-choice questions with a confidence score, typically in 0.1 to 0.6 s, for a fraction of a cent. It cannot write text, so it cannot make things up." },
 };
 
 /** Typical sizes from the real Claude + Grok PRD run, so estimates sit near what a live run would cost. */
@@ -204,7 +206,7 @@ function confidence(key: string, low: number, high: number): string {
 }
 
 /** How risky each workflow is, and whether it touches personal, health or financial data. */
-const RISK: Record<string, { level: "high" | "medium"; data: boolean }> = {
+const RISK: Record<string, { level: "low" | "high" | "medium"; data: boolean }> = {
   "healthcare-build": { level: "high", data: true },
   "healthcare-document": { level: "high", data: true },
   "education-build": { level: "high", data: true },
@@ -242,12 +244,22 @@ export interface Decision {
 
 const yesNo = (answer: DecisionAnswer | undefined) => answer?.type === "noul" && answer.noul >= 0.5;
 
+/** A deliberately trivial request per domain, so a viewer can watch the router choose the cheap path. */
+export const LOW_RISK_REQUEST: Record<DomainId, string> = {
+  healthcare: "Fix a typo on the denial workbench help page: 'reciept' should read 'receipt'.",
+  education: "Change the colour of the Print button on the timetable page from grey to blue.",
+  fmcg: "Fix a typo in the distributor portal footer: 'Distribtor' should read 'Distributor'.",
+  finance: "Update the copyright year in the loan app footer from 2025 to 2026.",
+  logistics: "Rename the 'Shipments' tab in the tracker menu to 'My shipments'.",
+};
+
 /** The questions behind each of Model C's steps, built from the workflow's own content. */
 export function decisionFor(spec: WorkflowSpec, stepId: string): Decision | null {
-  const risk = RISK[spec.id] ?? { level: "high", data: true };
-  if (stepId === "route")
+  const low = stepId === "routeLow";
+  const risk = low ? { level: "low" as const, data: false } : (RISK[spec.id] ?? { level: "high", data: true });
+  if (stepId === "route" || low)
     return {
-      state: `Project: ${spec.project}\nRequested by: ${spec.requester}\nRequest: ${spec.brief}`,
+      state: `Project: ${spec.project}\nRequested by: ${spec.requester}\nRequest: ${low ? LOW_RISK_REQUEST[spec.domain] : spec.brief}`,
       questions: [
         {
           key: "risk",
@@ -263,7 +275,7 @@ export function decisionFor(spec: WorkflowSpec, stepId: string): Decision | null
           confidence: [0.78, 0.93],
         },
         { key: "data", type: "noul", instructions: "Does this change touch personal, health or financial data about people?", label: "Does it touch personal, health or financial data?", expect: risk.data ? "yes" : "no", confidence: [0.88, 0.98] },
-        { key: "single", type: "noul", instructions: "Can a single AI model, working alone with no independent review, handle this change safely?", label: "Can one model handle it safely on its own?", expect: "no", confidence: [0.84, 0.96] },
+        { key: "single", type: "noul", instructions: "Can a single AI model, working alone with no independent review, handle this change safely?", label: "Can one model handle it safely on its own?", expect: low ? "yes" : "no", confidence: [0.84, 0.96] },
       ],
       conclude(answers) {
         const level = answers.risk?.type === "choice" ? answers.risk.choice : "high";
@@ -375,7 +387,7 @@ function panel(spec: WorkflowSpec, startCol: number, inputs: string[]): Step[] {
     llm({ id: "draftB", phase: 0, col: c, row: 2, title: "Draft B", caption: "Model B writes its own draft, separately. Two different models bring two different sets of blind spots.", given: "The same brief and material. Not draft A.", output: spec.draftB, after: inputs }, GROK, SIZE.draftGrok),
     llm({ id: "reviewOfB", phase: 0, col: c + 1, row: 0, title: "A reviews B", caption: "Model A reviews Model B's draft for defects. No model reviews its own work.", given: "Draft B only.", output: spec.reviewOfB, after: ["draftB"], verdict: reviewVerdict(spec.reviewOfB) }, CLAUDE, SIZE.reviewClaude),
     llm({ id: "reviewOfA", phase: 0, col: c + 1, row: 2, title: "B reviews A", caption: "Model B reviews Model A's draft the same way.", given: "Draft A only.", output: spec.reviewOfA, after: ["draftA"], verdict: reviewVerdict(spec.reviewOfA) }, GROK, SIZE.reviewGrok),
-    llm({ id: "triage", phase: 0, col: c + 2, row: 1, title: "Triage", caption: "Model C, a fast decision model, decides which findings the merge must fix, each with a confidence score. It costs a fraction of a cent.", given: "Both reviews' findings.", output: decisionText(spec, "triage"), after: ["reviewOfA", "reviewOfB"] }, JEV, SIZE.decide),
+    llm({ id: "triage", phase: 0, col: c + 2, row: 1, title: "Triage", caption: "Model C decides which findings the merge must fix, with a confidence score. Honestly, a plain rule (fix every P0 and P1) would decide the same here; Model C earns its keep on calls with no labels, like routing.", given: "Both reviews' findings.", output: decisionText(spec, "triage"), after: ["reviewOfA", "reviewOfB"] }, JEV, SIZE.decide),
     llm({ id: "merge", phase: 0, col: c + 3, row: 1, title: "Merge", caption: "Model A merges both drafts and has to resolve every finding Model C marked.", given: "Both drafts, both reviews and the triage.", output: spec.synthesis, after: ["triage"], verdict: "pass" }, CLAUDE, SIZE.merge),
     step({ id: "checks", kind: "check", phase: 0, col: c + 4, row: 1, title: "Code checks", actor: "No model", caption: "Plain code checks verify the result. No model is involved here.", given: "The merged result.", output: spec.checks.map((item) => `✓ ${item.name}\n  ${item.detail}`).join("\n"), after: ["merge"], seconds: 1, verdict: "pass" }),
     step({ id: "approve", kind: "human", phase: 0, col: c + 5, row: 1, title: "You approve", actor: "Person", caption: "A person approves. Nothing moves forward without it.", given: "The checked result, both drafts, and both reviews.", output: spec.approval, after: ["checks"], seconds: 0 }),
@@ -449,7 +461,7 @@ export function expand(spec: WorkflowSpec): Workflow {
       step({ id: "release", kind: "check", phase: 4, col: 0, row: 1, title: "Release gate", actor: "No model", caption: "The release gate re-checks approvals, tests and data rules before anything ships.", given: "Approvals, test results and scans.", output: spec.release ?? "", after: ["testsGreen"], seconds: 2, verdict: "pass" }),
       step({ id: "staging", kind: "tool", phase: 4, col: 1, row: 1, title: "Deploy to staging", actor: "Pipeline", caption: "The build goes to staging, a copy of production with no real users.", given: "The released build.", output: deploy?.staging ?? "", after: ["release"], seconds: 240 }),
       step({ id: "smoke", kind: "check", phase: 4, col: 2, row: 1, title: "Smoke tests", actor: "No model", caption: "Scripted checks exercise the main paths on staging.", given: "The staging deployment.", output: deploy?.smoke ?? "", after: ["staging"], seconds: 60, verdict: "pass" }),
-      llm({ id: "goNoGo", phase: 4, col: 3, row: 1, title: "Go / no-go", caption: "Model C weighs the staging results and recommends go or no-go, with its confidence. A person still decides.", given: "Smoke tests and the rollback plan.", output: decisionText(spec, "goNoGo"), after: ["smoke"] }, JEV, SIZE.decide),
+      llm({ id: "goNoGo", phase: 4, col: 3, row: 1, title: "Go / no-go", caption: "Model C weighs the staging results and recommends go or no-go. A script could answer the first two questions; the third, any sign of risk to real users, is the judgement call. A person still decides.", given: "Smoke tests and the rollback plan.", output: decisionText(spec, "goNoGo"), after: ["smoke"] }, JEV, SIZE.decide),
       step({ id: "deployApprove", kind: "human", phase: 4, col: 4, row: 1, title: "You approve", actor: "Person", caption: "A person approves the move to production.", given: "Model C's recommendation, test results, smoke tests and the rollback plan.", output: deploy?.approval ?? "", after: ["goNoGo"], seconds: 0 }),
       step({ id: "production", kind: "tool", phase: 4, col: 5, row: 1, title: "Production", actor: "Pipeline", caption: "A gradual rollout to real users, watched, with a rollback plan ready.", given: "The approved build.", output: deploy?.production ?? "", after: ["deployApprove"], seconds: 600 }),
     ];
@@ -494,6 +506,7 @@ export function expand(spec: WorkflowSpec): Workflow {
     output: spec.kind === "build" ? buildOutput(spec) : spec.output,
     phases,
     models: MODELS,
+    lowRiskRequest: LOW_RISK_REQUEST[spec.domain],
     stages: spec.kind === "build" ? BUILD_STAGES : DOCUMENT_STAGES,
     walls,
     steps,
