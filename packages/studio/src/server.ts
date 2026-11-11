@@ -56,6 +56,10 @@ export function createStudioServer(options: StudioOptions = {}): Server {
         send(res, 200, catalog());
         return;
       }
+      if (req.method === "GET" && url.pathname === "/api/status") {
+        send(res, 200, { decisionsLive: decider.live });
+        return;
+      }
       const decide = url.pathname.match(/^\/api\/decide\/([a-z0-9-]+)\/([a-zA-Z]+)$/);
       if (req.method === "GET" && decide) {
         const spec = loadSpecs().find((item) => item.id === decide[1]);

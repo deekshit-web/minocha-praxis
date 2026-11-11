@@ -100,6 +100,8 @@
       }
       .controls button.primary, #approve { background: var(--teal); border-color: var(--teal); color: #f7fffe; font-weight: 650; }
       .phases { display: flex; gap: 6px; margin-left: auto; }
+      .keys { font-size: 12px; color: var(--muted); }
+      @media (max-width: 1100px) { .keys { display: none; } }
       .phases button[aria-selected="true"] { background: var(--teal-deep); border-color: var(--teal-deep); color: #f7fffe; }
       .caption {
         display: flex;
@@ -220,11 +222,11 @@
       .yourturn button { border: 0; border-radius: 999px; padding: 10px 20px; background: var(--teal); color: #f7fffe; font: inherit; font-weight: 650; cursor: pointer; }
       .approving { margin: 6px 0; padding: 10px 14px; border-left: 3px solid var(--teal); background: var(--sky); white-space: pre-wrap; font-size: 14.5px; }
       .models { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0 0; }
-      .models > div { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-2); }
+      .models > div { padding: 7px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-2); font-size: 13.5px; }
       .models .who { font-weight: 650; }
       .models .who span { font-weight: 500; color: var(--muted); }
-      .models p { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
-      .models .real { margin-top: 6px; font-size: 13px; color: var(--teal-deep); }
+      .models p { margin: 2px 0 0; font-size: 13px; line-height: 1.35; color: var(--muted); }
+      .models .real { margin-top: 3px; font-size: 12.5px; color: var(--teal-deep); }
       @media (max-width: 760px) { .models { grid-template-columns: 1fr; } }
       .testlab { margin-top: 14px; }
       .testlab h2 { margin: 2px 0 4px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
@@ -302,7 +304,7 @@
           <p id="lede" class="lede">AI writes fluently and is sometimes confidently wrong. Here two different AIs do the work separately and check each other, plain code checks verify the result, and a person approves it, so mistakes are caught before they reach you. This page replays prepared runs, so no model is called and nothing is billed. The run summarised below is real.</p>
         </div>
         <div class="headside">
-          <span class="sim" title="Every output on this page was written in advance. Times and costs show what a live run would take."><i></i>Simulated · no model is called · $0</span>
+          <span class="sim" id="sim" title="Every output on this page was written in advance. Times and costs show what a live run would take."><i></i>Simulated · no model is called · $0</span>
           <div class="viewtoggle" role="group" aria-label="Level of detail">
             <button type="button" data-view="plain" aria-pressed="true">Plain</button>
             <button type="button" data-view="technical" aria-pressed="false">Technical</button>
@@ -325,7 +327,7 @@
           <div class="tile"><span class="label">Model time if live</span><span class="value" id="time-value">0 s</span><span class="sub" id="time-sub"></span></div>
           <div class="tile"><span class="label">Would cost if live</span><span class="value" id="cost-value">$0.00</span><span class="sub" id="cost-sub"></span></div>
           <div class="tile"><span class="label">Checks</span><span class="value" id="checks-value">-</span><span class="sub" id="checks-sub">Not run yet</span></div>
-          <div class="tile zero"><span class="label">Tokens spent</span><span class="value">0</span><span class="sub">Replayed run: no model is called</span></div>
+          <div class="tile zero"><span class="label">Spent for real</span><span class="value" id="spent-value">$0</span><span class="sub" id="spent-sub">Replayed run: no model is called</span></div>
         </div>
 
         <div class="controls">
@@ -333,11 +335,12 @@
           <button type="button" id="next">Next step ▸</button>
           <select id="speed" aria-label="Replay speed">
             <option value="10">10×</option>
-            <option value="30" selected>30×</option>
-            <option value="60">60×</option>
+            <option value="30">30×</option>
+            <option value="60" selected>60×</option>
           </select>
           <button type="button" id="restart">Restart</button>
           <button type="button" id="see-output">See the output ▾</button>
+          <span class="keys" title="Presenter shortcuts: Space play or pause · A approve · N next step · R restart · T plain or technical · 1–8 jump to a stage">⌨ Space · A · N · R · T · 1–8</span>
           <div class="phases" id="phases" role="tablist"></div>
         </div>
 
@@ -357,7 +360,7 @@
       </section>
 
       <footer>
-        How to read this page: every model output was written in advance to show how the workflow behaves; no model is called and nothing is billed. The code checks and the build workflows' tests are different: they are real code, and they run in your browser. Model times and costs are estimates of a live run, from the same price table the live runs use. The live, metered version of this pipeline exists for the healthcare requirements step and is run on request.
+        How to read this page: the drafting, review and coding models' outputs were written in advance to show how the workflow behaves, and cost nothing. Model C's small decisions run live when a decision-model key is set, for a fraction of a cent, and say so. The code checks and the build workflows' tests are different: they are real code, and they run in your browser. Model times and costs are estimates of a live run, from the same price table the live runs use. The live, metered version of this pipeline exists for the healthcare requirements step and is run on request.
       </footer>
     </div>
 
@@ -425,7 +428,7 @@
       let runId = null;
       let logKey = "";
       let scrollToOutput = false;
-      const play = { index: 0, progress: 0, playing: false, speed: 30, last: 0, frame: 0, drawn: 0, approved: new Set() };
+      const play = { index: 0, progress: 0, playing: false, speed: 60, last: 0, frame: 0, drawn: 0, approved: new Set() };
 
       const byId = (id) => document.getElementById(id);
       function text(id, value) { byId(id).textContent = value ?? ""; }
@@ -596,7 +599,7 @@
 
       function nodeText(step, state) {
         const kicker = step.title;
-        const name = step.kind === "llm" ? modelLabel(step.actor) : step.actor;
+        const name = step.kind === "llm" ? (flow.models && flow.models[step.actor] ? flow.models[step.actor].label : modelLabel(step.actor)) : step.actor;
         let meta = "";
         if (step.actor === "jev-1.14.0" && state !== "idle") {
           const result = decisions[flow.id + ":" + step.id];
@@ -639,6 +642,7 @@
         renderScoreboard();
         renderCaption();
         renderDetail();
+        settleDetail();
         renderOutput();
         renderRunLog();
         renderTryIt();
@@ -667,6 +671,11 @@
         text("time-value", duration(seconds));
         text("time-sub", "of " + duration(flow.estimatedSeconds) + " for the whole run");
         text("cost-value", money(cost));
+        const live = Object.values(decisions).filter((result) => result && result.live && !result.cached);
+        const spent = live.reduce((total, result) => total + (result.costUsd || 0), 0);
+        const tokens = live.reduce((total, result) => total + (result.inputTokens || 0), 0);
+        text("spent-value", spent > 0 ? "$" + spent.toFixed(6) : "$0");
+        text("spent-sub", live.length ? live.length + " live Model C decision" + (live.length === 1 ? "" : "s") + " · " + tokens.toLocaleString() + " tokens. Everything else is replayed." : decisionsLive ? "Model C answers live when reached. Everything else is replayed." : "Replayed run: no model is called");
         text("cost-sub", "of about " + money(flow.estimatedCostUsd) + " · this page spends $0");
         const checks = flow.steps.filter((step) => step.kind === "check");
         const run = checks.filter((step) => flow.steps.indexOf(step) < play.index);
@@ -723,9 +732,10 @@
         const step = flow.steps[play.index];
         byId("caption").parentElement.classList.toggle("blocked", !!play.blocked);
         if (play.blocked) {
-          approve.hidden = true;
+          approve.hidden = false;
+          approve.textContent = "Reset figures";
           const failed = liveFailures().length;
-          text("caption", "Blocked. " + failed + " code check" + (failed === 1 ? "" : "s") + " failed, so the run stops here and nothing reaches a person. Fix the figures below, or press Reset figures.");
+          text("caption", "Blocked. " + failed + " code check" + (failed === 1 ? "" : "s") + " failed, so the run stops here and nothing reaches a person. Reset the figures to let it continue.");
           return;
         }
         const waiting = step.kind === "human" && !play.approved.has(step.id) && (play.playing || play.progress > 0);
@@ -805,9 +815,19 @@
         };
         if (step.kind === "llm") {
           const vendor = VENDOR[step.actor] || { api: step.actor, id: "sim-", stop: "stop", limit: null };
-          const done = state === "done";
+          const done = state === "done" || state === "flagged";
           const firstToken = Math.max(1, Math.round(step.seconds * FIRST_TOKEN));
-          const rows = [
+          const real = decision && decision.live ? decision : null;
+          const rows = real
+            ? [
+                ["Model", (real.model || step.actor) + " · " + vendor.api],
+                ["Request", "A live call; its id stays on the server"],
+                ["Tokens", (real.inputTokens || 0).toLocaleString() + " in · typed answers out"],
+                ["Timing", "answered in " + real.ms + " ms" + (real.cached ? ", earlier today" : "")],
+                ["Stop reason", vendor.stop],
+                ["Cost", "$" + (real.costUsd || 0).toFixed(6) + ", real"],
+              ]
+            : [
             ["Model", step.actor + " · " + vendor.api],
             ["Request", vendor.id + hashHex((runId || flow.id) + step.id, 16) + " (simulated)"],
             ["Tokens", step.tokens.input.toLocaleString() + " in · " + (done ? step.tokens.output.toLocaleString() : share ? Math.round(step.tokens.output * share).toLocaleString() + "…" : "0") + " out" + (vendor.limit ? " · limit " + vendor.limit : "")],
@@ -825,6 +845,16 @@
             record.append(dt, dd);
           }
           detail.appendChild(record);
+        }
+        if (step.id === "checks" && byId("tryit") && !byId("tryit").hidden) {
+          const jump = document.createElement("div");
+          jump.className = "yourturn";
+          const go = document.createElement("button");
+          go.type = "button";
+          go.textContent = "Try to break it: change what the AI wrote ↓";
+          go.addEventListener("click", () => byId("tryit").scrollIntoView({ behavior: "smooth", block: "start" }));
+          jump.appendChild(go);
+          detail.appendChild(jump);
         }
         section("Given", step.given);
         if (state === "idle") section(step.kind === "human" ? "Outcome" : "Produced", "Not reached yet.");
@@ -1115,7 +1145,7 @@
       let modelsKey = "";
       function renderModels() {
         const box = byId("models");
-        const key = flow.id + "|" + technical();
+        const key = flow.id + "|" + technical() + "|" + decisionsLive;
         if (key === modelsKey) return;
         modelsKey = key;
         clear(box);
@@ -1134,7 +1164,7 @@
           if (technical()) {
             const real = document.createElement("div");
             real.className = "real";
-            real.textContent = "This replay assumes " + (MODEL_LABEL[id] || id) + ". Any model with these qualities can fill the role.";
+            real.textContent = (id === "jev-1.14.0" && decisionsLive ? "Live here: " : "Replayed as ") + (MODEL_LABEL[id] || id) + ". Any model with these qualities can fill the role.";
             card.appendChild(real);
           }
           box.appendChild(card);
@@ -1306,6 +1336,12 @@
         log.scrollTop = log.scrollHeight;
       }
 
+      function settleDetail() {
+        const detail = byId("detail");
+        const record = detail.querySelector(".record");
+        if (record) detail.appendChild(record);
+      }
+
       function renderOutput() {
         const card = byId("output");
         const finished = play.index >= flow.steps.length;
@@ -1424,8 +1460,10 @@
       }
 
       /** How long a step takes on screen: its live time at the chosen speed, never too short to follow. */
+      // The moments a visitor must not miss stay on screen longer: live decisions, catches, checks and test runs.
       function displayMs(step) {
-        return Math.max(MIN_DISPLAY_MS, (step.seconds * 1000) / play.speed);
+        const key = step.actor === "jev-1.14.0" || step.verdict === "flagged" || step.id === "checks" || step.id === "testsRed" || step.id === "unitRun";
+        return Math.max(key ? 3500 : MIN_DISPLAY_MS, (step.seconds * 1000) / play.speed);
       }
 
       function advance() {
@@ -1501,7 +1539,17 @@
         if (play.index < flow.steps.length) play.progress = 0.001;
         render();
       });
+      function resetFigures() {
+        claimEdits = {};
+        tryKey = "";
+        if (play.blocked) play.blocked = false;
+        render();
+      }
       byId("approve").addEventListener("click", () => {
+        if (play.blocked) {
+          resetFigures();
+          return;
+        }
         const step = flow.steps[play.index];
         if (!step) return;
         play.approved.add(step.id);
@@ -1536,6 +1584,24 @@
         play.speed = Number(event.target.value) || 30;
       });
       window.addEventListener("resize", () => flow && drawLines());
+      // Presenter shortcuts: Space play/pause, A approve, N next step, R restart, T plain/technical, 1-8 jump to a stage.
+      document.addEventListener("keydown", (event) => {
+        if (!flow || event.ctrlKey || event.metaKey || event.altKey) return;
+        const target = event.target;
+        if (target && (target.tagName === "INPUT" || target.tagName === "SELECT" || target.tagName === "TEXTAREA")) return;
+        const key = event.key.toLowerCase();
+        const click = (id) => !byId(id).hidden && byId(id).click();
+        if (key === " ") click("play");
+        else if (key === "a" || key === "enter") click("approve");
+        else if (key === "n") click("next");
+        else if (key === "r") click("restart");
+        else if (key === "t") setView(technical() ? "plain" : "technical");
+        else if (/^[1-8]$/.test(key)) {
+          const stage = document.querySelectorAll("#stages .stage")[Number(key) - 1];
+          if (stage) stage.click();
+        } else return;
+        event.preventDefault();
+      });
       // A shared link such as #education-document opens that workflow, even on a page that is already open.
       window.addEventListener("hashchange", () => {
         const wanted = location.hash.slice(1);
@@ -1614,6 +1680,21 @@
         savedView = localStorage.getItem("foundry-view") || "plain";
       } catch (error) {}
       setView(savedView);
+
+      // Whether Model C's decisions run live here, so the page never claims "no model is called" when one is.
+      let decisionsLive = false;
+      fetch("/api/status")
+        .then((response) => (response.ok ? response.json() : null))
+        .then((status) => {
+          decisionsLive = !!(status && status.decisionsLive);
+          if (!decisionsLive) return;
+          const badge = byId("sim");
+          badge.lastChild.textContent = "Replayed models · Model C live · under a cent";
+          badge.title = "The drafting, review and coding models are replayed and cost nothing. Model C's small decisions run live on a decision model, for a fraction of a cent each.";
+          text("lede", "AI writes fluently and is sometimes confidently wrong. Here two different AIs do the work separately and check each other, plain code checks verify the result, and a person approves it, so mistakes are caught before they reach you. The drafting and review models are replayed, so they cost nothing; Model C's small decisions run live, for a fraction of a cent. The run summarised below is real.");
+          if (flow) render();
+        })
+        .catch(() => {});
 
       fetch("/api/evidence")
         .then((response) => (response.ok ? response.json() : null))
