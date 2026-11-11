@@ -41,6 +41,14 @@
       "inputTokens": 2310,
       "outputTokens": 1493,
       "costUsd": 0.039942
+    },
+    {
+      "role": "finalReview",
+      "model": "grok-4.7",
+      "seconds": 47.4,
+      "inputTokens": 2315,
+      "outputTokens": 61,
+      "costUsd": 0.003268
     }
   ],
   "draftA": "REQ-1 For each distributor and product, calculate days of cover as stock on hand divided by average daily sell-out. Average daily sell-out is the distributor's total sell-out over the last 4 weeks (28 days) divided by 28.\nREQ-2 Raise an alert when days of cover is below 7, meaning the distributor is likely to run out within a week. Assumption to confirm with National sales operations: exactly 7.0 days does not trigger an alert.\nREQ-3 Send the alert to the area sales manager responsible for the distributor, at most once per distributor per product per day.\nREQ-4 In v1, seasonal products follow the same rule as all other products; separate seasonal handling is logged as a proposal only. Assumption to confirm: if 4-week sell-out is zero, days of cover is undefined and no alert is sent.\nAC-1 Given stock on hand of 120 units and 4-week sell-out of 560 units, average daily sell-out is 560 / 28 = 20, so days of cover is 120 / 20 = 6.0. Because 6.0 is below 7, the area sales manager receives an alert.\nAC-2 Given stock on hand of 300 units and 4-week sell-out of 840 units, average daily sell-out is 840 / 28 = 30, so days of cover is 300 / 30 = 10.0. Because 10.0 is not below 7, no alert is sent.\nAC-3 Given the AC-1 case is evaluated twice on the same day, the area sales manager receives exactly one alert for that distributor and product that day. If the condition still holds the next day, one new alert is sent.\nAC-4 Given stock on hand of 140 units and 4-week sell-out of 560 units, days of cover is 140 / 20 = 7.0. No alert is sent, per the REQ-2 boundary assumption.",
@@ -97,5 +105,9 @@
         "note": "REQ-6 puts all products in scope for v1, because the requester gave no definition of fast-moving. It is flagged for confirmation, with a question on the definition if a filter is wanted."
       }
     ]
+  },
+  "finalReview": {
+    "findings": [],
+    "strengths": "Days of cover, the 4-week sell-out basis, the area sales manager recipient, the once-per-day cap, and deferring seasonal handling all match the requester, and the 560/28 boundary cases recompute correctly."
   }
 }

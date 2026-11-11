@@ -41,6 +41,14 @@
       "inputTokens": 2110,
       "outputTokens": 1316,
       "costUsd": 0.035586
+    },
+    {
+      "role": "finalReview",
+      "model": "grok-4.7",
+      "seconds": 85.1,
+      "inputTokens": 2183,
+      "outputTokens": 74,
+      "costUsd": 0.003082
     }
   ],
   "draftA": "REQ-1 Flag a student when either condition holds: attendance below 90% over the last 20 school days, or two or more failing grades in the current term. Both signals are checked, and either one alone triggers the flag. Open point: the pass mark that defines a failing grade still needs confirming. REQ-2 Only the student's own counsellor and the head of year can see the flag. No other user can see it. REQ-3 The flag clears automatically only after neither condition has held for 10 consecutive school days. REQ-4 A new flag must reach the student's counsellor as soon as it is raised, so they can follow up within a week. AC-1 Attendance: a student present 17 of the last 20 school days (85%) with 0 failing grades is flagged. A student present 18 of 20 days (exactly 90%) is not flagged, because 90% is not below 90%. AC-2 Grades: a student with 20 of 20 days attended and 2 failing grades this term is flagged. With 1 failing grade this term they are not flagged. Failing grades from a previous term do not count. AC-3 Visibility: for a flagged student, their counsellor and the head of year can see the flag. A different student's counsellor and a subject teacher cannot. AC-4 Clearing: a flagged student who meets neither condition for 9 consecutive school days stays flagged, and the flag clears on day 10. If attendance falls below 90% on day 7, the student stays flagged and the 10-day count restarts once both conditions are clear again.",
@@ -84,5 +92,9 @@
         "note": "AC-4 now tests a condition recurring on day 5 of the window. The student stays flagged and the 10-day count restarts once both conditions are clear again."
       }
     ]
+  },
+  "finalReview": {
+    "findings": [],
+    "strengths": "The draft applies both stated triggers, limits visibility to the student's counsellor and the head of year, and uses the correct boundaries: 17 of 20 is 85 percent and flagged, exactly 90 percent is not below 90 percent, and the flag stays through nine clear days and clears on day 10."
   }
 }

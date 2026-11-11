@@ -41,6 +41,14 @@
       "inputTokens": 1912,
       "outputTokens": 870,
       "costUsd": 0.025876
+    },
+    {
+      "role": "finalReview",
+      "model": "grok-4.7",
+      "seconds": 68.6,
+      "inputTokens": 2131,
+      "outputTokens": 63,
+      "costUsd": 0.002912
     }
   ],
   "draftA": "Claim decision: Shipment SHP-9031 (18 kg glassware, damaged on arrival)\n\nCustomer refund: 1,200\nUnder customer policy R-4, damage on arrival is refunded at the full invoice value, which is 1,200.\n\nCarrier claim: 450\nCarrier contract C-7 limits liability to 25 per kg unless declared value cover was bought. SHP-9031 had no declared value cover, so the limit applies: 18 kg x 25 = 450. R-4 says to recover what the contract allows, so we claim the full 450. The cap is below the 1,200 invoice value, so we cannot recover more.\n\nNet cost to us: 750 (1,200 refunded minus 450 recovered).\n\nDeadline: C-7 requires claims within 30 days of delivery. SHP-9031 was delivered on 2026-11-03, so the claim must be filed by 2026-12-03. File promptly. If that date has passed, the carrier recovery may be lost, but the customer refund still stands.\n\nEvidence: Damage photos are on file. Attach them to the carrier claim.\n\nNotes: The sources give no currency, so amounts are shown in the invoice's units. For future high-value fragile shipments, consider buying declared value cover to avoid this kind of shortfall.\n\nActions:\n1. Refund the customer 1,200.\n2. File a 450 claim with the carrier under C-7, with photos, by 2026-12-03.\n3. Record a 750 net loss on SHP-9031.",
@@ -58,5 +66,9 @@
     "keptFromA": "From draft A I kept the structure with headed sections, the missed-deadline caveat, the currency and declared-value-cover notes, and the numbered action list.",
     "keptFromB": "From draft B I kept the use of the damage photos as evidence for the R-4 refund and the statement that the 750 gap is not claimable under C-7.",
     "resolutions": []
+  },
+  "finalReview": {
+    "findings": [],
+    "strengths": "The decision correctly refunds the invoice value of 1,200 under R-4 and limits the carrier claim to 450 (18 kg times 25) under C-7, with the filing deadline correctly set at 2026-12-03."
   }
 }
