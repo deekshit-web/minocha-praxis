@@ -41,6 +41,14 @@
       "inputTokens": 2054,
       "outputTokens": 1265,
       "costUsd": 0.034405
+    },
+    {
+      "role": "finalReview",
+      "model": "grok-4.7",
+      "seconds": 125.9,
+      "inputTokens": 2128,
+      "outputTokens": 60,
+      "costUsd": 0.002888
     }
   ],
   "draftA": "Northwind Health\nAttn: Appeals Department\n\nRe: Appeal of Denial, Claim CLM-221\nPatient: PAT-221\nDate of Service: 2026-08-20\nService: MRI of the lumbar spine\nDenial Code: CARC CO-50 (not deemed medically necessary)\n\nTo the Appeals Reviewer:\n\nWe are requesting reconsideration of the CO-50 denial for the lumbar spine MRI performed on 2026-08-20. This service was medically necessary and meets Northwind Health coverage policy LS-14.\n\nPolicy LS-14 covers a lumbar MRI after 6 weeks of documented conservative therapy. Clinical note DOC-318 documents the following conservative treatment:\n\n- Physical therapy from 2026-07-01 to 2026-08-14, a period of just over six weeks.\n- NSAIDs.\n- No improvement with this treatment.\n\nThe MRI was performed on 2026-08-20, after the required six weeks of therapy had been completed and had failed. This satisfies the LS-14 criterion. The diagnosis code on the claim is unchanged.\n\nWe ask that you overturn the denial and process CLM-221 for payment. This appeal is submitted before the filing deadline of 2026-11-18.\n\nEnclosures:\n- Clinical note DOC-318\n- Northwind Health policy LS-14 (cited)\n\nSincerely,\n\n[Name]\n[Title], Appeals Desk\n[Practice name, phone, address]",
@@ -58,5 +66,9 @@
     "keptFromA": "I kept Draft A's formal letter structure: the addressed salutation, the deadline-compliance sentence, the enclosure list and the signature block. I dropped its parenthetical gloss of CO-50, because that meaning does not appear in the supplied facts, and its hyphen bullets, to keep the letter plain text.",
     "keptFromB": "I kept Draft B's compact single-paragraph statement of the DOC-318 evidence, the filing deadline in the header, and the closing request tied explicitly to policy LS-14.",
     "resolutions": []
+  },
+  "finalReview": {
+    "findings": [],
+    "strengths": "The letter correctly appeals CLM-221 under LS-14 with DOC-318, the exact therapy dates, the 2026-08-20 service date, and the 2026-11-18 deadline, without changing the diagnosis."
   }
 }

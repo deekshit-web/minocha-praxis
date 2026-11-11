@@ -39,3 +39,31 @@ test("a recording runs drafts, crossed reviews and a merge, renumbers findings, 
   assert.match(renderReview(recording.reviewOfB, "D-B"), /No defects found/);
   assert.match(renderMerge(recording.merge, 1), /Fixed D-A1: 15% off\.\nDefects resolved: 1 of 1\./);
 });
+
+test("the final check: Model B reviews the merged document, and Model A fixes it only when something was raised", async () => {
+  const merge = { document: "Final, with 18% less trial.", keptFromA: "a", keptFromB: "b", resolutions: [] };
+  const claude = fake({ analystA: { text: "A plan." }, critiqueOfB: { findings: [], strengths: "Fine." }, synthesizer: merge }, "claude-opus-5");
+  const raised = { findings: [{ id: "x", severity: "P0", title: "Wrong trial figure", detail: "It is 15.3%.", quote: "18% less trial" }], strengths: "Clear." };
+  for (const finalReview of [raised, { findings: [], strengths: "Clean." }]) {
+    let reviews = 0;
+    const grok: ModelProvider = {
+      mode: "live",
+      async complete(request) {
+        const answer = request.role === "analystB" ? { text: "B plan." } : reviews++ === 0 ? { findings: [], strengths: "Fine." } : finalReview;
+        return { text: JSON.stringify(answer), model: "grok-4.7", usage: { inputTokens: 1000, outputTokens: 200, cacheReadTokens: 0, cacheWriteTokens: 0 } };
+      },
+    };
+    const fixer = fake({ synthesizer: { document: "Final, with 15.3% less trial.", resolutions: [{ finding: "D-F1", outcome: "fixed", note: "15.3%." }] } }, "claude-opus-5");
+    const recording = await recordPanel(spec, { claude, grok, fixer });
+    assert.equal(recording.finalReview?.findings[0]?.id, finalReview.findings.length ? "D-F1" : undefined);
+    if (finalReview.findings.length) {
+      assert.deepEqual(recording.calls.slice(5).map((call) => call.role), ["finalReview", "finalFix"]);
+      assert.match(fixer.prompts[0]?.prompt ?? "", /18% less trial[\s\S]*D-F1 · P0 · Wrong trial figure/);
+      assert.equal(recording.finalFix?.document, "Final, with 15.3% less trial.");
+    } else {
+      assert.deepEqual(recording.calls.slice(5).map((call) => call.role), ["finalReview"]);
+      assert.equal(recording.finalFix, undefined);
+      assert.equal(fixer.prompts.length, 0);
+    }
+  }
+});

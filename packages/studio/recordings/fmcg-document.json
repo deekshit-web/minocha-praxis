@@ -41,6 +41,14 @@
       "inputTokens": 2355,
       "outputTokens": 1845,
       "costUsd": 0.047164
+    },
+    {
+      "role": "finalReview",
+      "model": "grok-4.7",
+      "seconds": 49.7,
+      "inputTokens": 2398,
+      "outputTokens": 45,
+      "costUsd": 0.003338
     }
   ],
   "draftA": "SKU-5502 Launch Promotion Plan, Modern Trade, 4 Weeks\n\nObjective: 12,000 full-size units sold. Planning split is 3,000 per week. This is a target, not a forecast, because no baseline sales data is available.\n\nMechanic, Weeks 1-4: Buy SKU-5502 at the 6.00 list price and get a free 50 ml travel size.\n- Unit economics: revenue 6.00, cost 3.30 + 0.25 = 3.55, gross margin 2.45 / 6.00 = 40.8%. This clears the PP-3 floor of 35%.\n- Cost of giveaways at target: 12,000 x 0.25 = 3,000.\n\nRejected options:\n- Straight 2-for-1 (two units for 6.00): cost 6.60 against revenue 6.00, a negative margin, so it breaches PP-3.\n- Deep discounts: the lowest compliant shelf price is 5.08 (margin 35.0%, about 15% off). Our SKU-4410 data shows straight discounts drove 18% less trial than 2-for-1 bundles.\n\nRationale: Bundling a free trial size keeps the bundle format that won on trial for SKU-4410 while staying above the floor. It is not identical to a 2-for-1, so the size of any trial uplift is unproven.\n\nCompliance: No 'clinically proven' or medical claims on POS, shelf talkers or packs (CL-1), unless a filed study exists.\n\nOpen items before approval:\n- Confirm launch dates.\n- Confirm travel-size stock of 12,000 units.\n- Confirm any retailer funding or fees; these are not included and would lower margin.\n\nMargin guardrail: Any change to price or mechanic must be re-checked against the 35% floor.",
@@ -72,5 +80,9 @@
         "note": "The review is correct. If bundles beat discounts by 18%, discounts drove about 15.3% less trial, not 18% less. The plan now quotes the source wording directly: 2-for-1 bundles beat straight discounts on trial by 18%."
       }
     ]
+  },
+  "finalReview": {
+    "findings": [],
+    "strengths": "Every price, cost, and margin figure was recomputed and matches the facts, and the recommended travel-size gift stays above the 35% PP-3 floor."
   }
 }

@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import * as z from "zod/v4";
 import { type BuildRecording, buildRecordingFor } from "./build.ts";
-import { type Recording, recordingFor, renderMerge, renderReview } from "./record.ts";
+import { type Recording, recordingFor, renderFix, renderMerge, renderReview } from "./record.ts";
 
 /**
  * A simulated workflow. Nothing here calls a model: every output was written in advance, so a demo shows how
@@ -45,6 +45,9 @@ const SpecSchema = z.object({
   reviewOfA: Text,
   reviewOfB: Text,
   synthesis: Text,
+  /** The final check: Model B's review of the merged result, and Model A's fix when it raised anything. */
+  finalReview: Text.optional(),
+  finalFix: Text.optional(),
   checks: z.array(z.object({ name: Text, detail: Text })).min(3),
   approval: Text,
   /**
@@ -80,7 +83,7 @@ const SpecSchema = z.object({
    * What one model alone would have handed over, next to what the panel delivers: a passage from the draft a
    * review flagged, the passage that replaced it in the output, and why it mattered, in plain words.
    */
-  contrast: z.object({ draft: z.enum(["A", "B"]), before: Text, after: Text, why: Text }).nullable(),
+  contrast: z.object({ draft: z.enum(["A", "B", "merged"]), before: Text, after: Text, why: Text }).nullable(),
 });
 
 let calibrationCache: Record<string, { cost: number; seconds: number; input: number; output: number }> | null = null;
@@ -92,13 +95,12 @@ let calibrationCache: Record<string, { cost: number; seconds: number; input: num
 export function calibration(): Record<string, { cost: number; seconds: number; input: number; output: number }> {
   if (calibrationCache) return calibrationCache;
   const sums: Record<string, { real: [number, number, number, number]; guess: [number, number, number, number] }> = {};
-  const stepOf: Record<string, string> = { analystA: "draftA", analystB: "draftB", critiqueOfA: "reviewOfA", critiqueOfB: "reviewOfB", synthesizer: "merge" };
-  for (const authored of loadSpecs(undefined, { recordings: false })) {
+    for (const authored of loadSpecs(undefined, { recordings: false })) {
     const recording = recordingFor(authored.id);
     if (!recording) continue;
     const estimate = expandEstimates(authored);
     for (const call of recording.calls) {
-      const step = estimate.find((item) => item.id === stepOf[call.role]);
+      const step = estimate.find((item) => item.id === STEP_OF_CALL[call.role]);
       if (!step?.tokens) continue;
       const entry = (sums[step.actor] ??= { real: [0, 0, 0, 0], guess: [0, 0, 0, 0] });
       entry.real = [entry.real[0] + call.costUsd, entry.real[1] + call.seconds, entry.real[2] + call.inputTokens, entry.real[3] + call.outputTokens];
@@ -147,7 +149,18 @@ export interface Step {
 /** The stages of software development a build workflow walks through, in order. */
 export const BUILD_STAGES = ["PRD", "Architecture", "Code", "Code review", "Unit tests", "Test cases", "Testing", "Deployment"];
 /** The stages a document or decision walks through. */
-export const DOCUMENT_STAGES = ["Research", "Drafts", "Cross-review", "Merge", "Checks", "Approval", "Delivery"];
+export const DOCUMENT_STAGES = ["Research", "Drafts", "Cross-review", "Merge", "Final check", "Checks", "Approval", "Delivery"];
+
+/** Which page step each recorded panel call is. */
+const STEP_OF_CALL: Record<string, string> = {
+  analystA: "draftA",
+  analystB: "draftB",
+  critiqueOfA: "reviewOfA",
+  critiqueOfB: "reviewOfB",
+  synthesizer: "merge",
+  finalReview: "finalCheck",
+  finalFix: "finalFix",
+};
 
 export interface Workflow {
   id: string;
@@ -160,7 +173,7 @@ export interface Workflow {
   requester: string;
   brief: string;
   output: string;
-  contrast: { draft: "A" | "B"; before: string; after: string; why: string } | null;
+  contrast: { draft: "A" | "B" | "merged"; before: string; after: string; why: string } | null;
   /** For a build replayed from real recorded stages: the model-written code and test scripts, to rerun. */
   build: { firstCode: string; finalCode: string; unitScript: string; testScript: string; contract: string } | null;
   /** When the panel is replayed from a real recording: when it was made, what it cost, how long it took. */
@@ -201,6 +214,8 @@ const SIZE = {
   reviewClaude: { input: 25_000, output: 7_000, seconds: 94 },
   reviewGrok: { input: 25_000, output: 1_200, seconds: 259 },
   merge: { input: 45_000, output: 25_000, seconds: 320 },
+  finalCheck: { input: 12_000, output: 1_200, seconds: 150 },
+  finalFix: { input: 14_000, output: 4_000, seconds: 90 },
   decide: { input: 3_000, output: 0, seconds: 0.1 },
   archDraft: { input: 22_000, output: 5_000, seconds: 150 },
   archReview: { input: 20_000, output: 1_500, seconds: 200 },
@@ -423,9 +438,21 @@ function decisionText(spec: WorkflowSpec, stepId: string): string {
   return decision ? formatDecision(decision, replayAnswers(spec, stepId, decision)) : "";
 }
 
-/** Both shapes share the panel: two walled-off drafts, crossed reviews, one merge, code checks, a person. */
+/**
+ * Both shapes share the panel: two walled-off drafts, crossed reviews, one merge, the final check when the panel
+ * was recorded with one, code checks, a person.
+ */
 function panel(spec: WorkflowSpec, startCol: number, inputs: string[]): Step[] {
   const c = startCol;
+  // Measured: an independent review of the final document still found serious faults the panel had passed.
+  const final: Step[] = spec.finalReview
+    ? [
+        llm({ id: "finalCheck", phase: 0, col: c + 4, row: 1, title: "Final check", caption: "Model B, from a different vendor, reviews the merged result once more under a strict rule: any wrong figure, date, threshold or rule is serious. In our measurements this step still found serious faults the panel had passed.", given: "The merged result only.", output: spec.finalReview, after: ["merge"], verdict: reviewVerdict(spec.finalReview) }, GROK, SIZE.finalCheck),
+        ...(spec.finalFix
+          ? [llm({ id: "finalFix", phase: 0, col: c + 5, row: 1, title: "Fix", caption: "Model A fixes what the final check raised, or rejects a finding with its reason.", given: "The merged result and the final check.", output: spec.finalFix, after: ["finalCheck"], verdict: "pass" }, CLAUDE, SIZE.finalFix)]
+          : []),
+      ]
+    : [];
   return [
     llm({ id: "draftA", phase: 0, col: c, row: 0, title: "Draft A", caption: "Model A writes a first draft from the brief. It cannot see the other draft.", given: "The brief and everything gathered so far. Not draft B.", output: spec.draftA, after: inputs }, CLAUDE, SIZE.draftClaude),
     llm({ id: "draftB", phase: 0, col: c, row: 2, title: "Draft B", caption: "Model B writes its own draft, separately. Two different models bring two different sets of blind spots.", given: "The same brief and material. Not draft A.", output: spec.draftB, after: inputs }, GROK, SIZE.draftGrok),
@@ -433,8 +460,9 @@ function panel(spec: WorkflowSpec, startCol: number, inputs: string[]): Step[] {
     llm({ id: "reviewOfA", phase: 0, col: c + 1, row: 2, title: "B reviews A", caption: "Model B reviews Model A's draft the same way.", given: "Draft A only.", output: spec.reviewOfA, after: ["draftA"], verdict: reviewVerdict(spec.reviewOfA) }, GROK, SIZE.reviewGrok),
     llm({ id: "triage", phase: 0, col: c + 2, row: 1, title: "Triage", caption: "Model C decides which findings the merge must fix, with a confidence score. Honestly, a plain rule (fix every P0 and P1) would decide the same here; Model C earns its keep on calls with no labels, like routing.", given: "Both reviews' findings.", output: decisionText(spec, "triage"), after: ["reviewOfA", "reviewOfB"] }, JEV, SIZE.decide),
     llm({ id: "merge", phase: 0, col: c + 3, row: 1, title: "Merge", caption: "Model A merges both drafts and has to resolve every finding Model C marked.", given: "Both drafts, both reviews and the triage.", output: spec.synthesis, after: ["triage"], verdict: "pass" }, CLAUDE, SIZE.merge),
-    step({ id: "checks", kind: "check", phase: 0, col: c + 4, row: 1, title: "Code checks", actor: "No model", caption: "Plain code checks verify the result. No model is involved here.", given: "The merged result.", output: spec.checks.map((item) => `✓ ${item.name}\n  ${item.detail}`).join("\n"), after: ["merge"], seconds: 1, verdict: "pass" }),
-    step({ id: "approve", kind: "human", phase: 0, col: c + 5, row: 1, title: "You approve", actor: "Person", caption: "A person approves. Nothing moves forward without it.", given: "The checked result, both drafts, and both reviews.", output: spec.approval, after: ["checks"], seconds: 0 }),
+    ...final,
+    step({ id: "checks", kind: "check", phase: 0, col: c + 4 + final.length, row: 1, title: "Code checks", actor: "No model", caption: "Plain code checks verify the result. No model is involved here.", given: "The final result.", output: spec.checks.map((item) => `✓ ${item.name}\n  ${item.detail}`).join("\n"), after: [final.at(-1)?.id ?? "merge"], seconds: 1, verdict: "pass" }),
+    step({ id: "approve", kind: "human", phase: 0, col: c + 5 + final.length, row: 1, title: "You approve", actor: "Person", caption: "A person approves. Nothing moves forward without it.", given: "The checked result, both drafts, and both reviews.", output: spec.approval, after: ["checks"], seconds: 0 }),
   ];
 }
 
@@ -545,11 +573,11 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
       llm({ id: "route", phase: 0, col: 1, row: 1, title: "Route", caption: "Model C, a fast decision model, judges how risky the request is and how much checking it needs, in about a tenth of a second.", given: "The brief.", output: decisionText(spec, "route"), after: ["brief"] }, JEV, SIZE.decide),
       step({ id: "sources", kind: "tool", phase: 0, col: 2, row: 1, title: "Knowledge lookup", actor: "Retrieval", caption: "The relevant policies and records are looked up, so the drafts work from facts.", given: "The brief.", output: spec.sources ?? "", after: ["route"], seconds: 2 }),
       ...panel(spec, 3, ["sources"]),
-      step({ id: "deliver", kind: "tool", phase: 0, col: 9, row: 1, title: "Deliver", actor: "Workflow", caption: "The approved result goes out, with a record of who approved what.", given: "The approved result.", output: spec.deliver ?? "", after: ["approve"], seconds: 2 }),
+      step({ id: "deliver", kind: "tool", phase: 0, col: 9 + (spec.finalReview ? 1 : 0) + (spec.finalFix ? 1 : 0), row: 1, title: "Deliver", actor: "Workflow", caption: "The approved result goes out, with a record of who approved what.", given: "The approved result.", output: spec.deliver ?? "", after: ["approve"], seconds: 2 }),
     ];
     const stageOf: Record<string, string> = {
       brief: "Research", route: "Research", sources: "Research", draftA: "Drafts", draftB: "Drafts", reviewOfA: "Cross-review", reviewOfB: "Cross-review", triage: "Cross-review",
-      merge: "Merge", checks: "Checks", approve: "Approval", deliver: "Delivery",
+      merge: "Merge", finalCheck: "Final check", finalFix: "Final check", checks: "Checks", approve: "Approval", deliver: "Delivery",
     };
     steps = steps.map((item) => ({ ...item, stage: stageOf[item.id] }));
   }
@@ -588,9 +616,8 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
   }
   const recording = options.raw ? undefined : spec.recording;
   if (recording) {
-    const stepOf: Record<string, string> = { analystA: "draftA", analystB: "draftB", critiqueOfA: "reviewOfA", critiqueOfB: "reviewOfB", synthesizer: "merge" };
-    steps = steps.map((item) => {
-      const call = recording.calls.find((entry) => stepOf[entry.role] === item.id);
+        steps = steps.map((item) => {
+      const call = recording.calls.find((entry) => STEP_OF_CALL[entry.role] === item.id);
       return call ? { ...item, recorded: true, seconds: call.seconds, tokens: { input: call.inputTokens, output: call.outputTokens }, estimatedCostUsd: call.costUsd } : item;
     });
   }
@@ -628,7 +655,7 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
     phases,
     models: MODELS,
     lowRiskRequest: LOW_RISK_REQUEST[spec.domain],
-    stages: spec.kind === "build" ? BUILD_STAGES : DOCUMENT_STAGES,
+    stages: (spec.kind === "build" ? BUILD_STAGES : DOCUMENT_STAGES).filter((name) => steps.some((item) => item.stage === name)),
     walls,
     steps,
     estimatedCostUsd: models.reduce((total, item) => total + (item.estimatedCostUsd ?? 0), 0),
@@ -705,22 +732,27 @@ export function applyBuildRecording(spec: WorkflowSpec, build: BuildRecording): 
  * out when the reviews found nothing to contrast.
  */
 export function applyRecording(spec: WorkflowSpec, recording: Recording): WorkflowSpec {
-  const ids = (text: string) => text.match(/D-[AB]\d+/)?.[0];
-  const resolutions = recording.merge.resolutions.flatMap((item) => {
-    const id = ids(item.finding);
-    return id ? [{ ...item, finding: id }] : [];
-  });
+  const ids = (text: string) => text.match(/D-[ABF]\d+/)?.[0];
+  const byId = <T extends { finding: string }>(list: T[]) =>
+    list.flatMap((item) => {
+      const id = ids(item.finding);
+      return id ? [{ ...item, finding: id }] : [];
+    });
+  const resolutions = byId(recording.merge.resolutions);
+  const finalResolutions = byId(recording.finalFix?.resolutions ?? []);
   const total = recording.reviewOfA.findings.length + recording.reviewOfB.findings.length;
   const rank = { P0: 0, P1: 1, P2: 2 };
   const candidates = [
     ...recording.reviewOfA.findings.map((finding) => ({ finding, draft: "A" as const, text: recording.draftA })),
     ...recording.reviewOfB.findings.map((finding) => ({ finding, draft: "B" as const, text: recording.draftB })),
+    ...(recording.finalReview?.findings ?? []).map((finding) => ({ finding, draft: "merged" as const, text: recording.merge.document })),
   ]
     .filter((item) => item.finding.severity !== "P2" && item.finding.quote && item.text.includes(item.finding.quote))
     .sort((a, b) => rank[a.finding.severity] - rank[b.finding.severity]);
-  const pick = candidates.find((item) => resolutions.some((resolution) => resolution.finding === item.finding.id && resolution.outcome === "fixed"));
-  const fix = pick ? resolutions.find((resolution) => resolution.finding === pick.finding.id) : undefined;
-  const merged = recording.merge.document.trim();
+  const fixedIn = (item: (typeof candidates)[number]) => (item.draft === "merged" ? finalResolutions : resolutions);
+  const pick = candidates.find((item) => fixedIn(item).some((resolution) => resolution.finding === item.finding.id && resolution.outcome === "fixed"));
+  const fix = pick ? fixedIn(pick).find((resolution) => resolution.finding === pick.finding.id) : undefined;
+  const merged = (recording.finalFix?.document ?? recording.merge.document).trim();
   const output =
     spec.kind === "document"
       ? `## ${spec.deliverable}\n${merged}`
@@ -732,6 +764,8 @@ export function applyRecording(spec: WorkflowSpec, recording: Recording): Workfl
     reviewOfA: renderReview(recording.reviewOfA, "D-A"),
     reviewOfB: renderReview(recording.reviewOfB, "D-B"),
     synthesis: renderMerge({ ...recording.merge, resolutions }, total),
+    ...(recording.finalReview ? { finalReview: renderReview(recording.finalReview, "D-F") } : {}),
+    ...(recording.finalFix ? { finalFix: renderFix({ ...recording.finalFix, resolutions: finalResolutions }, recording.finalReview?.findings.length ?? 0) } : {}),
     output,
     contrast: pick && fix ? { draft: pick.draft, before: pick.finding.quote, after: fix.note, why: pick.finding.detail } : null,
     recording,

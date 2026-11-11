@@ -68,6 +68,8 @@ const LABELS: Record<string, string> = {
   critiqueOfB: "Model A reviews draft B",
   critiqueOfA: "Model B reviews draft A",
   synthesizer: "Model A merges both drafts",
+  finalReview: "Model B checks the final document",
+  finalFix: "Model A fixes what the final check found",
   single: "Model A writes it (one model, routed as low risk)",
 };
 
@@ -132,8 +134,8 @@ export function createLiveService(options: LiveOptions) {
           job.events.push({ role, label: LABELS[role] ?? role, model: call.model, seconds: call.seconds, costUsd: call.costUsd, text });
           job.costUsd = job.events.reduce((total, event) => total + event.costUsd, 0);
         });
-        job.final = recording.merge.document;
-        job.findings = recording.reviewOfA.findings.length + recording.reviewOfB.findings.length;
+        job.final = recording.finalFix?.document ?? recording.merge.document;
+        job.findings = recording.reviewOfA.findings.length + recording.reviewOfB.findings.length + (recording.finalReview?.findings.length ?? 0);
       }
       job.status = "done";
     } catch (error) {

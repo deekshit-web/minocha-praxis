@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { LIVE_CHECKS, runChecks } from "../public/checks.js";
 import { LIVE_TESTS, fixDiff, mutationTest, report, runRecorded, runTests, sourceOf, unsafeNames } from "../public/tests.js";
-import { BUILD_STAGES, DOCUMENT_STAGES, DOMAINS, catalog, expand, loadSpecs, workflowIssues } from "./workflows.ts";
+import { BUILD_STAGES, DOCUMENT_STAGES, DOMAINS, applyRecording, catalog, expand, loadSpecs, workflowIssues } from "./workflows.ts";
 
 test("every domain offers a feature build and a document workflow", () => {
   const specs = loadSpecs(undefined, { recordings: false });
@@ -177,9 +177,11 @@ test("a build walks every stage of software development, in order, each with a p
 test("a document walks its own stages in order", () => {
   for (const spec of loadSpecs(undefined, { recordings: false }).filter((item) => item.kind === "document")) {
     const flow = expand(spec);
-    assert.deepEqual(flow.stages, DOCUMENT_STAGES, spec.id);
-    const order = flow.steps.map((item) => DOCUMENT_STAGES.indexOf(item.stage ?? ""));
-    assert.deepEqual([...new Set(order)], DOCUMENT_STAGES.map((_, index) => index), spec.id);
+    // The final check is there only when the panel was recorded with one.
+    const expected = DOCUMENT_STAGES.filter((name) => name !== "Final check" || spec.finalReview);
+    assert.deepEqual(flow.stages, expected, spec.id);
+    const order = flow.steps.map((item) => expected.indexOf(item.stage ?? ""));
+    assert.deepEqual([...new Set(order)], expected.map((_, index) => index), spec.id);
   }
 });
 
@@ -226,14 +228,17 @@ test("mutation testing: the tests catch most deliberately broken versions of eac
   }
 });
 
+/** The steps a panel recording fills: the drafts, the crossed reviews, the merge and the final check. */
+const PANEL_STEPS = ["draftA", "draftB", "reviewOfA", "reviewOfB", "merge", "finalCheck", "finalFix"];
+
 test("recorded runs replace the prepared panel faithfully: real text, real figures, an honest before-and-after", () => {
   const recorded = loadSpecs().filter((spec) => spec.recording);
   for (const spec of recorded) {
     const recording = spec.recording!;
     const flow = expand(spec);
     assert.equal(spec.draftA, recording.draftA, spec.id);
-    const panelSteps = flow.steps.filter((step) => step.recorded && ["draftA", "draftB", "reviewOfA", "reviewOfB", "merge"].includes(step.id));
-    assert.equal(panelSteps.length, 5, spec.id);
+    const panelSteps = flow.steps.filter((step) => step.recorded && PANEL_STEPS.includes(step.id));
+    assert.equal(panelSteps.length, 5 + (recording.finalReview ? 1 : 0) + (recording.finalFix ? 1 : 0), spec.id);
     const cost = recording.calls.reduce((total, call) => total + call.costUsd, 0);
     assert.ok(Math.abs(panelSteps.reduce((total, step) => total + (step.estimatedCostUsd ?? 0), 0) - cost) < 1e-9, spec.id);
     assert.ok(flow.recording && Math.abs(flow.recording.costUsd - cost) < 1e-9, spec.id);
@@ -243,7 +248,10 @@ test("recorded runs replace the prepared panel faithfully: real text, real figur
       assert.equal(flow.steps.find((step) => step.id === id)?.verdict, review.findings.some((finding) => finding.severity === "P0") ? "flagged" : "pass", `${spec.id}:${id}`);
     }
     // The before-and-after quotes text that is really in the draft, or is left out.
-    if (spec.contrast) assert.ok((spec.contrast.draft === "A" ? recording.draftA : recording.draftB).includes(spec.contrast.before), spec.id);
+    const source = { A: recording.draftA, B: recording.draftB, merged: recording.merge.document };
+    if (spec.contrast) assert.ok(source[spec.contrast.draft].includes(spec.contrast.before), spec.id);
+    if (recording.finalReview)
+      assert.equal(flow.steps.find((step) => step.id === "finalCheck")?.verdict, recording.finalReview.findings.some((finding) => finding.severity === "P0") ? "flagged" : "pass", spec.id);
     assert.match(spec.synthesis, /Defects resolved: \d+ of \d+\./, spec.id);
     assert.deepEqual(findPhi(JSON.stringify(recording)), [], spec.id);
   }
@@ -267,7 +275,33 @@ test("recorded build stages are real: the model-written tests, rerun on the mode
     assert.equal(red.verdict, /^✗/m.test(red.output) ? "flagged" : "pass", spec.id);
     // Every recorded stage carries its real cost.
     const cost = build.calls.reduce((total, call) => total + call.costUsd, 0);
-    const shown = flow.steps.filter((step) => step.recorded && !["draftA", "draftB", "reviewOfA", "reviewOfB", "merge"].includes(step.id)).reduce((total, step) => total + (step.estimatedCostUsd ?? 0), 0);
+    const shown = flow.steps.filter((step) => step.recorded && !PANEL_STEPS.includes(step.id)).reduce((total, step) => total + (step.estimatedCostUsd ?? 0), 0);
     assert.ok(Math.abs(shown - cost) < 1e-9, `${spec.id}: shown ${shown} vs ${cost}`);
   }
+});
+
+test("a recording with a final check adds the check and the fix, and the fix is what gets delivered", () => {
+  const spec = loadSpecs(undefined, { recordings: false }).find((item) => item.id === "fmcg-document")!;
+  const call = { model: "claude-opus-5-5", seconds: 1, inputTokens: 1, outputTokens: 1, costUsd: 0.01 };
+  const recording = {
+    id: spec.id,
+    recordedAt: "2026-11-11T10:00:00Z",
+    calls: ["analystA", "analystB", "critiqueOfB", "critiqueOfA", "synthesizer", "finalReview", "finalFix"].map((role) => ({ ...call, role })),
+    draftA: "A plan.",
+    draftB: "B plan.",
+    reviewOfA: { findings: [], strengths: "Fine." },
+    reviewOfB: { findings: [], strengths: "Fine." },
+    merge: { document: "Merged: 18% less trial.", keptFromA: "a", keptFromB: "b", resolutions: [] },
+    finalReview: { findings: [{ id: "D-F1", severity: "P0" as const, title: "Wrong trial figure", detail: "It is 15.3%.", quote: "18% less trial" }], strengths: "Clear." },
+    finalFix: { document: "Merged: 15.3% less trial.", resolutions: [{ finding: "D-F1", outcome: "fixed" as const, note: "Now 15.3%." }] },
+  };
+  const flow = expand(applyRecording(spec, recording));
+  const ids = flow.steps.map((item) => item.id);
+  assert.deepEqual(ids.slice(ids.indexOf("merge"), ids.indexOf("approve") + 1), ["merge", "finalCheck", "finalFix", "checks", "approve"]);
+  assert.equal(flow.steps.find((item) => item.id === "finalCheck")?.verdict, "flagged");
+  assert.match(flow.steps.find((item) => item.id === "finalFix")?.output ?? "", /Fixed D-F1: Now 15\.3%\.\nFinal-check findings resolved: 1 of 1\./);
+  assert.match(flow.output, /15\.3% less trial/);
+  assert.doesNotMatch(flow.output, /18% less trial/);
+  assert.deepEqual(flow.contrast, { draft: "merged", before: "18% less trial", after: "Now 15.3%.", why: "It is 15.3%." });
+  assert.ok(flow.stages.includes("Final check"));
 });

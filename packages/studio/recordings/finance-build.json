@@ -41,6 +41,14 @@
       "inputTokens": 2298,
       "outputTokens": 1666,
       "costUsd": 0.043364
+    },
+    {
+      "role": "finalReview",
+      "model": "grok-4.7",
+      "seconds": 59.8,
+      "inputTokens": 2351,
+      "outputTokens": 61,
+      "costUsd": 0.00334
     }
   ],
   "draftA": "REQ-1: Compute debt-to-income (DTI) as (all existing monthly debt payments + the new loan's monthly payment) divided by gross monthly income. DTI passes only if it is at most 43%.\nREQ-2: Credit score passes only if it is at least 640.\nREQ-3: Use only DTI and credit score in v1. No other factor may affect the result. The check must return a result within seconds; the requester should confirm an exact time limit, since none was given.\nREQ-4: Show 'likely to qualify' only if both checks pass. Otherwise, show each failed reason in plain words and state that this is not a final decision.\nAC-1: Gross income $5,000/month, existing debt $1,500/month, new payment $650/month, score 640. DTI is 2,150/5,000 = 43.0%, so it passes at the limit. Score 640 passes at the limit. The app shows 'likely to qualify'.\nAC-2: Same as AC-1, but the new payment is $700. DTI is 2,200/5,000 = 44.0%, above 43%. The app shows 'not likely to qualify' with the reason 'Your monthly debt including this loan would be 44% of your gross income; the limit is 43%', plus 'This is not a final decision'.\nAC-3: Same as AC-1, but the score is 639. DTI is 43.0%, so it passes. The score fails because 639 is below 640. The app shows 'not likely to qualify' with the reason 'Your credit score is below the minimum of 640', plus 'This is not a final decision'.\nAC-4: Gross income $5,000, existing debt $1,500, new payment $700, score 600. Both checks fail (44.0% DTI; 600 below 640). The app shows both reasons and 'This is not a final decision'.",
@@ -84,5 +92,9 @@
         "note": "AC-4 covers DTI 44.0% with score 639 and requires both specific reasons plus 'This is not a final decision'. REQ-4 now requires a reason for each failed check."
       }
     ]
+  },
+  "finalReview": {
+    "findings": [],
+    "strengths": "Boundary math matches the rules: 43.0% DTI and score 640 pass at the limits, 44.0% DTI and score 639 fail, and dual failures state both reasons plus that this is not a final decision."
   }
 }

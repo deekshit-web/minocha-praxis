@@ -199,6 +199,19 @@
       @media (max-width: 980px) { .stages { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
       @media (max-width: 520px) { .stages { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       .recap { margin-top: 14px; }
+      /* Folds: sections that are not in context stay closed to one line, and open when the run reaches them. */
+      details.fold { margin-top: 14px; }
+      details.fold:has(> [hidden]) { display: none; }
+      body.plain details.fold:has(> .tech) { display: none; }
+      details.fold > summary { list-style: none; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 11px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); cursor: pointer; font-weight: 650; color: var(--ink); }
+      details.fold > summary::-webkit-details-marker { display: none; }
+      details.fold > summary::before { content: "▸"; color: var(--teal); width: 1em; }
+      details.fold[open] > summary::before { content: "▾"; }
+      details.fold > summary .hint { font-weight: 400; font-size: 13.5px; color: var(--muted); }
+      details.fold > summary:hover { border-color: var(--teal); }
+      details.fold[open] > summary { border-radius: 12px 12px 0 0; border-bottom-style: dashed; }
+      details.fold > .card { margin-top: 0; border-top: 0; border-radius: 0 0 12px 12px; }
+      details.fold > .card > .eyebrow:first-child, #proof .row > div:first-child > .eyebrow:first-child { display: none; }
       .recap h2 { margin: 2px 0 6px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
       .recap ol { list-style: none; margin: 0; padding: 0; }
       .recap li { display: grid; grid-template-columns: 30px 1fr; gap: 0 10px; padding: 9px 4px; border-top: 1px solid var(--line); cursor: pointer; }
@@ -335,12 +348,12 @@
         </div>
       </header>
 
-      <section class="card proof" id="proof" hidden></section>
+      <details class="fold" id="fold-proof" open><summary><span>Proof: a real, metered run</span><span class="hint">what it cost, and what one model caught in the other's work</span></summary><section class="card proof" id="proof" hidden></section></details>
 
-      <section class="card livebrief" id="livebrief" hidden>
+      <details class="fold" id="fold-livebrief"><summary><span>Run the real panel on your own request</span><span class="hint">live models, with a passcode</span></summary><section class="card livebrief" id="livebrief" hidden>
         <p class="eyebrow">Live · your own brief</p>
         <h2>Run the real panel on your own request</h2>
-        <p class="meta">Real models, right now: Model C routes it, then Model A and Model B draft, review each other and merge. About $0.10 and 3 to 6 minutes (Model B is the slow one). Please use made-up names and ids, never personal data.</p>
+        <p class="meta">Real models, right now: Model C routes it, then Model A and Model B draft, review each other and merge, and Model B checks the final document once more. About $0.15 and 4 to 8 minutes (Model B is the slow one). Please use made-up names and ids, never personal data.</p>
         <form id="liveform">
           <label>Passcode<input type="password" name="passcode" autocomplete="off" required /></label>
           <label>Domain<select name="domain" id="livedomain"></select></label>
@@ -350,7 +363,7 @@
           <div class="go"><button type="submit" id="livego">Run it live</button><span id="livemsg" class="meta"></span></div>
         </form>
         <div id="liveout"></div>
-      </section>
+      </section></details>
 
       <nav class="domains" id="domains" aria-label="Domains"></nav>
       <p id="domain-blurb" class="domain-blurb"></p>
@@ -390,11 +403,11 @@
           </div>
         </div>
         <div class="card detail" id="detail" hidden></div>
-        <section class="card recap" id="recap" hidden></section>
-        <section class="card recap gatedcard" id="gated" hidden></section>
-        <section class="card tryit" id="tryit" hidden></section>
-        <section class="card testlab" id="testlab" hidden></section>
-        <div class="card logcard tech" id="logcard" hidden><p class="eyebrow">Run log</p><div class="log" id="log"></div></div>
+        <details class="fold" id="fold-recap"><summary><span>What happened, stage by stage</span><span class="hint">a sentence per stage</span></summary><section class="card recap" id="recap" hidden></section></details>
+        <details class="fold" id="fold-gated"><summary><span>Measured: can Model C make it cheaper?</span><span class="hint">the same panel judged blind, full against gated</span></summary><section class="card recap gatedcard" id="gated" hidden></section></details>
+        <details class="fold" id="fold-tryit"><summary><span>Try to break it</span><span class="hint">change what the AI wrote and watch the code checks</span></summary><section class="card tryit" id="tryit" hidden></section></details>
+        <details class="fold" id="fold-testlab"><summary><span>Run the tests yourself</span><span class="hint">real tests, run in your browser</span></summary><section class="card testlab" id="testlab" hidden></section></details>
+        <details class="fold" id="fold-logcard"><summary><span>Run log</span><span class="hint">every step, with time and cost</span></summary><div class="card logcard tech" id="logcard" hidden><p class="eyebrow">Run log</p><div class="log" id="log"></div></div></details>
         <div class="card output" id="output" hidden></div>
       </section>
 
@@ -591,6 +604,9 @@
         const response = await fetch("/api/workflows/" + encodeURIComponent(id));
         if (!response.ok) return;
         flow = await response.json();
+        // A new workflow starts with its sections folded; they open as the run reaches them.
+        for (const id of ["recap", "gated", "tryit", "testlab", "logcard"]) byId("fold-" + id).open = false;
+        foldsInContext.clear();
         domainId = flow.domain;
         play.index = 0;
         play.progress = 0;
@@ -698,9 +714,9 @@
         } else if (step.kind === "human") meta = state === "waiting" ? "waiting for you" : state === "idle" ? "" : "approved";
         else if (step.kind === "tool" || step.kind === "check") meta = isReal(step) ? "real code" : "replay";
         const label = { idle: "", running: step.kind === "llm" ? "thinking…" : "working…", waiting: "your turn", done: "done", flagged: "flagged", blocked: "blocked: " + liveFailures().length + " failed" }[state];
-        const flaggedLabel = step.id.startsWith("reviewOf") || step.id === "archReview" || step.id === "codeReview" ? "caught a serious defect" : step.id === "testsRed" ? "1 test failing" : "flagged";
-        if (state === "done" && (step.id === "archReview" || step.id === "codeReview" || step.id === "reviewOfA" || step.id === "reviewOfB")) {
-          const findings = (step.output.match(/^(AR|CR|D-[AB])-?\d/gm) || []).length;
+        const flaggedLabel = step.id.startsWith("reviewOf") || step.id === "finalCheck" || step.id === "archReview" || step.id === "codeReview" ? "caught a serious defect" : step.id === "testsRed" ? "1 test failing" : "flagged";
+        if (state === "done" && (step.id === "archReview" || step.id === "codeReview" || step.id === "reviewOfA" || step.id === "reviewOfB" || step.id === "finalCheck")) {
+          const findings = (step.output.match(/^(AR|CR|D-[ABF])-?\d/gm) || []).length;
           return [kicker, name, meta, findings + " finding" + (findings === 1 ? "" : "s")];
         }
         return [kicker, name, meta, state === "flagged" ? flaggedLabel : label];
@@ -740,7 +756,41 @@
         renderRecap();
         renderModels();
         renderGated();
+        renderFolds();
         byId("play").textContent = play.playing ? "❚❚ Pause" : play.index >= flow.steps.length ? "▶ Replay" : play.index > 0 || play.progress > 0 ? "▶ Resume" : "▶ Play";
+      }
+
+      // Opens a fold when the run reaches what it is about, once per workflow; the visitor can close it again.
+      const foldsInContext = new Map();
+      function renderFolds() {
+        const total = flow.steps.length;
+        const finished = play.index >= total;
+        const started = play.index > 0 || play.progress > 0 || play.playing;
+        const reached = (id) => {
+          const index = flow.steps.findIndex((step) => step.id === id);
+          return index >= 0 && play.index >= index;
+        };
+        // In context from the step it is about until the run is done; the recap once it is done.
+        const inContext = {
+          proof: !started,
+          tryit: reached("checks") && !finished,
+          testlab: reached("testsRed") && !reached("release"),
+          recap: finished,
+        };
+        for (const [id, wanted] of Object.entries(inContext)) {
+          const fold = byId("fold-" + id);
+          const key = flow.id + "|" + id;
+          // Only on a change, so a visitor's own open or close sticks: a section opens as the run reaches it and
+          // folds away when the run moves on.
+          if (!fold || foldsInContext.get(key) === wanted) continue;
+          if (wanted || foldsInContext.get(key) === true) fold.open = wanted;
+          foldsInContext.set(key, wanted);
+        }
+      }
+
+      function openFold(id) {
+        const fold = byId("fold-" + id);
+        if (fold) fold.open = true;
       }
 
       function renderScoreboard() {
@@ -956,7 +1006,10 @@
           const go = document.createElement("button");
           go.type = "button";
           go.textContent = "Try to break it: change what the AI wrote ↓";
-          go.addEventListener("click", () => byId("tryit").scrollIntoView({ behavior: "smooth", block: "start" }));
+          go.addEventListener("click", () => {
+            openFold("tryit");
+            byId("fold-tryit").scrollIntoView({ behavior: "smooth", block: "start" });
+          });
           jump.appendChild(go);
           detail.appendChild(jump);
         }
@@ -1197,6 +1250,7 @@
           const fixed = out("merge").match(/Defects resolved: (\d+) of (\d+)/);
           return fixed ? fixed[1] + " of " + fixed[2] + " defects resolved" : "Merged";
         }
+        if (name === "Final check") return count(out("finalCheck"), /^D-F\d/gm) + " more found";
         if (name === "Checks") return (liveResults().length || count(out("checks"), /^✓/gm)) + " code checks passed";
         if (name === "Approval") return "Approved";
         if (name === "Delivery") return "Delivered";
@@ -1265,12 +1319,22 @@
       }
       function stageStory(name) {
         const out = (id) => (flow.steps.find((step) => step.id === id) || { output: "" }).output;
+        // The final check, in a sentence: what Model B found in the merged result and what Model A did about it.
+        const finalStory = () => {
+          if (!flow.steps.some((step) => step.id === "finalCheck")) return "";
+          const found = out("finalCheck").match(/^D-F\d+ · P\d/gm) || [];
+          const p0 = found.filter((line) => /P0$/.test(line)).length;
+          const resolved = (out("finalFix").match(/findings resolved: (\d+)/) || [0, 0])[1];
+          return found.length
+            ? "Model B's final check of the merged result found " + found.length + " more point" + (found.length === 1 ? "" : "s") + (p0 ? ", " + p0 + " of them serious" : "") + ", and Model A fixed " + resolved + ". "
+            : "Model B's final check of the merged result found nothing more. ";
+        };
         const firstLine = (text) => text.split("\n")[0].replace(/\.$/, "");
         const caught = serious(out("reviewOfA") + "\n" + out("reviewOfB"));
         const raised = (out("reviewOfA") + "\n" + out("reviewOfB")).match(/^D-[AB]\d+ · P\d/gm) || [];
         const fixed = (out("merge").match(/Defects resolved: (\d+)/) || [0, "all"])[1];
         if (name === "PRD")
-          return "Model C routed the request to the full panel in a fraction of a second. Model A asked " + questionsAndAnswers().length + " questions, then Model A and Model B each wrote the requirements without seeing the other's and reviewed each other's. " + (caught.length ? "The review caught a serious problem: " + listOf(caught) + ". " : raised.length ? "Their reviews raised " + raised.length + " point" + (raised.length === 1 ? "" : "s") + ", none of them serious. " : "Neither review found a defect. ") + "Model C triaged the findings, and Model A merged both and fixed " + fixed + " defects, and code checks passed. " + out("approve");
+          return "Model C routed the request to the full panel in a fraction of a second. Model A asked " + questionsAndAnswers().length + " questions, then Model A and Model B each wrote the requirements without seeing the other's and reviewed each other's. " + (caught.length ? "The review caught a serious problem: " + listOf(caught) + ". " : raised.length ? "Their reviews raised " + raised.length + " point" + (raised.length === 1 ? "" : "s") + ", none of them serious. " : "Neither review found a defect. ") + "Model C triaged the findings, and Model A merged both and fixed " + fixed + " defects. " + finalStory() + "Code checks passed. " + out("approve");
         if (name === "Architecture") {
           const found = titles(out("archReview"));
           return "Model A designed the components, data and the files it may change. Model B's review found " + found.length + " issue" + (found.length === 1 ? "" : "s") + " (" + listOf(found) + ")" + (serious(out("archReview")).length ? ", one of them serious," : "") + " and Model A revised the design to fix them. Design checks passed. " + out("archApprove");
@@ -1303,6 +1367,7 @@
         if (name === "Drafts") return "Model A and Model B each wrote a draft without seeing the other's, so they could not copy each other's mistakes.";
         if (name === "Cross-review") return "Each model reviewed the other's draft. " + (caught.length ? "Caught: " + listOf(caught) + ". " : raised.length ? raised.length + " point" + (raised.length === 1 ? "" : "s") + " raised, none serious. " : "Neither found a defect. ") + "Model C triaged every finding and marked which ones the merge must fix.";
         if (name === "Merge") return "Model A merged the two drafts and had to resolve every defect either review raised: " + fixed + " resolved.";
+        if (name === "Final check") return finalStory().trim();
         if (name === "Checks") return "Plain code checks, with no AI involved, recomputed the figures: " + (liveResults().map((check) => check.name.toLowerCase()).join("; ") || "all passed") + ".";
         if (name === "Approval") return out("approve");
         if (name === "Delivery") return out("deliver");
@@ -1702,8 +1767,10 @@
             return box;
           };
           vs.append(
-            side("before", "One AI alone would have handed you", contrast.before, "From draft " + contrast.draft + " (Model " + contrast.draft + "), before review."),
-            side("after", "What you get instead", contrast.after, "After the other AI's review, the merge, the code checks and a person's approval."),
+            contrast.draft === "merged"
+              ? side("before", "Two reviews and a merge would have handed you", contrast.before, "From the merged document, before the final check.")
+              : side("before", "One AI alone would have handed you", contrast.before, "From draft " + contrast.draft + " (Model " + contrast.draft + "), before review."),
+            side("after", "What you get instead", contrast.after, contrast.draft === "merged" ? "After Model B's final check, Model A's fix, the code checks and a person's approval." : "After the other AI's review, the merge, the code checks and a person's approval."),
           );
           const why = document.createElement("p");
           why.className = "why";

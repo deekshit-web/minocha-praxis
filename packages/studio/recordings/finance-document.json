@@ -41,6 +41,14 @@
       "inputTokens": 1770,
       "outputTokens": 883,
       "costUsd": 0.025531
+    },
+    {
+      "role": "finalReview",
+      "model": "grok-4.7",
+      "seconds": 40.5,
+      "inputTokens": 2092,
+      "outputTokens": 67,
+      "costUsd": 0.002858
     }
   ],
   "draftA": "KYC Decision: Customer CUST-3381\nReview date: 2026-11-10\nRecommendation: REQUEST MORE DOCUMENTS\n\nReasons:\n\n1. Photo ID fails policy K-2. K-2 requires a valid, unexpired photo ID. Passport ID-778 expired on 2026-09-30, 41 days before the review date. It cannot be accepted.\n\n2. Proof of address fails policy K-2. K-2 requires proof of address dated within 3 months of review, meaning on or after 2026-08-10. The utility bill is dated 2026-06-02, about 5 months before review. It is out of date.\n\n3. Sanctions screening returned no match, and the risk rating is standard. Nothing in the file points to refusal. Both failures are curable document gaps, so requesting new documents is the right step rather than refusing.\n\nDocuments required from the customer:\n- A valid, unexpired photo ID, such as a renewed passport.\n- Proof of address dated on or after 2026-08-10.\n\nNext step: Hold the account pending receipt of these documents, then re-review against K-2. If the new photo ID differs from ID-778, confirm whether sanctions screening needs to be re-run, since the sources do not cover this.",
@@ -58,5 +66,9 @@
     "keptFromA": "I kept Draft A's structure: a headed decision with numbered reasons, a list of required documents, and a next step. I also kept its 41-day expiry count and its note on re-screening if the new ID differs.",
     "keptFromB": "I kept Draft B's explicit statement that the file should be neither approved nor refused, and its step-by-step derivation of the 2026-08-10 three-month cutoff.",
     "resolutions": []
+  },
+  "finalReview": {
+    "findings": [],
+    "strengths": "The decision correctly applies K-2, confirms the passport expired 41 days before review and the 2026-06-02 bill falls outside the 2026-08-10 window, and requests new documents rather than refusing a standard-risk customer with no sanctions match."
   }
 }

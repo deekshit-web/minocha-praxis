@@ -41,6 +41,14 @@
       "inputTokens": 2588,
       "outputTokens": 3072,
       "costUsd": 0.072616
+    },
+    {
+      "role": "finalReview",
+      "model": "grok-4.7",
+      "seconds": 51.1,
+      "inputTokens": 2426,
+      "outputTokens": 39,
+      "costUsd": 0.003358
     }
   ],
   "draftA": "Lesson Plan: Unit Rates with Fractions (Grade 7, 45 minutes)\nStandard: 7.RP.A.1. Compute unit rates from ratios of fractions.\nClass: 28 students. 4 need reading support, so all problems use short sentences.\n\n1. Warm-up (5 min): Divide fractions. 1/2 ÷ 1/4 = 2. 3/4 ÷ 1/2 = 3/2.\n\n2. Worked Example (10 min): Ana walks 1/2 mile. It takes 1/4 hour. Find miles per hour. (1/2) ÷ (1/4) = 2. Unit rate: 2 miles per hour.\n\n3. Guided Practice (10 min): In pairs. Ben runs 3/4 mile. It takes 1/4 hour. Miles per hour? Answer: 3.\n\n4. Independent Practice (12 min): A tap fills 2/5 of a tank. It takes 1/5 hour. Tanks per hour? Answer: 2.\n\n5. Exit Quiz (8 min): Five questions below.\n\nQuiz\n1. A snail moves 1/3 foot. It takes 1/6 minute. Feet per minute?\n2. Sam paints 3/4 of a wall. It takes 1/2 hour. Walls per hour?\n3. A recipe uses 2/3 cup of sugar. It makes 1/3 of a batch. Cups per batch?\n4. Mia paints 5/6 square meter. It takes 1/3 hour. Square meters per hour?\n5. A car uses 3/5 gallon. It goes 9 miles. Miles per gallon?\n\nAnswer Key\n1. (1/3) ÷ (1/6) = 2 feet per minute\n2. (3/4) ÷ (1/2) = 1 1/2 walls per hour\n3. (2/3) ÷ (1/3) = 2 cups per batch\n4. (5/6) ÷ (1/3) = 2 1/2 square meters per hour\n5. 9 ÷ (3/5) = 15 miles per gallon",
@@ -96,5 +104,9 @@
         "note": "Bare division 2/3 ÷ 1/6 became the farmer mowing rate (4 acres per hour). Bare division 3/8 ÷ 3/4 became the recipe rate (1/2 cup per batch). All five items are now unit-rate problems with units."
       }
     ]
+  },
+  "finalReview": {
+    "findings": [],
+    "strengths": "Every unit-rate calculation checks out, the five-part flow matches the department guide, and the timed sections add to 45 minutes."
   }
 }
