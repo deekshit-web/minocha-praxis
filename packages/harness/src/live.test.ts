@@ -70,7 +70,7 @@ test("each PRD seat asks Claude with the shared cached context, its own schema, 
     messages: Array<{ content: string }>;
     output_config: { format: unknown };
   };
-  assert.equal(first.model, "claude-opus-5");
+  assert.equal(first.model, CLAUDE_MODEL);
   assert.equal((first as { max_tokens?: number }).max_tokens, 64000);
   assert.equal(first.fallbacks, "default");
   assert.deepEqual(first.betas, ["server-side-fallback-2026-07-01"]);
@@ -88,10 +88,10 @@ test("each PRD seat asks Claude with the shared cached context, its own schema, 
   );
   for (const metric of result.metrics) {
     assert.equal(metric.source, "live");
-    assert.equal(metric.model, "claude-opus-5");
+    assert.equal(metric.model, CLAUDE_MODEL);
     assert.ok(metric.durationMs >= 0);
     // 1200 in at $5, 3400 out at $25, 900 cache reads at $0.50 per million tokens.
-    assert.equal(metric.costUsd?.toFixed(5), "0.09145");
+    assert.equal(metric.costUsd?.toFixed(5), "0.07298");
   }
   assert.ok(result.durationMs >= 0);
   assert.equal(result.quality.synthesizer.verdict, "pass");
@@ -140,7 +140,7 @@ test("a malformed synthesis fails, keeps the four finished answers and every bil
   assert.equal(failure.answers.length, 4);
   assert.equal(failure.metrics.length, 5);
   assert.equal(failure.metrics[4]?.role, "synthesizer");
-  assert.equal(failure.metrics[4]?.costUsd?.toFixed(5), "0.09145");
+  assert.equal(failure.metrics[4]?.costUsd?.toFixed(5), "0.07298");
 
   const retry = fakeClient([replies[4] ?? {}]);
   const resumed = await runLivePrd(new ResumingProvider(failure.answers, new ClaudeModel(prdContext(FEATURE_B_BRIEF), livePrdSeats(), { client: retry.client })));
@@ -162,7 +162,7 @@ test("a malformed synthesis fails, keeps the four finished answers and every bil
     answers: failure.answers,
   });
   assert.equal(summary.verdict, "failed");
-  assert.equal(summary.costUsd?.toFixed(4), (0.09145 * 5).toFixed(4));
+  assert.equal(summary.costUsd?.toFixed(4), (0.07298 * 5).toFixed(4));
   assert.deepEqual(summary.issues, ["model-unparsed:synthesizer"]);
 });
 

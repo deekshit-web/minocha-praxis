@@ -1,81 +1,62 @@
 {
   "id": "finance-document",
-  "recordedAt": "2026-11-11T04:21:45.568Z",
+  "recordedAt": "2026-11-11T07:32:24.292Z",
   "calls": [
     {
       "role": "analystA",
-      "model": "claude-opus-5",
-      "seconds": 9.1,
-      "inputTokens": 598,
-      "outputTokens": 602,
-      "costUsd": 0.0187325
+      "model": "claude-opus-5-5",
+      "seconds": 6.8,
+      "inputTokens": 600,
+      "outputTokens": 577,
+      "costUsd": 0.014494
     },
     {
       "role": "analystB",
       "model": "grok-4.7",
-      "seconds": 16.3,
+      "seconds": 20.5,
       "inputTokens": 1563,
-      "outputTokens": 225,
-      "costUsd": 0.002748
+      "outputTokens": 213,
+      "costUsd": 0.002676
     },
     {
       "role": "critiqueOfB",
-      "model": "claude-opus-5",
-      "seconds": 11.9,
-      "inputTokens": 1262,
-      "outputTokens": 781,
-      "costUsd": 0.02680875
+      "model": "claude-opus-5-5",
+      "seconds": 10,
+      "inputTokens": 1247,
+      "outputTokens": 254,
+      "costUsd": 0.010847
     },
     {
       "role": "critiqueOfA",
       "model": "grok-4.7",
-      "seconds": 36.3,
-      "inputTokens": 2084,
-      "outputTokens": 52,
-      "costUsd": 0.002752
+      "seconds": 39,
+      "inputTokens": 2048,
+      "outputTokens": 44,
+      "costUsd": 0.002632
     },
     {
       "role": "synthesizer",
-      "model": "claude-opus-5",
-      "seconds": 16.7,
-      "inputTokens": 1942,
-      "outputTokens": 1281,
-      "costUsd": 0.04272375
+      "model": "claude-opus-5-5",
+      "seconds": 8.8,
+      "inputTokens": 1770,
+      "outputTokens": 883,
+      "costUsd": 0.025531
     }
   ],
-  "draftA": "KYC Decision — Customer CUST-3381\nReview date: 2026-11-10\nDecision: Request more documents (do not approve at this time)\n\nReasons:\n\n1. Photo ID expired. Policy K-2 requires a valid, unexpired photo ID. Passport ID-778 expired on 2026-09-30, which is 41 days before the review date of 2026-11-10. The file therefore fails the ID requirement.\n\n2. Proof of address is out of date. Policy K-2 requires proof of address dated within 3 months of review. The earliest acceptable date for a 2026-11-10 review is 2026-08-10. The utility bill on file is dated 2026-06-02, which is approximately five months old and about two months outside the permitted window.\n\n3. Sanctions screening returned no match, and the customer is rated standard risk. There is no adverse finding that would justify refusal.\n\nBecause both document defects are curable and there is no sanctions hit or elevated risk, refusal is not warranted; however, the file cannot be approved as it stands.\n\nRequired to proceed:\n- A current, unexpired photo ID (for example, a renewed passport), valid as at the date of re-review.\n- Proof of address dated within 3 months of the re-review date.\n\nOn receipt of both items, the file can be re-assessed for approval under K-2. No further checks are outstanding on the facts available.",
-  "draftB": "KYC decision for CUST-3381. Review date 2026-11-10. Recommendation: request more documents. Do not approve.\n\nPolicy K-2 requires a valid, unexpired photo ID and proof of address dated within 3 months of review. Passport ID-778 expired on 2026-09-30, which is before 2026-11-10, so it is not a valid unexpired photo ID. The utility bill dated 2026-06-02 is also outside the required window. Three months before 2026-11-10 is 2026-08-10, and 2026-06-02 is earlier than that date.\n\nSanctions screening shows no match. Risk rating is standard. Those results do not cure the document failures. Refusal is not required on these facts, because there is no sanctions match and both gaps are outdated documents that can be replaced. Request a current unexpired photo ID and proof of address dated on or after 2026-08-10, then re-review.",
+  "draftA": "KYC Decision: Customer CUST-3381\nReview date: 2026-11-10\nRecommendation: REQUEST MORE DOCUMENTS\n\nReasons:\n\n1. Photo ID fails policy K-2. K-2 requires a valid, unexpired photo ID. Passport ID-778 expired on 2026-09-30, 41 days before the review date. It cannot be accepted.\n\n2. Proof of address fails policy K-2. K-2 requires proof of address dated within 3 months of review, meaning on or after 2026-08-10. The utility bill is dated 2026-06-02, about 5 months before review. It is out of date.\n\n3. Sanctions screening returned no match, and the risk rating is standard. Nothing in the file points to refusal. Both failures are curable document gaps, so requesting new documents is the right step rather than refusing.\n\nDocuments required from the customer:\n- A valid, unexpired photo ID, such as a renewed passport.\n- Proof of address dated on or after 2026-08-10.\n\nNext step: Hold the account pending receipt of these documents, then re-review against K-2. If the new photo ID differs from ID-778, confirm whether sanctions screening needs to be re-run, since the sources do not cover this.",
+  "draftB": "KYC decision for customer CUST-3381. Review date 2026-11-10. Recommendation: request more documents. Do not approve and do not refuse on the current file.\n\nReasons. Policy K-2 requires a valid, unexpired photo ID and proof of address dated within 3 months of review. Passport ID-778 expired on 2026-09-30, before the review date of 2026-11-10, so the photo ID is expired and does not meet policy. The utility bill is dated 2026-06-02. Three months before 2026-11-10 is 2026-08-10, and 2026-06-02 falls outside that window, so the proof of address does not meet policy. Sanctions screening shows no match and the risk rating is standard, so those items do not support refusal. Ask the customer for a current unexpired photo ID and proof of address dated on or after 2026-08-10.",
   "reviewOfA": {
     "findings": [],
-    "strengths": "The draft correctly applies policy K-2, confirms the passport expired 41 days before review and the utility bill falls outside the three-month window, and rightly requests more documents instead of approving or refusing."
+    "strengths": "The draft correctly rejects the expired passport and the out-of-date utility bill, with accurate date checks, and rightly requests new documents rather than approving or refusing."
   },
   "reviewOfB": {
-    "findings": [
-      {
-        "id": "D-B1",
-        "severity": "P2",
-        "title": "Address date anchored to old review",
-        "detail": "The 3-month window runs from the review date. Fixing the cutoff at 2026-08-10 assumes re-review happens on 2026-11-10; at any later re-review a bill dated 2026-08-10 would already be outside the window. Better to state the window is three months before the re-review date.",
-        "quote": "Request a current unexpired photo ID and proof of address dated on or after 2026-08-10, then re-review."
-      }
-    ],
-    "strengths": "The date arithmetic is correct and clearly shown: the passport expired 2026-09-30 before the 2026-11-10 review, and the 2026-06-02 utility bill falls outside the three-month cutoff of 2026-08-10, supporting the request-more-documents recommendation."
+    "findings": [],
+    "strengths": "The draft checks both K-2 requirements against the review date and gets them right: the passport expired on 2026-09-30, and the 2026-06-02 utility bill falls before the 2026-08-10 three-month cutoff. It then tells the customer exactly which documents to provide."
   },
   "merge": {
-    "document": "KYC Decision - Customer CUST-3381\nReview date: 2026-11-10\nDecision: Request more documents (do not approve at this time)\n\nPolicy K-2 requires a valid, unexpired photo ID and proof of address dated within 3 months of review.\n\nReasons:\n\n1. Photo ID expired. Passport ID-778 expired on 2026-09-30, which is 41 days before the review date of 2026-11-10. The file fails the unexpired photo ID requirement.\n\n2. Proof of address out of date. For a review on 2026-11-10 the earliest acceptable date is 2026-08-10. The utility bill on file is dated 2026-06-02, roughly five months old and about two months outside the permitted window.\n\n3. Sanctions screening returned no match and the risk rating is standard. These results do not cure the document failures, but there is no adverse finding that would justify refusal.\n\nBecause both defects are curable outdated documents, with no sanctions match and no elevated risk, refusal is not warranted; the file also cannot be approved as it stands.\n\nRequired to proceed:\n- A current photo ID that is unexpired as at the date of re-review (for example, a renewed passport).\n- Proof of address dated within 3 months before the re-review date. On a re-review held on 2026-11-10 that means dated on or after 2026-08-10; at a later re-review the cutoff moves forward accordingly.\n\nOn receipt of both items the file can be re-assessed for approval under K-2. No further checks are outstanding on the facts available.",
-    "keptFromA": "I kept draft A's structure and detail: the numbered reasons, the 41-day expiry calculation, the five-month/two-month assessment of the utility bill, and the closing statement of what is required to proceed.",
-    "keptFromB": "I kept draft B's explicit statement of policy K-2 up front, its point that a clean sanctions screen and standard risk do not cure the document failures, and its concrete 2026-08-10 cutoff figure.",
-    "resolutions": [
-      {
-        "finding": "Review of draft A: no defects found",
-        "outcome": "rejected",
-        "note": "Nothing to fix; I re-checked the arithmetic independently (2026-09-30 to 2026-11-10 is 41 days, and three months before 2026-11-10 is 2026-08-10) and confirmed draft A's figures, so its content was carried through unchanged."
-      },
-      {
-        "finding": "D-B1 Address date anchored to old review",
-        "outcome": "fixed",
-        "note": "Correct: a fixed 2026-08-10 cutoff only holds if re-review occurs on 2026-11-10. The requirement now states proof of address must be dated within 3 months before the re-review date, with 2026-08-10 given only as the cutoff for a 2026-11-10 re-review."
-      }
-    ]
+    "document": "KYC Decision: Customer CUST-3381\nReview date: 2026-11-10\nRecommendation: REQUEST MORE DOCUMENTS. Do not approve and do not refuse on the current file.\n\nReasons:\n\n1. Photo ID fails policy K-2. K-2 requires a valid, unexpired photo ID. Passport ID-778 expired on 2026-09-30, 41 days before the review date, so it cannot be accepted.\n\n2. Proof of address fails policy K-2. K-2 requires proof of address dated within 3 months of review. Three months before 2026-11-10 is 2026-08-10. The utility bill is dated 2026-06-02, about 5 months before review and outside that window, so it is out of date.\n\n3. Sanctions screening returned no match, and the risk rating is standard. Nothing in the file supports refusal. Both failures are curable document gaps, so the right step is to request new documents rather than refuse.\n\nDocuments required from the customer:\n1. A valid, unexpired photo ID, such as a renewed passport.\n2. Proof of address dated on or after 2026-08-10.\n\nNext step: Hold the account until these documents arrive, then re-review against K-2. If the new photo ID differs from ID-778, confirm whether sanctions screening must be re-run. The sources do not say.",
+    "keptFromA": "I kept Draft A's structure: a headed decision with numbered reasons, a list of required documents, and a next step. I also kept its 41-day expiry count and its note on re-screening if the new ID differs.",
+    "keptFromB": "I kept Draft B's explicit statement that the file should be neither approved nor refused, and its step-by-step derivation of the 2026-08-10 three-month cutoff.",
+    "resolutions": []
   }
 }

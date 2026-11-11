@@ -48,14 +48,16 @@ It stops at **Your answers**: four questions with suggested answers. Have them p
 
 ## 5. The catch (30 s)
 
-Drafts are written apart ("cannot see each other"). These steps are a **recording of a real run**: the badge says
-"Recorded live call" with its real time and cost. Click **A reviews B**: Model A found **4 findings** in Model B's
-draft, including no rule for an applicant who fails both checks and no source for the new loan payment. Click
+Drafts are written apart ("cannot see each other"). These steps are a **recording of a real run**; the badge says
+"Recorded live call", with its real time and cost. Click **A reviews B**: Model A found **2 findings** in Model B's
+draft, one P1 (REQ-1 only tells an applicant the outcome when both rules pass, which contradicts the brief). Click
 **B reviews A**: **0 findings**.
 
-> "Nothing here is planted. These are real gaps one model found in the other's work, and the merge fixed all of
-> them. Note it is lopsided: in our ten recorded runs, Model A's reviews found far more than Model B's. That's
-> the kind of thing you only learn by running both."
+> "Nothing here is planted. These are real gaps one model found in the other's work, and the merge fixed them."
+
+**The best real catch** (worth a detour if they're interested): FMCG → **Plan a launch promotion**. Model B caught
+a real **P0** in Model A's draft: the source says bundles beat discounts by 18%, and the draft turned that into
+"discounts drove 18% less trial", which is wrong (it's 15.3%). The output opens with the wrong sentence next to the fix.
 
 ## 6. Break it yourself (40 s)
 
@@ -130,7 +132,7 @@ handed you** next to **What you get instead**.
 - **"Cost?"** Measured on 50 real calls: the two-model panel costs $0.09–0.22 a run. A whole feature build comes
   to about $0.30 in model calls and about 25 minutes; a document $0.09–0.22 and 1–5 minutes. Each Model C decision
   costs about $0.00002.
-- **"Did the real runs catch anything?"** Yes, and honestly: across ten real panel runs the reviews raised 34 points,
-  all P1 or P2 and none P0. They were real gaps, like an untested access rule or practice problems that were never
+- **"Did the real runs catch anything?"** Yes, and honestly. On the current models (Opus 5.5 and Grok 4.7), ten real
+  runs raised 13 points, including one real P0 (the FMCG trial figure). Earlier runs on Opus 5 raised 34, all P1 or P2. They were real gaps, like an untested access rule or practice problems that were never
   written, and every merge resolved them, rejecting some with reasons. The dramatic catches in earlier replays were
   planted, and are gone.

@@ -176,7 +176,7 @@ export interface Workflow {
   estimatedSeconds: number;
 }
 
-const CLAUDE = "claude-opus-5";
+const CLAUDE = "claude-opus-5-5";
 const GROK = "grok-4.7";
 const JEV = "jev-1.14.0";
 

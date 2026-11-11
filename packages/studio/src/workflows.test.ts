@@ -24,7 +24,7 @@ test("each workflow shows its model calls without making them, and estimates wha
     const flow = expand(spec);
     const calls = flow.steps.filter((step) => step.kind === "llm");
     assert.ok(calls.length >= 5, spec.id);
-    assert.deepEqual([...new Set(calls.map((call) => call.actor))].sort(), ["claude-opus-5", "grok-4.7", "jev-1.14.0"], spec.id);
+    assert.deepEqual([...new Set(calls.map((call) => call.actor))].sort(), ["claude-opus-5-5", "grok-4.7", "jev-1.14.0"], spec.id);
     // Every model is named by its role on the page; each role is described.
     for (const id of new Set(calls.map((call) => call.actor))) assert.ok(flow.models[id]?.label && flow.models[id]?.qualities, `${spec.id}:${id}`);
     assert.ok(flow.estimatedCostUsd > 0.05 && flow.estimatedCostUsd < 5, `${spec.id} costs ${flow.estimatedCostUsd}`);

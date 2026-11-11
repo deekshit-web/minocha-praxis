@@ -1,105 +1,62 @@
 {
   "id": "healthcare-build",
-  "recordedAt": "2026-11-11T04:32:08.918Z",
+  "recordedAt": "2026-11-11T07:43:20.973Z",
   "calls": [
     {
       "role": "analystA",
-      "model": "claude-opus-5",
-      "seconds": 18.3,
-      "inputTokens": 769,
-      "outputTokens": 1376,
-      "costUsd": 0.03908
+      "model": "claude-opus-5-5",
+      "seconds": 13.8,
+      "inputTokens": 771,
+      "outputTokens": 1319,
+      "costUsd": 0.030132
     },
     {
       "role": "analystB",
       "model": "grok-4.7",
-      "seconds": 62.8,
+      "seconds": 34,
       "inputTokens": 1662,
-      "outputTokens": 245,
-      "costUsd": 0.003066
+      "outputTokens": 250,
+      "costUsd": 0.003096
     },
     {
       "role": "critiqueOfB",
-      "model": "claude-opus-5",
-      "seconds": 20.9,
-      "inputTokens": 1412,
-      "outputTokens": 1393,
-      "costUsd": 0.04300125
+      "model": "claude-opus-5-5",
+      "seconds": 6.7,
+      "inputTokens": 1434,
+      "outputTokens": 576,
+      "costUsd": 0.018149
     },
     {
       "role": "critiqueOfA",
       "model": "grok-4.7",
-      "seconds": 54.9,
-      "inputTokens": 2162,
-      "outputTokens": 92,
-      "costUsd": 0.003148
+      "seconds": 170.4,
+      "inputTokens": 2209,
+      "outputTokens": 50,
+      "costUsd": 0.00299
     },
     {
       "role": "synthesizer",
-      "model": "claude-opus-5",
-      "seconds": 32.3,
-      "inputTokens": 2359,
-      "outputTokens": 2627,
-      "costUsd": 0.07860125
+      "model": "claude-opus-5-5",
+      "seconds": 12.6,
+      "inputTokens": 2122,
+      "outputTokens": 1340,
+      "costUsd": 0.036193
     }
   ],
-  "draftA": "REQ-1: The readiness gate applies only to CO-50 medical-necessity denials; denials of any other class are unaffected by it.\nREQ-2: On a CO-50 denial, \"Mark appeal packet ready\" is blocked unless both are present: a non-empty clinical-note reference in DOC-### form, and a filing-deadline date.\nREQ-3: The filing deadline is date of service plus 90 days (Northwind Health timely filing); the system computes it from DOS and stores it as the deadline field.\nREQ-4: No role may override the gate in v1; when blocked, the button label names exactly which of the two items is missing.\nAC-1: CO-50, DOS 2024-03-01 gives deadline 2024-05-30, note ref DOC-204 present: button is enabled and the packet is marked ready. (Second check: DOS 2025-01-15 gives 2025-04-15.)\nAC-2: CO-50 with deadline 2024-05-30 present but note ref blank: action blocked, button reads \"Add clinical note reference\".\nAC-3: CO-50 with DOC-204 present but no deadline: blocked, button reads \"Add filing deadline\". With both missing: blocked, button reads \"Add clinical note reference and filing deadline\".\nAC-4: A non-CO-50 denial with both fields empty can still be marked ready; a blocked CO-50 stays blocked for every user and role, with no override path.\n",
-  "draftB": "REQ-1: On CO-50 denials only, do not allow the appeal packet to be marked ready unless a non-empty DOC-### clinical-note id and a filing-deadline date are both present, and allow no override in v1.\nREQ-2: The filing deadline is the date of service plus 90 days under Northwind Health timely filing.\nREQ-3: When blocked, the button names exactly what is missing.\nAC-1: CO-50 with DOC-100 and date of service 2025-01-01 has filing deadline 2025-04-01 and may be marked ready.\nAC-2: CO-50 with no DOC-### id and date of service 2025-01-01 is blocked, and the button names only the missing clinical-note id.\nAC-3: CO-50 with DOC-100 and no date of service is blocked, and the button names only the missing filing deadline.\nAC-4: CO-50 missing both items is blocked and the button names both; a non-CO-50 denial missing both is not blocked; nobody can override in v1.",
+  "draftA": "REQ-1 The gate applies to CO-50 (medical-necessity) denials only. All other denial classes keep their current Mark Ready behavior.\nREQ-2 On a CO-50 denial, Mark Ready is blocked unless two things are present. The first is a non-empty clinical-note reference in DOC-### form. This is assumed to mean DOC plus exactly three digits, which the PFS lead should confirm.\nREQ-3 The second is a filing-deadline date, calculated as date of service + 90 days (Northwind Health timely filing). If the date of service is missing, the deadline counts as missing.\nREQ-4 No one can override the gate in v1, whatever their role.\nREQ-5 When blocked, the button names exactly what is missing: the clinical note, the filing deadline, or both.\nAC-1 CO-50, note DOC-123, DOS 2024-03-01: deadline 2024-03-01 + 90 days = 2024-05-30 (30 days left in March + 30 in April + 30 in May), so Mark Ready is enabled. The dates and DOC id are illustrative, since the brief gives none.\nAC-2 CO-50, DOS 2024-03-01, no note: button reads 'Missing: clinical note'. CO-50, note DOC-123, no DOS: 'Missing: filing deadline'. CO-50, note blank and no DOS: names both. CO-50, note 'DOC-12' (fails the assumed 3-digit format): treated as missing.\nAC-3 A supervisor or admin on a blocked CO-50 denial cannot mark it ready. A non-CO-50 denial with no note and no DOS can still be marked ready as today.",
+  "draftB": "REQ-1: The gate applies only to CO-50 medical-necessity denials, not to any other denial class.\nREQ-2: A specialist cannot mark a CO-50 appeal packet ready unless a non-empty DOC-### clinical-note id and a filing-deadline date are both present.\nREQ-3: The filing deadline is the date of service plus 90 days under Northwind Health timely filing.\nREQ-4: Nobody can override the gate in v1.\nREQ-5: When blocked, the button names exactly what is missing.\nAC-1: A CO-50 denial with non-empty clinical-note id DOC-### and filing deadline equal to date of service plus 90 days can be marked ready.\nAC-2: A CO-50 denial missing the DOC-### id, the date-of-service-plus-90-days deadline, or both cannot be marked ready, the button names exactly each missing item, and no v1 override exists.\nAC-3: A denial that is not CO-50 is not blocked by this gate even if the DOC-### id or the 90-day deadline is absent.",
   "reviewOfA": {
     "findings": [],
-    "strengths": "The draft correctly limits the gate to CO-50, requires a non-empty DOC-### note id and a DOS-plus-90 deadline with no override, and both acceptance dates check out: 2024-03-01 plus 90 days is 2024-05-30, and 2025-01-15 plus 90 days is 2025-04-15."
+    "strengths": "The draft correctly limits the gate to CO-50, allows no v1 override, and computes 2024-03-01 plus 90 days as 2024-05-30."
   },
   "reviewOfB": {
-    "findings": [
-      {
-        "id": "D-B1",
-        "severity": "P1",
-        "title": "No test for malformed DOC id",
-        "detail": "Facts define the clinical-note reference as a non-empty DOC-### id, but acceptance only covers present (DOC-100) versus absent. Nothing verifies that a malformed or whitespace value (for example \"DOC-\", \"ABC-123\", or \" \") is treated as missing and blocks the packet.",
-        "quote": "AC-2: CO-50 with no DOC-### id and date of service 2025-01-01 is blocked, and the button names only the missing clinical-note id."
-      },
-      {
-        "id": "D-B2",
-        "severity": "P2",
-        "title": "AC-4 bundles three separate scenarios",
-        "detail": "One criterion mixes the both-missing CO-50 case, the non-CO-50 exemption, and the no-override rule. Each needs its own pass/fail test so a partial failure is visible rather than hidden inside a single compound assertion.",
-        "quote": "AC-4: CO-50 missing both items is blocked and the button names both; a non-CO-50 denial missing both is not blocked; nobody can override in v1."
-      },
-      {
-        "id": "D-B3",
-        "severity": "P2",
-        "title": "Override ban stated, not testable",
-        "detail": "\"Nobody can override in v1\" asserts a rule without a scenario: no actor attempts an override and no expected outcome is defined. Add a case where a specialist (or any role) tries to bypass the gate and the attempt fails.",
-        "quote": "nobody can override in v1."
-      }
-    ],
-    "strengths": "The filing-deadline arithmetic is correct: date of service 2025-01-01 plus 90 days in non-leap 2025 is indeed 2025-04-01, and the CO-50-only scope and no-override rule are carried through faithfully."
+    "findings": [],
+    "strengths": "Every requirement and acceptance criterion traces directly to the brief and the requester's answers: CO-50 scope, a non-empty DOC-### id, a deadline of date of service plus 90 days, no v1 override, and a button that names exactly what is missing. The draft also tests the negative case of non-CO-50 denials."
   },
   "merge": {
-    "document": "REQ-1: The readiness gate applies only to CO-50 medical-necessity denials; denials of any other class are unaffected.\nREQ-2: On a CO-50 denial, \"Mark appeal packet ready\" is blocked unless both are present: a non-empty clinical-note reference in DOC-### form, and a filing-deadline date. A value that is blank, whitespace, or not in DOC-### form counts as missing.\nREQ-3: The filing deadline is date of service plus 90 days (Northwind Health timely filing); the system computes it from DOS and stores it as the deadline field.\nREQ-4: No role may override the gate in v1; when blocked, the button label names exactly which of the two items is missing.\nAC-1: CO-50, DOS 2024-03-01 gives deadline 2024-05-30, note ref DOC-204 present: button is enabled and the packet is marked ready. (Date checks: DOS 2025-01-15 gives 2025-04-15; DOS 2025-01-01 gives 2025-04-01.)\nAC-2: CO-50 with deadline 2024-05-30 present but note ref blank: blocked, button reads \"Add clinical note reference\".\nAC-3: CO-50 with deadline present and note ref \"DOC-\", \"ABC-123\", or \" \": each is treated as missing, blocked, button reads \"Add clinical note reference\".\nAC-4: CO-50 with DOC-204 present but no deadline: blocked, button reads \"Add filing deadline\".\nAC-5: CO-50 with both items missing: blocked, button reads \"Add clinical note reference and filing deadline\".\nAC-6: A non-CO-50 denial with both fields empty can still be marked ready.\nAC-7: A specialist, and any other role, attempting to mark a blocked CO-50 packet ready (including by direct action outside the button) is refused; the packet stays not ready and no override path exists.",
-    "keptFromA": "I kept draft A's four-requirement structure, its explicit DOS-plus-90 computation and storage statement, and its verified example dates (2024-03-01 to 2024-05-30, 2025-01-15 to 2025-04-15) plus the exact blocked-button wording.",
-    "keptFromB": "I kept draft B's tight CO-50-only phrasing of the gate condition, its correct 2025-01-01 to 2025-04-01 example, and its clean one-case-per-criterion split of the missing-note and missing-deadline scenarios.",
-    "resolutions": [
-      {
-        "finding": "D-B1 - No test for malformed DOC id",
-        "outcome": "fixed",
-        "note": "Added REQ-2 wording that blank, whitespace, or non-DOC-### values count as missing, and AC-3 testing \"DOC-\", \"ABC-123\", and \" \"."
-      },
-      {
-        "finding": "D-B2 - AC-4 bundles three separate scenarios",
-        "outcome": "fixed",
-        "note": "Split into AC-5 (both missing on CO-50), AC-6 (non-CO-50 exemption), and AC-7 (no override), each independently pass/fail."
-      },
-      {
-        "finding": "D-B3 - Override ban stated, not testable",
-        "outcome": "fixed",
-        "note": "AC-7 now names an actor (specialist or any role) attempting to bypass the gate and the expected outcome: refused, packet stays not ready."
-      },
-      {
-        "finding": "Review of draft A - no defects found",
-        "outcome": "rejected",
-        "note": "Dates in draft A check out, but the review missed two gaps: no malformed DOC-### case and no explicit override-attempt scenario; both are covered in AC-3 and AC-7."
-      }
-    ]
+    "document": "REQ-1 The gate applies to CO-50 (medical-necessity) denials only. All other denial classes keep their current Mark Ready behavior.\nREQ-2 On a CO-50 denial, a specialist cannot mark the appeal packet ready unless two things are present. The first is a non-empty clinical-note reference in DOC-### form. This is assumed to mean DOC plus exactly three digits; the PFS lead should confirm.\nREQ-3 The second is a filing-deadline date, calculated as date of service + 90 days (Northwind Health timely filing). If the date of service is missing, the deadline counts as missing.\nREQ-4 Nobody can override the gate in v1, whatever their role.\nREQ-5 When blocked, the button names exactly what is missing: the clinical note, the filing deadline, or both.\nAC-1 CO-50, note DOC-123, DOS 2024-03-01: deadline 2024-03-01 + 90 days = 2024-05-30 (30 days left in March + 30 in April + 30 in May), so Mark Ready is enabled. The dates and DOC id are illustrative, since the brief gives none.\nAC-2 CO-50, DOS 2024-03-01, no note: button reads 'Missing: clinical note'. CO-50, note DOC-123, no DOS: 'Missing: filing deadline'. CO-50, note blank and no DOS: the button names both. CO-50, note 'DOC-12' (fails the assumed 3-digit format): treated as missing.\nAC-3 A supervisor or admin on a blocked CO-50 denial cannot mark it ready. A non-CO-50 denial with no note and no DOS is not blocked by this gate and can still be marked ready as today.",
+    "keptFromA": "I kept draft A's structure and its concrete, checkable examples: the verified 2024-03-01 + 90 days = 2024-05-30 calculation, the per-case button text, the missing-DOS rule, the flagged DOC-### format assumption, and the role-based no-override test.",
+    "keptFromB": "I kept draft B's wording that it is the specialist who cannot mark the appeal packet ready, and its explicit framing that non-CO-50 denials are simply not blocked by this gate.",
+    "resolutions": []
   }
 }
