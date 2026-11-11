@@ -59,7 +59,11 @@ export function panelContext(spec: WorkflowSpec, domain: string): string {
     `Task: ${spec.title}. ${spec.summary}`,
     `Deliverable: ${spec.deliverable}.`,
     `Brief: ${spec.brief}`,
-    spec.kind === "build" ? `Questions asked and the requester's answers:\n${spec.questions}\n${spec.answers}` : `Sources found by the knowledge lookup:\n${spec.sources}`,
+    spec.kind === "build" && spec.questions
+      ? `Questions asked and the requester's answers:\n${spec.questions}\n${spec.answers ?? ""}`
+      : spec.sources
+        ? `Facts to rely on:\n${spec.sources}`
+        : "No further facts were given; state any assumption you make.",
     "Rules: use only these facts; check every number, date and rule yourself; be concise; plain text, no markdown.",
   ].join("\n\n");
 }
@@ -142,23 +146,31 @@ async function timed(provider: ModelProvider, role: Parameters<ModelProvider["co
 }
 
 /** Runs one workflow's panel for real: drafts in parallel, crossed reviews in parallel, then the merge. */
-export async function recordPanel(spec: WorkflowSpec, panel: Panel, now = () => new Date()): Promise<Recording> {
-  const [a, b] = await Promise.all([
-    timed(panel.claude, "analystA", "Write your draft."),
-    timed(panel.grok, "analystB", "Write your draft."),
-  ]);
+/** Called as each of the panel's calls finishes, so a live page can show progress. */
+export type PanelProgress = (event: { role: string; call: RecordedCall; text: string }) => void;
+
+export async function recordPanel(spec: WorkflowSpec, panel: Panel, now = () => new Date(), onProgress: PanelProgress = () => {}): Promise<Recording> {
+  const step = async (provider: ModelProvider, role: Parameters<ModelProvider["complete"]>[0]["role"], prompt: string, show: (json: unknown) => string) => {
+    const result = await timed(provider, role, prompt);
+    onProgress({ role, call: result.call, text: show(result.json) });
+    return result;
+  };
+  const draftText = (json: unknown) => Draft.parse(json).text;
+  const reviewText = (prefix: "D-A" | "D-B") => (json: unknown) => renderReview(renumber(Review.parse(json), prefix), prefix);
+  const [a, b] = await Promise.all([step(panel.claude, "analystA", "Write your draft.", draftText), step(panel.grok, "analystB", "Write your draft.", draftText)]);
   const draftA = Draft.parse(a.json).text;
   const draftB = Draft.parse(b.json).text;
   const [ofB, ofA] = await Promise.all([
-    timed(panel.claude, "critiqueOfB", `Review this draft. Number findings D-B1, D-B2, ...\n\n${draftB}`),
-    timed(panel.grok, "critiqueOfA", `Review this draft. Number findings D-A1, D-A2, ...\n\n${draftA}`),
+    step(panel.claude, "critiqueOfB", `Review this draft. Number findings D-B1, D-B2, ...\n\n${draftB}`, reviewText("D-B")),
+    step(panel.grok, "critiqueOfA", `Review this draft. Number findings D-A1, D-A2, ...\n\n${draftA}`, reviewText("D-A")),
   ]);
   const reviewOfA = renumber(Review.parse(ofA.json), "D-A");
   const reviewOfB = renumber(Review.parse(ofB.json), "D-B");
-  const merged = await timed(
+  const merged = await step(
     panel.claude,
     "synthesizer",
     `Draft A:\n${draftA}\n\nDraft B:\n${draftB}\n\nReview of draft A:\n${renderReview(reviewOfA, "D-A")}\n\nReview of draft B:\n${renderReview(reviewOfB, "D-B")}`,
+    (json) => Merge.parse(json).document,
   );
   return RecordingSchema.parse({
     id: spec.id,

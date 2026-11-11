@@ -113,6 +113,13 @@ handed you** next to **What you get instead**.
 > "Eight stages. Each one caught something the others didn't. A live run on your own problem costs about 30
 > cents in model calls and about 25 minutes, most of it staging and rollout."
 
+## For a serious visitor: their own brief, live
+
+Scroll to **Run the real panel on your own request**. Give them the passcode and let them type a real-world brief
+(made-up names, no personal data) and any facts. Model C routes it live; then the two models draft, review and merge
+while they watch, about $0.10 and 3 to 6 minutes. Our test run, a supplier shortfall letter, had Model B catch two P0s
+in Model A's draft: it claimed a penalty week had passed when only six days had.
+
 ## Hard questions, straight answers
 
 - **"Is this real?"** Partly, and the page says which parts. The proof run, the Jev decisions, the checks and

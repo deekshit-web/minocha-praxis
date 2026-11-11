@@ -5,6 +5,7 @@ import { createServer, type Server, type ServerResponse } from "node:http";
 import { join } from "node:path";
 import { createDecider } from "./jev.ts";
 import { gatedFor } from "./record.ts";
+import { createLiveService, liveRunners } from "./live.ts";
 import { catalog, expand, loadSpecs } from "./workflows.ts";
 
 /** A summary of a real, metered run of the requirements panel, so viewers can see the replays are not invented. */
@@ -25,13 +26,23 @@ export interface StudioOptions {
   hosted?: boolean;
   /** Answers Model C's decisions, live when a key is set. Defaults to one reading JEV_API_KEY. */
   decider?: ReturnType<typeof createDecider>;
+  /** Live runs on a visitor's brief. Defaults to one switched on by LIVE_PASSCODE, with the real models. */
+  live?: ReturnType<typeof createLiveService>;
 }
 
 /** Serves the studio page and its simulated workflows. Nothing here calls a model. */
 export function createStudioServer(options: StudioOptions = {}): Server {
   const decider = options.decider ?? createDecider();
+  const live =
+    options.live ??
+    createLiveService({
+      passcode: process.env.LIVE_PASSCODE && process.env.ANTHROPIC_API_KEY && process.env.XAI_API_KEY ? process.env.LIVE_PASSCODE : "",
+      dailyCapUsd: Number(process.env.LIVE_DAILY_CAP_USD ?? 2),
+      runners: liveRunners(),
+    });
   return createServer((req, res) => {
-    if (options.hosted ? req.method !== "GET" && req.method !== "HEAD" : foreignRequest(req)) {
+    const liveRun = req.method === "POST" && (req.url ?? "").split("?")[0] === "/api/live/run";
+    if (options.hosted ? req.method !== "GET" && req.method !== "HEAD" && !liveRun : foreignRequest(req)) {
       send(res, options.hosted ? 405 : 403, { error: options.hosted ? "read-only" : "foreign-origin" });
       return;
     }
@@ -62,6 +73,47 @@ export function createStudioServer(options: StudioOptions = {}): Server {
       }
       if (req.method === "GET" && url.pathname === "/api/catalog") {
         send(res, 200, catalog());
+        return;
+      }
+      if (liveRun) {
+        // The one write the studio accepts: same-origin JSON, small, and passcode-checked by the live service.
+        const origin = req.headers.origin;
+        if (origin && origin !== `https://${req.headers.host}` && origin !== `http://${req.headers.host}`) {
+          send(res, 403, { error: "foreign-origin" });
+          return;
+        }
+        if (!String(req.headers["content-type"] ?? "").startsWith("application/json")) {
+          send(res, 415, { error: "Send JSON." });
+          return;
+        }
+        let body = "";
+        let tooBig = false;
+        req.on("data", (chunk: Buffer) => {
+          body += chunk.toString("utf8");
+          if (body.length > 10_000) tooBig = true;
+        });
+        req.on("end", () => {
+          if (tooBig) return send(res, 413, { error: "Too long." });
+          let input: unknown;
+          try {
+            input = JSON.parse(body);
+          } catch {
+            return send(res, 400, { error: "Send JSON." });
+          }
+          const result = live.submit((input ?? {}) as Parameters<typeof live.submit>[0]);
+          if ("error" in result) send(res, result.status, { error: result.error });
+          else send(res, 202, result);
+        });
+        return;
+      }
+      if (req.method === "GET" && url.pathname === "/api/live") {
+        send(res, 200, live.status());
+        return;
+      }
+      const liveJob = url.pathname.match(/^\/api\/live\/jobs\/([a-f0-9-]+)$/);
+      if (req.method === "GET" && liveJob) {
+        const job = live.job(liveJob[1] ?? "");
+        send(res, job ? 200 : 404, job ?? { error: "unknown-job" });
         return;
       }
       if (req.method === "GET" && url.pathname === "/api/status") {
