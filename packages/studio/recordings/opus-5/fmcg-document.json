@@ -1,0 +1,117 @@
+{
+  "id": "fmcg-document",
+  "recordedAt": "2026-11-11T04:29:38.917Z",
+  "calls": [
+    {
+      "role": "analystA",
+      "model": "claude-opus-5",
+      "seconds": 19.6,
+      "inputTokens": 654,
+      "outputTokens": 1353,
+      "costUsd": 0.03785375
+    },
+    {
+      "role": "analystB",
+      "model": "grok-4.7",
+      "seconds": 136.1,
+      "inputTokens": 1594,
+      "outputTokens": 331,
+      "costUsd": 0.003446
+    },
+    {
+      "role": "critiqueOfB",
+      "model": "claude-opus-5",
+      "seconds": 32.1,
+      "inputTokens": 1474,
+      "outputTokens": 2294,
+      "costUsd": 0.06576
+    },
+    {
+      "role": "critiqueOfA",
+      "model": "grok-4.7",
+      "seconds": 62.9,
+      "inputTokens": 2217,
+      "outputTokens": 62,
+      "costUsd": 0.003078
+    },
+    {
+      "role": "synthesizer",
+      "model": "claude-opus-5",
+      "seconds": 49,
+      "inputTokens": 2614,
+      "outputTokens": 3751,
+      "costUsd": 0.1079
+    }
+  ],
+  "draftA": "PROMOTION PLAN - SKU-5502 LAUNCH (MODERN TRADE, 4 WEEKS)\n\nObjective: 12,000 units sold in 4 weeks, gross margin at or above the 35% floor (PP-3).\n\nBaseline economics: list 6.00, unit cost 3.30, margin 2.70 = 45.0%. Floor price at 35% margin = 3.30 / 0.65 = 5.08. No offer may price below 5.08.\n\nWeeks 1-2: Trial bundle. SKU-5502 at 6.00 with 50 ml travel size attached free. Combined cost 3.30 + 0.25 = 3.55; margin 2.45 = 40.8%. Compliant. Target 7,000 units.\n\nWeeks 3-4: Price promotion at 5.25. Margin 1.95 = 37.1%. Compliant, 0.17 above floor price. Target 5,000 units.\n\nBlended result at target volumes: revenue 68,250, gross profit 26,900, margin 39.4% - above floor.\n\nExcluded: straight 2-for-1 on SKU-5502. Two units cost 6.60 against 6.00 revenue, a negative margin, so it breaches PP-3 despite the SKU-4410 result (2-for-1 beat straight discounts on trial by 18%). The travel-size bundle carries that bundle mechanic within the floor.\n\nClaims: pack, shelf and digital copy to avoid 'clinically proven' and any medical claim; no study is filed (CL-1).\n\nApproval required: trade sign-off on the two mechanics, the 5.25 promo price and the travel-size supply for week 1-2 volume.\n\nNote: the 7,000/5,000 volume split is a planning assumption, not drawn from the sources.",
+  "draftB": "Launch promotion plan for SKU-5502 shampoo, modern trade, four weeks, for trade approval. Lead offer: one SKU-5502 at list 6.00 plus one free 50 ml travel size. SKU-4410 showed 2-for-1 bundles beat straight discounts on trial by 18 percent. A literal 2-for-1 fails PP-3: two units cost 6.60, and 10.15 gives margin 34.98 percent while 10.16 gives 35.04 percent. Do not sell two for 6.00. Lead-offer margin: 3.30 plus 0.25 is 3.55; 2.45 divided by 6.00 is 40.83 percent, above the 35 percent floor. Target 12,000 units, 3,000 per week. Revenue 72,000, SKU cost 39,600, travel cost 3,000, profit 29,400, margin 40.83 percent. Fallback straight price no lower than 5.08. Exact floor is 3.30 divided by 0.65, or 5.076923 repeating. At 5.07 margin is 34.91 percent and fails. At 5.08 margin is 35.04 percent and passes. CL-1: no clinically proven or medical claims, and no filed study is in the sources. Approve four weeks at list 6.00 with free 50 ml, 12,000 units, margin 40.83 percent.",
+  "reviewOfA": {
+    "findings": [],
+    "strengths": "Both mechanics and the 12,000-unit blend are calculated correctly and stay above the 35% PP-3 floor, and the 2-for-1 is rightly excluded because 6.00 revenue cannot cover 6.60 cost."
+  },
+  "reviewOfB": {
+    "findings": [
+      {
+        "id": "D-B1",
+        "severity": "P1",
+        "title": "Fallback price may breach floor",
+        "detail": "The 5.08 floor assumes cost 3.30 only. If the free 50 ml rides along with the discounted price, cost is 3.55 and margin at 5.08 is 30.1 percent, breaching PP-3. The draft never states the sample is withdrawn in the fallback.",
+        "quote": "Fallback straight price no lower than 5.08."
+      },
+      {
+        "id": "D-B2",
+        "severity": "P1",
+        "title": "No mechanic to drive volume",
+        "detail": "The lead offer sells at full list 6.00 with a sample, so there is no consumer price incentive. The 12,000-unit target is asserted with no uplift basis; the only cited evidence (SKU-4410) concerns bundles versus discounts, not a free travel sample.",
+        "quote": "Target 12,000 units, 3,000 per week."
+      },
+      {
+        "id": "D-B3",
+        "severity": "P1",
+        "title": "Plan lacks approvable trade detail",
+        "detail": "A plan ready for trade approval needs start and end dates for the four weeks, modern-trade account mechanics, display or feature support, sample supply of 12,000 travel units, and funding ownership. None are given, so approvers cannot act.",
+        "quote": "Approve four weeks at list 6.00 with free 50 ml, 12,000 units, margin 40.83 percent."
+      },
+      {
+        "id": "D-B4",
+        "severity": "P2",
+        "title": "Claims rule stated, not applied",
+        "detail": "CL-1 is quoted but no compliant launch messaging is proposed, leaving pack and shelf copy unguided. State the permitted claim wording so trade material cannot drift into medical or clinically proven territory.",
+        "quote": "CL-1: no clinically proven or medical claims, and no filed study is in the sources."
+      }
+    ],
+    "strengths": "Every margin calculation checks out, including the 40.83 percent lead-offer margin, the 29,400 profit on 72,000 revenue, and the correct PP-3 thresholds of 5.08 single and 10.16 for two units."
+  },
+  "merge": {
+    "document": "PROMOTION PLAN - SKU-5502 LAUNCH (MODERN TRADE, 4 WEEKS)\n\nObjective: 12,000 units in four weeks, gross margin at or above the 35% floor (PP-3).\n\nEconomics: list 6.00, unit cost 3.30, margin 2.70 = 45.0%. Floor price for shampoo alone = 3.30 / 0.65 = 5.0769, so 5.08 (35.04%); 5.07 fails at 34.91%.\n\nWeeks 1-2, lead offer: SKU-5502 at 6.00 with a free 50 ml travel size. Cost 3.30 + 0.25 = 3.55, margin 2.45 = 40.83%. Compliant. Target 7,000 units; requires 7,000 travel units.\n\nWeeks 3-4, price promotion at 5.25, sample NOT attached. Margin 1.95 = 37.1%. Compliant, 0.17 above the 5.08 floor. Target 5,000 units. If the sample were to ride with a discounted price, cost is 3.55 and the floor price becomes 3.55 / 0.65 = 5.47 (35.1%); 5.25 with sample is only 32.4% and breaches PP-3, so it is not permitted.\n\nBlended at target volumes: revenue 68,250, gross profit 26,900, margin 39.4% - above floor.\n\nExcluded: literal 2-for-1. Two units cost 6.60 against 6.00 revenue, a negative margin; two units would need 10.16 to clear the floor (35.04%), as 10.15 gives 34.98%. The travel-size bundle carries the SKU-4410 bundle learning (2-for-1 beat straight discounts on trial by 18%) within the floor.\n\nClaims (CL-1): no study is filed, so no 'clinically proven' and no medical claims. Permitted copy: product descriptor, 'new', 'for daily use', fragrance and sensory language only. No scalp, hair-loss or treatment efficacy wording on pack, shelf or digital.\n\nFor trade sign-off: confirm the four-week start and end dates (not in the sources), account list and feature/display support, 7,000 travel-unit supply, promotion funding ownership, and the 5.25 price.\n\nAssumption: the 12,000 target and the 7,000/5,000 split are planning assumptions; the sources give no uplift data for a free-sample mechanic.",
+    "keptFromA": "From draft A I kept the two-phase structure (weeks 1-2 sample bundle, weeks 3-4 price promotion at 5.25), the blended 68,250 / 26,900 / 39.4% maths, the 2-for-1 exclusion and the volume-split caveat.",
+    "keptFromB": "From draft B I kept the precise thresholds - exact floor 5.0769 with 5.07 failing at 34.91% and 5.08 passing at 35.04%, and the two-unit 10.15/10.16 test - plus the 40.83% lead-offer margin figure.",
+    "resolutions": [
+      {
+        "finding": "Review of draft A: no defects found",
+        "outcome": "rejected",
+        "note": "Partly wrong: draft A's margin work is sound, but it omitted trade-approval detail (dates, accounts, display, funding, sample supply) and did not state that the sample is withdrawn in weeks 3-4; both are now added."
+      },
+      {
+        "finding": "D-B1 Fallback price may breach floor",
+        "outcome": "fixed",
+        "note": "Correct. The plan now states the sample is not attached during the discounted weeks, and gives the with-sample floor of 5.47 (3.55/0.65) and the 32.4% failure at 5.25 with sample."
+      },
+      {
+        "finding": "D-B2 No mechanic to drive volume",
+        "outcome": "fixed",
+        "note": "Correct. A consumer price incentive is added in weeks 3-4 at 5.25, and the plan flags that the 12,000 target and split are assumptions with no source uplift data for a free-sample mechanic."
+      },
+      {
+        "finding": "D-B3 Plan lacks approvable trade detail",
+        "outcome": "fixed",
+        "note": "Correct. An approval list is added: dates (noted as absent from sources, to be confirmed), accounts, feature/display, 7,000 travel-unit supply, funding ownership and the 5.25 price."
+      },
+      {
+        "finding": "D-B4 Claims rule stated, not applied",
+        "outcome": "fixed",
+        "note": "Correct. Permitted wording is specified (descriptor, 'new', 'for daily use', sensory copy) with scalp, hair-loss and efficacy claims expressly barred under CL-1."
+      }
+    ]
+  }
+}

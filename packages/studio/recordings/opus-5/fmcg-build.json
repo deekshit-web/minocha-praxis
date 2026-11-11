@@ -1,0 +1,125 @@
+{
+  "id": "fmcg-build",
+  "recordedAt": "2026-11-11T04:25:30.899Z",
+  "calls": [
+    {
+      "role": "analystA",
+      "model": "claude-opus-5",
+      "seconds": 18.5,
+      "inputTokens": 706,
+      "outputTokens": 1445,
+      "costUsd": 0.04041125
+    },
+    {
+      "role": "analystB",
+      "model": "grok-4.7",
+      "seconds": 41,
+      "inputTokens": 1630,
+      "outputTokens": 230,
+      "costUsd": 0.002912
+    },
+    {
+      "role": "critiqueOfB",
+      "model": "claude-opus-5",
+      "seconds": 19.4,
+      "inputTokens": 1340,
+      "outputTokens": 1446,
+      "costUsd": 0.0438875
+    },
+    {
+      "role": "critiqueOfA",
+      "model": "grok-4.7",
+      "seconds": 150.1,
+      "inputTokens": 2243,
+      "outputTokens": 165,
+      "costUsd": 0.003748
+    },
+    {
+      "role": "synthesizer",
+      "model": "claude-opus-5",
+      "seconds": 34.2,
+      "inputTokens": 2537,
+      "outputTokens": 2794,
+      "costUsd": 0.0835875
+    }
+  ],
+  "draftA": "REQ-1 For each distributor/product pair, compute days of cover = stock on hand / average daily sell-out, where average daily sell-out = total distributor sell-out over the last 4 weeks (28 days) / 28. Open question: behaviour when average daily sell-out is 0 (division undefined) was not specified.\nREQ-2 Raise an alert to the area sales manager when days of cover is less than 7, i.e. the distributor is likely to run out within a week; the alert must show distributor, product, stock on hand, average daily sell-out and days of cover so a replenishment order can be raised.\nREQ-3 Suppress duplicates: at most one alert per distributor per product per calendar day; a new alert for the same pair may be sent the next day if the condition still holds.\nREQ-4 v1 applies the same rule to all products, including seasonal ones; differentiated seasonal treatment is recorded as a proposal and is out of scope for v1. The alert must be tested in the distributor portal before release.\nAC-1 Distributor D, product P: sell-out over the last 28 days = 280 units, so average daily sell-out = 10/day; stock on hand = 60, days of cover = 6.0; 6.0 < 7, so one alert is sent to the area sales manager for D/P.\nAC-2 Same inputs but stock on hand = 80: days of cover = 8.0; 8.0 is not less than 7, so no alert is sent.\nAC-3 Boundary: stock on hand = 70 and average daily sell-out = 10/day gives exactly 7.0 days of cover; no alert is sent, since the trigger is strictly under 7 days.\nAC-4 Dedup: the calculation runs twice on the same day for D/P with 60 units and 10/day (6.0 days both times); exactly one alert is sent that day, and a further alert is only possible on the following day.\n",
+  "draftB": "REQ-1: Alert the area sales manager in the distributor portal when a distributor is likely to run out of a product within 7 days.\nREQ-2: Measure likely run-out as days of cover: stock on hand divided by average daily sales.\nREQ-3: Average daily sales is distributor sell-out over the last 4 weeks divided by 28 days.\nREQ-4: Send at most one alert per distributor per product per day.\nREQ-5: Do not apply a separate seasonal rule in v1; flag seasonal treatment as a proposal.\nAC-1: Last 4 weeks sell-out 280 and stock 70 gives 280/28 = 10 per day and 70/10 = 7 days of cover, so send the alert.\nAC-2: Last 4 weeks sell-out 280 and stock 80 gives 80/10 = 8 days of cover, so do not send the alert.\nAC-3: After one alert today for that distributor and product, do not send a second alert the same day.",
+  "reviewOfA": {
+    "findings": [
+      {
+        "id": "D-A1",
+        "severity": "P1",
+        "title": "Exact seven-day cover excluded",
+        "detail": "Within a week includes a run-out in exactly seven days. Days of cover of 7.0 means stock lasts seven days, so the alert should fire when cover is less than or equal to 7. AC-3 wrongly withholds the alert at exactly 7.0.",
+        "quote": "days of cover is less than 7, i.e. the distributor is likely to run out within a week"
+      }
+    ],
+    "strengths": "The worked examples correctly derive average daily sell-out of 10 from 280 units over 28 days and days of cover of 6.0, 8.0 and 7.0."
+  },
+  "reviewOfB": {
+    "findings": [
+      {
+        "id": "D-B1",
+        "severity": "P1",
+        "title": "Alert threshold rule never stated",
+        "detail": "REQ-2 defines days of cover but no requirement states the trigger condition (days of cover of 7 or fewer). The rule only appears implicitly in AC-1 and AC-2, leaving the boundary case (exactly 7) unspecified for implementers.",
+        "quote": "REQ-2: Measure likely run-out as days of cover: stock on hand divided by average daily sales."
+      },
+      {
+        "id": "D-B2",
+        "severity": "P1",
+        "title": "Zero average daily sales undefined",
+        "detail": "If 4-week sell-out is 0, average daily sales is 0 and the division in REQ-2 is undefined, so behaviour is unspecified. Zero stock on hand (already out) is likewise unaddressed. Both cases need an explicit rule.",
+        "quote": "REQ-3: Average daily sales is distributor sell-out over the last 4 weeks divided by 28 days."
+      },
+      {
+        "id": "D-B3",
+        "severity": "P2",
+        "title": "Fast-moving product scope undefined",
+        "detail": "The task targets fast-moving products, but the requirements apply to every product with no definition or filter, widening scope beyond the request and risking alert volume the requester did not ask for.",
+        "quote": "REQ-1: Alert the area sales manager in the distributor portal when a distributor is likely to run out of a product within 7 days."
+      },
+      {
+        "id": "D-B4",
+        "severity": "P2",
+        "title": "Repeat alerts on later days unspecified",
+        "detail": "The cap is stated per day, but nothing says whether the alert repeats on subsequent days while the condition persists. No acceptance criterion covers the next day, so behaviour after the first day is untested.",
+        "quote": "AC-3: After one alert today for that distributor and product, do not send a second alert the same day."
+      }
+    ],
+    "strengths": "The arithmetic is correct and the acceptance criteria neatly bracket the threshold: 280/28 = 10 per day, with 70 stock giving 7 days of cover (alert) and 80 stock giving 8 days (no alert)."
+  },
+  "merge": {
+    "document": "REQ-1 For each distributor/product pair, compute days of cover = stock on hand / average daily sell-out, where average daily sell-out = total distributor sell-out over the last 4 weeks (28 days) / 28.\nREQ-2 Raise an alert to the area sales manager in the distributor portal when days of cover is 7 or fewer, i.e. the distributor is likely to run out within a week. The alert must show distributor, product, stock on hand, average daily sell-out and days of cover so a replenishment order can be raised in time.\nREQ-3 Suppress duplicates: at most one alert per distributor per product per calendar day. If the condition still holds the next day, a new alert is sent that day.\nREQ-4 v1 applies the same rule to all products, including seasonal ones; differentiated seasonal treatment is recorded as a proposal and is out of scope for v1.\nREQ-5 The alert must be tested in the distributor portal before release.\nOQ-1 Average daily sell-out of 0 (no sell-out in the last 28 days) makes the division in REQ-1 undefined; no rule was supplied. Confirm the intended behaviour before build.\nOQ-2 Stock on hand of 0 (already out) gives 0 days of cover and would alert under REQ-2; confirm this is wanted, or whether already-out pairs need separate handling.\nOQ-3 The brief targets fast-moving products, but no definition or filter was given, so v1 covers every product. Confirm whether a fast-moving filter is needed and how it is defined.\nOQ-4 The boundary in REQ-2 is an assumption: a cover of exactly 7.0 days means run-out on day 7, which is within a week, so it alerts. Confirm with the requester.\nAC-1 Distributor D, product P: sell-out over the last 28 days = 280 units, so average daily sell-out = 280/28 = 10/day; stock on hand = 60, days of cover = 60/10 = 6.0; 6.0 is 7 or fewer, so one alert is sent to the area sales manager for D/P.\nAC-2 Same inputs but stock on hand = 80: days of cover = 80/10 = 8.0; 8.0 is more than 7, so no alert is sent.\nAC-3 Boundary: stock on hand = 70 and average daily sell-out = 10/day gives exactly 70/10 = 7.0 days of cover; an alert is sent, since the trigger is 7 days or fewer.\nAC-4 Dedup: the calculation runs twice on the same day for D/P with 60 units and 10/day (6.0 days both times); exactly one alert is sent that day.\nAC-5 Repeat: D/P still at 6.0 days of cover the following day; one further alert is sent that day.",
+    "keptFromA": "Draft A's structure and detail: the explicit 28-day averaging formula, the dedup requirement with next-day repeat, the alert payload, the v1 seasonal scope, the testing requirement and the worked boundary examples.",
+    "keptFromB": "Draft B's concise requirement phrasing, the explicit mention of the distributor portal and the area sales manager, and its alerting-at-7.0-days boundary treatment (AC-1 with stock 70).",
+    "resolutions": [
+      {
+        "finding": "D-A1 Exact seven-day cover excluded",
+        "outcome": "fixed",
+        "note": "Trigger changed to days of cover of 7 or fewer; AC-3 now sends the alert at exactly 7.0 days. The boundary was not stated by the requester, so OQ-4 flags the assumption for confirmation."
+      },
+      {
+        "finding": "D-B1 Alert threshold rule never stated",
+        "outcome": "fixed",
+        "note": "REQ-2 now states the trigger condition explicitly (days of cover 7 or fewer), with AC-1, AC-2 and AC-3 bracketing 6.0, 8.0 and the 7.0 boundary."
+      },
+      {
+        "finding": "D-B2 Zero average daily sales undefined",
+        "outcome": "fixed",
+        "note": "Both gaps are now recorded: OQ-1 for the undefined division when average daily sell-out is 0, OQ-2 for stock on hand of 0. No rule is invented, since the requester supplied none."
+      },
+      {
+        "finding": "D-B3 Fast-moving product scope undefined",
+        "outcome": "fixed",
+        "note": "OQ-3 records that no definition or filter for fast-moving was given; v1 covers all products, matching the answer to Q4, and the scope and alert-volume risk is raised for the requester to decide."
+      },
+      {
+        "finding": "D-B4 Repeat alerts on later days unspecified",
+        "outcome": "fixed",
+        "note": "REQ-3 states that a new alert is sent the next day if the condition still holds (consistent with the once-per-day cap in the answer to Q3), and AC-5 tests the next-day repeat."
+      }
+    ]
+  }
+}

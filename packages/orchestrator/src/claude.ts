@@ -4,7 +4,7 @@ import * as z from "zod/v4";
 import type { PanelRole } from "./panel.ts";
 import { CompletionError, type Completion, type CompletionRequest, type ModelProvider } from "./provider.ts";
 
-export const CLAUDE_MODEL = "claude-opus-5";
+export const CLAUDE_MODEL = "claude-opus-5-5";
 
 /** What one seat is told on top of the shared context, and the JSON shape its answer must take. */
 export interface SeatSpec {
