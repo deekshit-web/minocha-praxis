@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { LIVE_CHECKS, runChecks } from "../public/checks.js";
-import { LIVE_TESTS, fixDiff, mutationTest, report, runTests, sourceOf } from "../public/tests.js";
+import { LIVE_TESTS, fixDiff, mutationTest, report, runRecorded, runTests, sourceOf, unsafeNames } from "../public/tests.js";
 import { BUILD_STAGES, DOCUMENT_STAGES, DOMAINS, catalog, expand, loadSpecs, workflowIssues } from "./workflows.ts";
 
 test("every domain offers a feature build and a document workflow", () => {
@@ -232,7 +232,7 @@ test("recorded runs replace the prepared panel faithfully: real text, real figur
     const recording = spec.recording!;
     const flow = expand(spec);
     assert.equal(spec.draftA, recording.draftA, spec.id);
-    const panelSteps = flow.steps.filter((step) => step.recorded);
+    const panelSteps = flow.steps.filter((step) => step.recorded && ["draftA", "draftB", "reviewOfA", "reviewOfB", "merge"].includes(step.id));
     assert.equal(panelSteps.length, 5, spec.id);
     const cost = recording.calls.reduce((total, call) => total + call.costUsd, 0);
     assert.ok(Math.abs(panelSteps.reduce((total, step) => total + (step.estimatedCostUsd ?? 0), 0) - cost) < 1e-9, spec.id);
@@ -246,5 +246,28 @@ test("recorded runs replace the prepared panel faithfully: real text, real figur
     if (spec.contrast) assert.ok((spec.contrast.draft === "A" ? recording.draftA : recording.draftB).includes(spec.contrast.before), spec.id);
     assert.match(spec.synthesis, /Defects resolved: \d+ of \d+\./, spec.id);
     assert.deepEqual(findPhi(JSON.stringify(recording)), [], spec.id);
+  }
+});
+
+test("recorded build stages are real: the model-written tests, rerun on the model-written code, give the recorded results", () => {
+  for (const spec of loadSpecs().filter((item) => item.buildRecording)) {
+    const build = spec.buildRecording!;
+    const flow = expand(spec);
+    assert.ok(flow.build, spec.id);
+    // Nothing that reaches for the network, files or globals was recorded.
+    for (const source of [...build.runs.map((run) => run.code), build.finalCode, build.testScript, build.unitScript]) assert.deepEqual(unsafeNames(source), [], spec.id);
+    // Rerunning reproduces the recorded runs exactly.
+    for (const run of build.runs) {
+      assert.equal(report(runRecorded(run.code, build.testScript)), run.acceptance, `${spec.id} round ${run.round}`);
+      assert.equal(report(runRecorded(run.code, build.unitScript)), run.unit, `${spec.id} round ${run.round} unit`);
+    }
+    // The page's Run tests step shows the first run, and its verdict follows it.
+    const red = flow.steps.find((step) => step.id === "testsRed")!;
+    assert.equal(red.output, build.runs[0]?.acceptance, spec.id);
+    assert.equal(red.verdict, /^✗/m.test(red.output) ? "flagged" : "pass", spec.id);
+    // Every recorded stage carries its real cost.
+    const cost = build.calls.reduce((total, call) => total + call.costUsd, 0);
+    const shown = flow.steps.filter((step) => step.recorded && !["draftA", "draftB", "reviewOfA", "reviewOfB", "merge"].includes(step.id)).reduce((total, step) => total + (step.estimatedCostUsd ?? 0), 0);
+    assert.ok(Math.abs(shown - cost) < 1e-9, `${spec.id}: shown ${shown} vs ${cost}`);
   }
 });

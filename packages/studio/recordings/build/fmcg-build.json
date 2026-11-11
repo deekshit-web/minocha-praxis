@@ -1,0 +1,115 @@
+{
+  "id": "fmcg-build",
+  "recordedAt": "2026-11-11T09:38:51.012Z",
+  "contract": "daysOfCover(stock, sellOut, weeks) where sellOut is units sold over the last `weeks` weeks of history; returns days of cover as a number (Infinity when nothing sold). createAlerter() returns { check({ distributor, sku, stock, sellOut, weeks, date }) } where date is \"YYYY-MM-DD\"; check returns an alert object { distributor, sku, cover } when one should be sent, or null.",
+  "calls": [
+    {
+      "role": "archDraft",
+      "model": "claude-opus-5-5",
+      "seconds": 10.3,
+      "inputTokens": 1501,
+      "outputTokens": 950,
+      "costUsd": 0.025609
+    },
+    {
+      "role": "archReview",
+      "model": "grok-4.7",
+      "seconds": 120.2,
+      "inputTokens": 2808,
+      "outputTokens": 155,
+      "costUsd": 0.004818
+    },
+    {
+      "role": "archFinal",
+      "model": "claude-opus-5-5",
+      "seconds": 12.1,
+      "inputTokens": 2523,
+      "outputTokens": 1259,
+      "costUsd": 0.036052
+    },
+    {
+      "role": "code",
+      "model": "claude-opus-5-5",
+      "seconds": 12.7,
+      "inputTokens": 2312,
+      "outputTokens": 1249,
+      "costUsd": 0.034857
+    },
+    {
+      "role": "codeReview",
+      "model": "grok-4.7",
+      "seconds": 125,
+      "inputTokens": 2558,
+      "outputTokens": 47,
+      "costUsd": 0.00367
+    },
+    {
+      "role": "codeRevise",
+      "model": "claude-opus-5-5",
+      "seconds": 9.7,
+      "inputTokens": 2157,
+      "outputTokens": 1037,
+      "costUsd": 0.030148
+    },
+    {
+      "role": "unitTests",
+      "model": "claude-opus-5-5",
+      "seconds": 11.9,
+      "inputTokens": 1890,
+      "outputTokens": 1254,
+      "costUsd": 0.033245
+    },
+    {
+      "role": "testCases",
+      "model": "grok-4.7",
+      "seconds": 50.5,
+      "inputTokens": 2205,
+      "outputTokens": 430,
+      "costUsd": 0.005262
+    },
+    {
+      "role": "testScript",
+      "model": "grok-4.7",
+      "seconds": 117.7,
+      "inputTokens": 2685,
+      "outputTokens": 1598,
+      "costUsd": 0.01323
+    }
+  ],
+  "architecture": {
+    "draft": "Components: (1) pure calc module daysOfCover(stock, sellOut, weeks) = stock / (sellOut / (weeks*7)); with weeks=4 that is sellOut/28 per REQ-1. It returns Infinity when sellOut is 0, including stock 0, which avoids 0/0 = NaN; Infinity is above 7, so no alert and no error (AC-5, REQ-5). (2) createAlerter().check({distributor, sku, stock, sellOut, weeks, date}) alerts when cover <= 7 (inclusive, AC-2), returns {distributor, sku, cover} or null, and dedupes in memory on the key distributor|sku|date (YYYY-MM-DD), so there is one alert per day and a new one the next day (AC-4). (3) Portal notification step that maps distributor to its area sales manager and posts the alert in the portal (REQ-3).\nData in: per distributor and SKU, stock on hand and 28-day sell-out total, plus the date. Data out: the alert object. No seasonal logic or fast-moving filter in v1; all SKUs are covered (REQ-4, REQ-6).\nGap: the contract's alert object has no recipient, so the ASM mapping must live in the portal step. Confirm with National sales operations where the distributor-to-ASM mapping comes from. Dedupe is in-memory only, so it is lost on restart; confirm whether persistence is needed.\nFile fence (proposed, because the repo layout was not given): stockout/daysOfCover.js, stockout/alerter.js, stockout/alerter.test.js covering AC-1 to AC-5 (120/560 gives 6.0 and an alert, 140/560 gives 7.0 and an alert, 160/560 gives 8.0 and no alert, a same-day repeat gives one alert and the next day gives one more, 50/0 gives no alert), plus the one portal notification hook file. Nothing else may change.\nProposals log: seasonal handling and the fast-moving definition.",
+    "review": "AR-1 · P0 · In-memory dedupe breaks rule\n  REQ-3 and AC-4 require at most one alert per distributor, product, and day. In-memory dedupe is lost on restart, so the same day can send a second alert. Durable dedupe is required; treating persistence as optional leaves the rule broken.\nStrengths: Cover math matches REQ-1 and AC-1 through AC-5, including the inclusive seven-day threshold and no alert when four-week sell-out is zero.",
+    "final": "Components: (1) daysOfCover(stock, sellOut, weeks) = stock / (sellOut / (weeks*7)). With weeks=4 this is sellOut/28 (REQ-1). It returns Infinity when sellOut is 0, including stock 0, so there is no NaN, no alert and no error (AC-5, REQ-5).\n(2) createAlerter().check({distributor, sku, stock, sellOut, weeks, date}) alerts when cover <= 7 (AC-2) and returns {distributor, sku, cover} or null. Its in-memory dedupe on distributor|sku|date stays as a first-pass filter only.\n(3) Portal notification hook: before posting, it does an atomic insert-if-absent into a durable sent-alerts record with unique key distributor|sku|date. It posts to the area sales manager (ASM) only if the insert succeeds. This keeps at most one alert per distributor, product and day across restarts (REQ-3, AC-4) without changing the module contract.\nData in: stock on hand, 28-day sell-out total and date, per distributor and SKU. Data out: the alert object. No seasonal logic or fast-moving filter; all SKUs are covered (REQ-4, REQ-6).\nTests (stockout/alerter.test.js): 120/560 gives 6.0 and an alert; 140/560 gives 7.0 and an alert; 160/560 gives 8.0 and no alert; 50/0 gives no alert. A same-day repeat gives one alert, and the next day gives one more.\nHook test: two fresh hook and alerter instances on the same date (simulated restart) post exactly one alert.\nFile fence (proposed, repo layout not given): stockout/daysOfCover.js, stockout/alerter.js, stockout/alerter.test.js, the portal notification hook file and its test, and the sent-alerts store definition. Nothing else may change.\nConfirm with National sales operations: where the distributor-to-ASM mapping comes from, and which portal storage holds sent-alerts.\nProposals log: seasonal handling; fast-moving definition.",
+    "resolutions": "AR-1 · P0 · In-memory dedupe breaks rule applied: Durable dedupe is now required, not optional. The portal hook does an atomic insert-if-absent on distributor|sku|date and posts only on success. This survives restarts and keeps the createAlerter contract unchanged. A restart test was added. Only the storage location remains to confirm."
+  },
+  "code": {
+    "first": "(() => {\n  function daysOfCover(stock, sellOut, weeks) {\n    const w = typeof weeks === \"number\" && weeks > 0 ? weeks : 4;\n    const s = Number(stock);\n    const so = Number(sellOut);\n    if (!(so > 0)) return Infinity;\n    if (!Number.isFinite(s)) return NaN;\n    return s * w * 7 / so;\n  }\n  function createAlerter() {\n    const sent = new Set();\n    function check({ distributor, sku, stock, sellOut, weeks, date } = {}) {\n      const cover = daysOfCover(stock, sellOut, weeks);\n      if (!Number.isFinite(cover) || cover > 7) return null;\n      const key = JSON.stringify([distributor, sku, date]);\n      if (sent.has(key)) return null;\n      sent.add(key);\n      return { distributor, sku, cover };\n    }\n    return { check };\n  }\n  return { daysOfCover, createAlerter };\n})()",
+    "summary": "The module returns an object with two functions, daysOfCover and createAlerter.\n\ndaysOfCover takes stock, 4-week sell-out and the number of weeks. It calculates stock * weeks * 7 / sellOut, which equals stock / (sellOut / 28) for 4 weeks. Multiplying before dividing avoids floating-point drift right at the 7.0 cut-off.\n- Sell-out of zero or less returns Infinity, so no alert, NaN or error is raised (AC-5, REQ-5).\n- If weeks is missing or invalid, it falls back to 4, per REQ-1.\n- If stock is not a number, it returns NaN, which never alerts.\n\ncheck alerts when cover is 7 or less (REQ-2). I checked the numbers against the acceptance criteria:\n- 120/560 gives 6.0 and an alert (AC-1).\n- 140/560 gives 7.0 and an alert (AC-2).\n- 160/560 gives 8.0 and no alert (AC-3).\n- 50/0 gives Infinity and no alert (AC-5).\n- Zero stock with positive sell-out gives 0 and an alert.\n\nRepeat alerts are blocked in memory using a key built from distributor, SKU and date. The key is only recorded when an alert is actually returned. So a same-day repeat returns null, and the next day alerts again (AC-4).\n\nThis in-memory check is only a first-pass filter and does not survive a restart. The durable once-per-day guarantee across restarts depends on the portal hook's atomic insert-if-absent, as the architecture says.\n\nOutside this module:\n- There is no seasonal logic and no fast-moving filter (REQ-4, REQ-6).\n- The distributor-to-ASM mapping and the sent-alerts storage still need confirming with National sales operations.",
+    "review": "No defects found.\nStrengths: Days-of-cover math, the inclusive 7 threshold, same-day distributor-sku dedupe, and zero sell-out suppression match the PRD and the contract.",
+    "revised": "(() => {\n  function daysOfCover(stock, sellOut, weeks) {\n    const w = typeof weeks === \"number\" && weeks > 0 ? weeks : 4;\n    const s = Number(stock);\n    const so = Number(sellOut);\n    if (!(so > 0)) return Infinity;\n    if (!Number.isFinite(s)) return NaN;\n    return s * w * 7 / so;\n  }\n  function createAlerter() {\n    const sent = new Set();\n    function check({ distributor, sku, stock, sellOut, weeks, date } = {}) {\n      const cover = daysOfCover(stock, sellOut, weeks);\n      if (!Number.isFinite(cover) || cover > 7) return null;\n      const key = JSON.stringify([distributor, sku, date]);\n      if (sent.has(key)) return null;\n      sent.add(key);\n      return { distributor, sku, cover };\n    }\n    return { check };\n  }\n  return { daysOfCover, createAlerter };\n})()",
+    "resolutions": "Review: no defects found; days-of-cover math, inclusive 7 threshold, same-day dedupe and zero sell-out suppression match the PRD and contract. applied: I agree with the review, so the code is unchanged. I checked each case myself. AC-1: 120*28/560 = 6, so an alert is sent. AC-2: 140*28/560 = 7, and because the threshold is inclusive an alert is sent. AC-3: 160*28/560 = 8, so the result is null. AC-4: a repeat on the same date is deduped by the distributor/sku/date key, and a new date alerts again. AC-5: zero sell-out returns Infinity, so the result is null with no error. Open items to confirm with National sales operations: REQ-5, REQ-6 and the seasonal proposal."
+  },
+  "unitScript": "test(\"days of cover is 6 for 120 units in stock and 560 units sold over 4 weeks\", () => {\n  assert.equal(code.daysOfCover(120, 560, 4), 6);\n});\ntest(\"alert is sent with cover 6 when cover is 6 days\", () => {\n  const a = code.createAlerter();\n  assert.deepEqual(a.check({ distributor: \"D1\", sku: \"P1\", stock: 120, sellOut: 560, weeks: 4, date: \"2024-05-01\" }), { distributor: \"D1\", sku: \"P1\", cover: 6 });\n});\ntest(\"alert is sent when cover is exactly 7 days and not sent at 8 days\", () => {\n  const a = code.createAlerter();\n  assert.deepEqual(a.check({ distributor: \"D1\", sku: \"P1\", stock: 140, sellOut: 560, weeks: 4, date: \"2024-05-01\" }), { distributor: \"D1\", sku: \"P1\", cover: 7 });\n  assert.equal(code.daysOfCover(160, 560, 4), 8);\n  assert.equal(a.check({ distributor: \"D2\", sku: \"P1\", stock: 160, sellOut: 560, weeks: 4, date: \"2024-05-01\" }), null);\n});\ntest(\"only one alert per distributor and product on the same day, and a new one the next day\", () => {\n  const a = code.createAlerter();\n  const input = { distributor: \"D1\", sku: \"P1\", stock: 120, sellOut: 560, weeks: 4 };\n  assert.ok(a.check({ ...input, date: \"2024-05-01\" }));\n  assert.equal(a.check({ ...input, date: \"2024-05-01\" }), null);\n  assert.deepEqual(a.check({ ...input, date: \"2024-05-02\" }), { distributor: \"D1\", sku: \"P1\", cover: 6 });\n});\ntest(\"a different product for the same distributor on the same day still gets its own alert\", () => {\n  const a = code.createAlerter();\n  assert.ok(a.check({ distributor: \"D1\", sku: \"P1\", stock: 120, sellOut: 560, weeks: 4, date: \"2024-05-01\" }));\n  assert.deepEqual(a.check({ distributor: \"D1\", sku: \"P2\", stock: 120, sellOut: 560, weeks: 4, date: \"2024-05-01\" }), { distributor: \"D1\", sku: \"P2\", cover: 6 });\n});\ntest(\"zero sell-out gives infinite cover, no alert and no error\", () => {\n  assert.equal(code.daysOfCover(50, 0, 4), Infinity);\n  const a = code.createAlerter();\n  let result;\n  result = a.check({ distributor: \"D1\", sku: \"P1\", stock: 50, sellOut: 0, weeks: 4, date: \"2024-05-01\" });\n  assert.equal(result, null);\n});",
+  "testCases": [
+    "TC-1 · Days of cover is stock on hand divided by average daily sell-out, and average daily sell-out is the last 4 weeks of sell-out divided by 28; alert when cover is 7 or less · stock 120, 4-week sell-out 560 → average daily sell-out 20, cover 6.0, and the area sales manager receives an alert in the distributor portal",
+    "TC-2 · Alert when days of cover is exactly 7 · stock 140, 4-week sell-out 560 → cover 7.0 and an alert is sent",
+    "TC-3 · No alert when days of cover is above 7 · stock 160, 4-week sell-out 560 → cover 8.0 and no alert is sent",
+    "TC-4 · At most one alert per distributor per product per day · same distributor, product A stock 120 and product B stock 140, each with 4-week sell-out 560, each checked twice on the same day → exactly one alert for A and one alert for B that day",
+    "TC-5 · A qualifying distributor and product may alert again on the next day · same distributor and product still at cover 7 or less on the next day → one new alert is sent",
+    "TC-6 · If 4-week sell-out is zero, days of cover is undefined and no alert is sent · stock 50, 4-week sell-out 0 → no alert is sent and no error is raised",
+    "TC-7 · In v1 seasonal products follow the same rule; separate seasonal handling is a proposal only · seasonal product, stock 120, 4-week sell-out 560 → cover 6.0 and an alert is sent under the same rule",
+    "TC-8 · v1 covers all products because fast-moving was not defined · any product, stock 120, 4-week sell-out 560 → cover 6.0 and an alert is sent with no fast-moving filter"
+  ],
+  "testScript": "test(\"days of cover is stock on hand divided by average daily sell-out from the last 4 weeks and an alert is sent when cover is 7 or less\", function() {\n  assert.equal(560 / 28, 20);\n  assert.equal(120 / 20, 6);\n  assert.equal(code.daysOfCover(120, 560, 4), 6);\n  var alerter = code.createAlerter();\n  var alert = alerter.check({\n    distributor: \"D1\",\n    sku: \"P1\",\n    stock: 120,\n    sellOut: 560,\n    weeks: 4,\n    date: \"2024-06-01\"\n  });\n  assert.deepEqual(alert, { distributor: \"D1\", sku: \"P1\", cover: 6 });\n});\ntest(\"alert when days of cover is exactly 7\", function() {\n  assert.equal(140 / 20, 7);\n  assert.equal(code.daysOfCover(140, 560, 4), 7);\n  var alerter = code.createAlerter();\n  var alert = alerter.check({\n    distributor: \"D2\",\n    sku: \"P2\",\n    stock: 140,\n    sellOut: 560,\n    weeks: 4,\n    date: \"2024-06-02\"\n  });\n  assert.deepEqual(alert, { distributor: \"D2\", sku: \"P2\", cover: 7 });\n});\ntest(\"no alert when days of cover is above 7\", function() {\n  assert.equal(160 / 20, 8);\n  assert.equal(code.daysOfCover(160, 560, 4), 8);\n  var alerter = code.createAlerter();\n  var alert = alerter.check({\n    distributor: \"D3\",\n    sku: \"P3\",\n    stock: 160,\n    sellOut: 560,\n    weeks: 4,\n    date: \"2024-06-03\"\n  });\n  assert.equal(alert, null);\n});\ntest(\"at most one alert per distributor per product per day\", function() {\n  var alerter = code.createAlerter();\n  var date = \"2024-06-04\";\n  var a1 = alerter.check({ distributor: \"D4\", sku: \"A\", stock: 120, sellOut: 560, weeks: 4, date });\n  var a2 = alerter.check({ distributor: \"D4\", sku: \"A\", stock: 120, sellOut: 560, weeks: 4, date });\n  var b1 = alerter.check({ distributor: \"D4\", sku: \"B\", stock: 140, sellOut: 560, weeks: 4, date });\n  var b2 = alerter.check({ distributor: \"D4\", sku: \"B\", stock: 140, sellOut: 560, weeks: 4, date });\n  assert.deepEqual(a1, { distributor: \"D4\", sku: \"A\", cover: 6 });\n  assert.equal(a2, null);\n  assert.deepEqual(b1, { distributor: \"D4\", sku: \"B\", cover: 7 });\n  assert.equal(b2, null);\n});\ntest(\"a qualifying distributor and product may alert again on the next day\", function() {\n  var alerter = code.createAlerter();\n  var day1 = alerter.check({ distributor: \"D5\", sku: \"A\", stock: 120, sellOut: 560, weeks: 4, date: \"2024-06-05\" });\n  var day1Again = alerter.check({ distributor: \"D5\", sku: \"A\", stock: 120, sellOut: 560, weeks: 4, date: \"2024-06-05\" });\n  var day2 = alerter.check({ distributor: \"D5\", sku: \"A\", stock: 120, sellOut: 560, weeks: 4, date: \"2024-06-06\" });\n  var day2Again = alerter.check({ distributor: \"D5\", sku: \"A\", stock: 120, sellOut: 560, weeks: 4, date: \"2024-06-06\" });\n  assert.deepEqual(day1, { distributor: \"D5\", sku: \"A\", cover: 6 });\n  assert.equal(day1Again, null);\n  assert.deepEqual(day2, { distributor: \"D5\", sku: \"A\", cover: 6 });\n  assert.equal(day2Again, null);\n});\ntest(\"if 4-week sell-out is zero days of cover is undefined and no alert is sent and no error is raised\", function() {\n  assert.equal(code.daysOfCover(50, 0, 4), Infinity);\n  var alerter = code.createAlerter();\n  var alert = alerter.check({\n    distributor: \"D6\",\n    sku: \"P6\",\n    stock: 50,\n    sellOut: 0,\n    weeks: 4,\n    date: \"2024-06-07\"\n  });\n  assert.equal(alert, null);\n});\ntest(\"in v1 a seasonal product follows the same rule and an alert is sent\", function() {\n  assert.equal(code.daysOfCover(120, 560, 4), 6);\n  var alerter = code.createAlerter();\n  var alert = alerter.check({\n    distributor: \"D7\",\n    sku: \"SEASONAL-1\",\n    stock: 120,\n    sellOut: 560,\n    weeks: 4,\n    date: \"2024-06-08\"\n  });\n  assert.deepEqual(alert, { distributor: \"D7\", sku: \"SEASONAL-1\", cover: 6 });\n});\ntest(\"v1 covers all products and sends an alert with no fast-moving filter\", function() {\n  assert.equal(code.daysOfCover(120, 560, 4), 6);\n  var alerter = code.createAlerter();\n  var alert = alerter.check({\n    distributor: \"D8\",\n    sku: \"SLOW-MOVER\",\n    stock: 120,\n    sellOut: 560,\n    weeks: 4,\n    date: \"2024-06-09\"\n  });\n  assert.deepEqual(alert, { distributor: \"D8\", sku: \"SLOW-MOVER\", cover: 6 });\n});",
+  "runs": [
+    {
+      "round": 1,
+      "code": "(() => {\n  function daysOfCover(stock, sellOut, weeks) {\n    const w = typeof weeks === \"number\" && weeks > 0 ? weeks : 4;\n    const s = Number(stock);\n    const so = Number(sellOut);\n    if (!(so > 0)) return Infinity;\n    if (!Number.isFinite(s)) return NaN;\n    return s * w * 7 / so;\n  }\n  function createAlerter() {\n    const sent = new Set();\n    function check({ distributor, sku, stock, sellOut, weeks, date } = {}) {\n      const cover = daysOfCover(stock, sellOut, weeks);\n      if (!Number.isFinite(cover) || cover > 7) return null;\n      const key = JSON.stringify([distributor, sku, date]);\n      if (sent.has(key)) return null;\n      sent.add(key);\n      return { distributor, sku, cover };\n    }\n    return { check };\n  }\n  return { daysOfCover, createAlerter };\n})()",
+      "acceptance": "✓ days of cover is stock on hand divided by average daily sell-out from the last 4 weeks and an alert is sent when cover is 7 or less\n✓ alert when days of cover is exactly 7\n✓ no alert when days of cover is above 7\n✓ at most one alert per distributor per product per day\n✓ a qualifying distributor and product may alert again on the next day\n✓ if 4-week sell-out is zero days of cover is undefined and no alert is sent and no error is raised\n✓ in v1 a seasonal product follows the same rule and an alert is sent\n✓ v1 covers all products and sends an alert with no fast-moving filter\n8 passing",
+      "unit": "✓ days of cover is 6 for 120 units in stock and 560 units sold over 4 weeks\n✓ alert is sent with cover 6 when cover is 6 days\n✓ alert is sent when cover is exactly 7 days and not sent at 8 days\n✓ only one alert per distributor and product on the same day, and a new one the next day\n✓ a different product for the same distributor on the same day still gets its own alert\n✓ zero sell-out gives infinite cover, no alert and no error\n6 passing",
+      "failing": 0
+    }
+  ],
+  "fixes": [],
+  "finalCode": "(() => {\n  function daysOfCover(stock, sellOut, weeks) {\n    const w = typeof weeks === \"number\" && weeks > 0 ? weeks : 4;\n    const s = Number(stock);\n    const so = Number(sellOut);\n    if (!(so > 0)) return Infinity;\n    if (!Number.isFinite(s)) return NaN;\n    return s * w * 7 / so;\n  }\n  function createAlerter() {\n    const sent = new Set();\n    function check({ distributor, sku, stock, sellOut, weeks, date } = {}) {\n      const cover = daysOfCover(stock, sellOut, weeks);\n      if (!Number.isFinite(cover) || cover > 7) return null;\n      const key = JSON.stringify([distributor, sku, date]);\n      if (sent.has(key)) return null;\n      sent.add(key);\n      return { distributor, sku, cover };\n    }\n    return { check };\n  }\n  return { daysOfCover, createAlerter };\n})()"
+}

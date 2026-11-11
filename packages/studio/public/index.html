@@ -447,11 +447,47 @@
       // The build workflows' real tests (public/tests.js), and the runs made for this replay.
       let TESTS = null;
       let testRuns = {};
+      // Builds replayed from real recorded stages run the model-written code and tests; the others run the
+      // prepared feature code with its planted bug.
+      function hasTests() {
+        return !!(TESTS && flow && (flow.build || TESTS.LIVE_TESTS.includes(flow.id)));
+      }
+      function runFor(version, suite) {
+        if (flow.build) return TESTS.runRecorded(version === "first" ? flow.build.firstCode : flow.build.finalCode, suite === "unit" ? flow.build.unitScript : flow.build.testScript);
+        return TESTS.runTests(flow.id, version, suite);
+      }
+      function codeOf(version) {
+        return flow.build ? (version === "first" ? flow.build.firstCode : flow.build.finalCode) : TESTS.sourceOf(flow.id, version);
+      }
+      function lineDiff(before, after) {
+        const a = before.split("\n");
+        const b = after.split("\n");
+        const table = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+        for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
+        const out = [];
+        let i = 0;
+        let j = 0;
+        while (i < a.length || j < b.length) {
+          if (i < a.length && j < b.length && a[i] === b[j]) {
+            i += 1;
+            j += 1;
+          } else if (j < b.length && (i >= a.length || table[i][j + 1] >= table[i + 1][j])) out.push("+ " + b[j++].trim());
+          else out.push("- " + a[i++].trim());
+        }
+        return out.join("\n");
+      }
+      function diffOf() {
+        return flow.build ? lineDiff(flow.build.firstCode, flow.build.finalCode) : TESTS.fixDiff(flow.id);
+      }
+      function mutationFor() {
+        return flow.build ? TESTS.mutationTestRecorded(flow.build.finalCode, [flow.build.testScript, flow.build.unitScript]) : TESTS.mutationTest(flow.id);
+      }
+
       function testRun(version) {
         const key = flow.id + ":" + version;
         if (!testRuns[key]) {
           const started = performance.now();
-          const results = TESTS.runTests(flow.id, version);
+          const results = runFor(version);
           testRuns[key] = { results, ms: performance.now() - started };
         }
         return testRuns[key];
@@ -643,7 +679,7 @@
       // Steps that genuinely execute here: the live code checks and the build tests. Everything else is replayed.
       function isReal(step) {
         if (step.id === "checks") return !!(LIVE && LIVE.LIVE_CHECKS[flow.id]);
-        if (step.id === "testsRed" || step.id === "testsGreen" || step.id === "unitRun") return !!(TESTS && TESTS.LIVE_TESTS.includes(flow.id));
+        if (step.id === "testsRed" || step.id === "testsGreen" || step.id === "unitRun") return hasTests();
         return false;
       }
 
@@ -924,13 +960,13 @@
           jump.appendChild(go);
           detail.appendChild(jump);
         }
-        if (TESTS && TESTS.LIVE_TESTS.includes(flow.id) && (step.id === "code" || step.id === "fix") && state !== "idle") {
+        if (hasTests() && (step.id === "code" || step.id === "fix") && state !== "idle" && !(step.id === "fix" && flow.build && !diffOf())) {
           const label = document.createElement("p");
           label.className = "label";
-          label.textContent = step.id === "code" ? "The real code, as first written (the code the tests run against)" : "The fix, as a diff against the first version";
+          label.textContent = step.id === "code" ? (flow.build ? "The real code, after code review (the code the tests ran against)" : "The real code, as first written (the code the tests run against)") : "The fix, as a diff against the first version";
           const pre = document.createElement("pre");
           pre.className = "codeview";
-          const body = step.id === "code" ? TESTS.sourceOf(flow.id, "first") : TESTS.fixDiff(flow.id);
+          const body = step.id === "code" ? codeOf("first") : diffOf();
           for (const line of body.split("\n")) {
             const span = document.createElement("span");
             span.textContent = line + "\n";
@@ -939,7 +975,13 @@
           }
           const note = document.createElement("p");
           note.className = "meta";
-          note.textContent = step.id === "code" ? "This first version carries a bug we planted to show the mechanism. The code and the tests are real; the tests below run against exactly this." : "The planted bug, and the change that removes it.";
+          note.textContent = flow.build
+            ? step.id === "code"
+              ? "This is the code Model A actually wrote, after Model B's code review, recorded on " + new Date(flow.recording ? flow.recording.recordedAt : Date.now()).toLocaleDateString(undefined, { day: "numeric", month: "short" }) + ". The tests below run against exactly this."
+              : "What Model A changed after the failing test, line by line."
+            : step.id === "code"
+              ? "This first version carries a bug we planted to show the mechanism. The code and the tests are real; the tests below run against exactly this."
+              : "The planted bug, and the change that removes it.";
           detail.append(label, pre, note);
         }
         if (step.id === "route" && state !== "idle" && flow.lowRiskRequest) {
@@ -1012,15 +1054,15 @@
           detail.appendChild(turn);
         }
         else {
-          const realUnit = TESTS && TESTS.LIVE_TESTS.includes(flow.id) && step.id === "unitRun";
+          const realUnit = hasTests() && step.id === "unitRun";
           if (realUnit) meta.textContent = "These unit tests really ran, in your browser, against Model A's code as first written. They pass: the author did not think to test the case with the bug.";
-          const realTests = TESTS && TESTS.LIVE_TESTS.includes(flow.id) && (step.id === "testsRed" || step.id === "testsGreen");
+          const realTests = hasTests() && (step.id === "testsRed" || step.id === "testsGreen");
           if (realTests) {
             const run = testRun(step.id === "testsRed" ? "first" : "fixed");
-            meta.textContent = "These tests really ran, in your browser, against the " + (step.id === "testsRed" ? "first version of the code, which carries a bug we planted to show the mechanism" : "fixed code") + ": " + run.results.length + " tests in " + run.ms.toFixed(1) + " ms.";
+            meta.textContent = "These tests really ran, in your browser, against the " + (step.id === "testsRed" ? (flow.build ? "code Model A wrote" : "first version of the code, which carries a bug we planted to show the mechanism") : flow.build ? "final code" : "fixed code") + ": " + run.results.length + " tests in " + run.ms.toFixed(1) + " ms.";
           }
           if (decision) meta.textContent = decisionNote(decision);
-          const body = decision && !decision.pending ? decision.text : decision ? "" : realUnit ? TESTS.report(TESTS.runTests(flow.id, "first", "unit")) : realTests ? TESTS.report(testRun(step.id === "testsRed" ? "first" : "fixed").results) : step.id === "checks" && liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name + "\n  " + check.detail).join("\n") : step.output;
+          const body = decision && !decision.pending ? decision.text : decision ? "" : realUnit ? TESTS.report(runFor("first", "unit")) : realTests ? TESTS.report(testRun(step.id === "testsRed" ? "first" : "fixed").results) : step.id === "checks" && liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name + "\n  " + check.detail).join("\n") : step.output;
           const pre = section(step.kind === "human" ? "Outcome" : state === "blocked" ? "Failed" : "Produced", body, state === "running" && !decision ? share : undefined);
           if (decision && decision.live && decision.disagreements && decision.disagreements.length) {
             const note = document.createElement("p");
@@ -1124,7 +1166,11 @@
           const fixed = out("merge").match(/Defects resolved: (\d+)/);
           return "Approved · " + (fixed ? fixed[1] + " defects fixed" : "checked");
         }
-        if (name === "Architecture") return "Approved · " + count(out("archReview"), /^AR-\d/gm) + " findings resolved";
+        if (name === "Architecture") {
+          const found = count(out("archReview"), /^AR-\d/gm);
+          return "Approved · " + (found ? found + " finding" + (found === 1 ? "" : "s") + " resolved" : "no findings");
+        }
+        if (name === "Code" && flow.build) return flow.build.firstCode.split("\n").length + " lines of real code";
         if (name === "Code") {
           const files = new Set(out("code").match(/(?:src|packages|migrations)\/[\w./*-]+\.(?:ts|tsx|sql)/g) || []).size;
           return files + (files === 1 ? " file written" : " files written");
@@ -1134,14 +1180,14 @@
           return count(out("codeReview"), /^CR-\d/gm) + " findings · " + count(revise, / applied/g) + " applied · " + count(revise, / declined/g) + " declined";
         }
         if (name === "Unit tests") {
-          const passing = TESTS && TESTS.LIVE_TESTS.includes(flow.id) ? TESTS.runTests(flow.id, "first", "unit").filter((result) => result.pass).length : count(out("unitRun"), /^✓/gm);
+          const passing = hasTests() ? runFor("first", "unit").filter((result) => result.pass).length : count(out("unitRun"), /^✓/gm);
           return passing + " passing (Model A's own)";
         }
         if (name === "Test cases") return count(out("testCases"), /^TC-/gm) + " cases, from the PRD";
         if (name === "Testing") {
           const failing = (out("testsRed").match(/(\d+) failing/) || [0, 0])[1];
           const passing = (out("testsGreen").match(/(\d+) passing/) || [0, 0])[1];
-          return failing + " failed → fixed → " + passing + " passing";
+          return Number(failing) ? failing + " failed → fixed → " + passing + " passing" : passing + " passing, first run";
         }
         if (name === "Deployment") return "Live in production";
         if (name === "Research") return count(out("sources"), /^.+$/gm) + " sources looked up";
@@ -1229,6 +1275,7 @@
           const found = titles(out("archReview"));
           return "Model A designed the components, data and the files it may change. Model B's review found " + found.length + " issue" + (found.length === 1 ? "" : "s") + " (" + listOf(found) + ")" + (serious(out("archReview")).length ? ", one of them serious," : "") + " and Model A revised the design to fix them. Design checks passed. " + out("archApprove");
         }
+        if (name === "Code" && flow.build) return "Model A wrote " + flow.build.firstCode.split("\n").length + " lines of real JavaScript to a contract both models were given: " + flow.build.contract.split(". ")[0] + ".";
         if (name === "Code") return "Model A wrote the code, touching only the files the approved design allows: " + listOf([...new Set(out("code").match(/(?:src|packages|migrations)\/[\w./*-]+\.(?:ts|tsx|sql)/g) || [])]) + ".";
         if (name === "Code review") {
           const found = titles(out("codeReview"));
@@ -1242,10 +1289,14 @@
         if (name === "Test cases") return "Model B wrote " + (out("testCases").match(/^TC-/gm) || []).length + " test cases from the PRD, without ever seeing the code, then turned them into a runnable test script.";
         if (name === "Testing") {
           const red = out("testsRed");
+          if (!/^✗/m.test(red)) {
+            const count = (red.match(/(\d+) passing/) || [0, "all"])[1];
+            return "Model B's " + count + " tests, written from the PRD without seeing the code, really ran against Model A's code and all passed on the first run" + (flow.build ? ". Here the problems had already been caught earlier, in design and code review." : ".");
+          }
           const failed = (red.match(/^✗ (.+)$/m) || [0, "a test"])[1];
           const why = (red.match(/^✗ .+\n {2}(.+)$/m) || [0, ""])[1];
           const passing = (out("testsGreen").match(/(\d+) passing/) || [0, "all"])[1];
-          return "Model B's tests really ran against Model A's code, and one failed: \"" + failed + "\"" + (why ? " (" + why + ")" : "") + ". That bug had passed code review and Model A's own unit tests. Model A fixed it (" + firstLine(out("fix")).toLowerCase() + "), and all " + passing + " tests pass.";
+          return "Model B's tests really ran against Model A's code, and one failed: \"" + failed + "\"" + (why ? " (" + why + ")" : "") + ". It had got past code review and Model A's own unit tests. Model A fixed it (" + firstLine(out("fix")).replace(/^Round \d+: /, "").toLowerCase() + "), and all " + passing + " tests pass.";
         }
         if (name === "Deployment") return "The release gate re-checked approvals, tests and data rules. The build went to staging and passed its smoke tests, and Model C recommended go. " + out("deployApprove") + " " + out("production").split("\n").slice(0, 2).join(" ");
         if (name === "Research") return "Model C routed the request to the full panel in a fraction of a second. The relevant policies and records were looked up first, so both drafts work from the same facts: " + (out("sources").match(/^.+$/gm) || []).length + " sources.";
@@ -1418,7 +1469,7 @@
       let labKey = "";
       function renderTestLab() {
         const card = byId("testlab");
-        const live = TESTS && TESTS.LIVE_TESTS.includes(flow.id);
+        const live = hasTests();
         card.hidden = !live;
         if (!live || labKey === flow.id) return;
         labKey = flow.id;
@@ -1432,7 +1483,13 @@
         card.append(
           add("p", "Run the tests yourself", "eyebrow"),
           add("h2", "Model B's test script is real code. Run it against the first version of the feature, then against Model A's fix."),
-          add("p", "Nothing here is recorded: the tests run in your browser each time you press a button, against working code. The first version carries a bug we planted to show the mechanism.", "meta"),
+          add(
+            "p",
+            flow.build
+              ? "The code and both test scripts were written by the models in a recorded real run. Each button runs them again, here in your browser, after a safety scan."
+              : "Nothing here is recorded: the tests run in your browser each time you press a button, against working code. The first version carries a bug we planted to show the mechanism.",
+            "meta",
+          ),
         );
         const buttons = add("div", undefined, "buttons");
         const first = add("button", "▶ Run against the first version", "primary");
@@ -1445,7 +1502,7 @@
         const run = (version, suite) => {
           clear(out);
           const started = performance.now();
-          const results = TESTS.runTests(flow.id, version, suite);
+          const results = runFor(version, suite);
           const ms = performance.now() - started;
           for (const result of results) {
             out.appendChild(add("div", (result.pass ? "✓ " : "✗ ") + result.name + "  (" + result.ms.toFixed(2) + " ms)", result.pass ? "ok" : "bad"));
@@ -1455,7 +1512,7 @@
           out.appendChild(
             add(
               "div",
-              (failing ? failing + " failing, " + (results.length - failing) + " passing" : results.length + " passing") + " · ran just now in " + ms.toFixed(1) + " ms · " + (suite === "unit" ? "Model A's own unit tests, on the first version. They pass, bug and all: only Model B's independent tests catch it." : version === "first" ? "the first version of the code" : "the code after Model A's fix"),
+              (failing ? failing + " failing, " + (results.length - failing) + " passing" : results.length + " passing") + " · ran just now in " + ms.toFixed(1) + " ms · " + (suite === "unit" ? "Model A's own unit tests, on the first version. They pass, bug and all: only Model B's independent tests catch it." : flow.build ? (flow.build.firstCode === flow.build.finalCode ? "Model A's code (no fix was needed)" : version === "first" ? "Model A's code before the fix" : "Model A's code after the fix") : version === "first" ? "the first version of the code" : "the code after Model A's fix"),
               "sum " + (failing ? "bad" : "ok"),
             ),
           );
@@ -1466,7 +1523,7 @@
         mutate.addEventListener("click", () => {
           clear(out);
           const started = performance.now();
-          const result = TESTS.mutationTest(flow.id);
+          const result = mutationFor();
           const ms = performance.now() - started;
           out.appendChild(add("div", "Mutation testing: the fixed code was broken " + result.total + " different ways (each < made <=, each && made ||, each number nudged by one, and so on), and every test re-run against each broken version.", ""));
           out.appendChild(add("div", "The tests caught " + result.killed + " of " + result.total + " broken versions · ran just now in " + ms.toFixed(0) + " ms", "sum " + (result.killed === result.total ? "ok" : "")));
@@ -1480,7 +1537,7 @@
         });
         const source = add("details");
         source.appendChild(add("summary", "Show the code under test (after the fix)"));
-        source.appendChild(add("pre", TESTS.sourceOf(flow.id, "fixed"), "codeview"));
+        source.appendChild(add("pre", codeOf("fixed"), "codeview"));
         card.append(source);
         const script = add("details");
         script.appendChild(add("summary", "Show the test script"));

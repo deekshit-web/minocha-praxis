@@ -511,7 +511,13 @@ const OPERATORS = [
 
 /** Runs every mutant of a feature against its acceptance and unit tests. */
 export function mutationTest(id) {
-  const source = SOURCES[id];
+  return mutate(SOURCES[id], (source) => {
+    const code = instantiate(source);
+    return [...runSuite(id, code, "acceptance"), ...runSuite(id, code, "unit")];
+  });
+}
+
+function mutate(source, runAll) {
   // Text inside string and regex literals is data, not logic; changing "STU-104" proves nothing.
   const literals = [...source.matchAll(/"(?:[^"\\]|\\.)*"|\/\^[^\n]*?\$\//g)].map((match) => [match.index, match.index + match[0].length]);
   const inLiteral = (at) => literals.some(([start, end]) => at >= start && at < end);
@@ -532,16 +538,64 @@ export function mutationTest(id) {
   }
   const results = [];
   for (const mutant of mutants) {
-    let code;
+    let outcome;
     try {
-      code = instantiate(mutant.source);
+      outcome = runAll(mutant.source);
     } catch {
       continue; // Not valid code: not a meaningful mutant.
     }
-    const failing = [...runSuite(id, code, "acceptance"), ...runSuite(id, code, "unit")].filter((result) => !result.pass);
+    const failing = outcome.filter((result) => !result.pass);
     results.push({ operator: mutant.operator, line: mutant.line, killed: failing.length > 0, by: failing[0] ? failing[0].name : null });
   }
   return { total: results.length, killed: results.filter((result) => result.killed).length, results };
+}
+
+// ---------- Model-written code and tests, recorded from real runs. They run only if they pass a safety scan:
+// no network, files, timers, globals or dynamic code. (They also ran first in a time-limited server sandbox.)
+
+const FORBIDDEN = /\b(fetch|XMLHttpRequest|WebSocket|EventSource|import|require|process|globalThis|window|document|self|eval|Function|setTimeout|setInterval|setImmediate|localStorage|sessionStorage|indexedDB|navigator|Worker|postMessage|constructor|__proto__)\b/g;
+
+/** The forbidden names a piece of model-written code uses, ignoring text inside string literals. */
+export function unsafeNames(source) {
+  const code = String(source).replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`/g, '""');
+  return [...new Set(code.match(FORBIDDEN) || [])];
+}
+
+function instantiateRecorded(source) {
+  const unsafe = unsafeNames(source);
+  if (unsafe.length) throw new Error("refused to run: uses " + unsafe.join(", "));
+  return new Function('"use strict"; return (' + source + ");")();
+}
+
+function runScriptAgainst(code, script) {
+  const unsafe = unsafeNames(script);
+  if (unsafe.length) throw new Error("refused to run the tests: they use " + unsafe.join(", "));
+  const results = [];
+  const test = (name, body) => {
+    const started = typeof performance !== "undefined" ? performance.now() : Date.now();
+    let error = null;
+    try {
+      body();
+    } catch (caught) {
+      error = caught instanceof AssertionError ? caught.message : `${caught && caught.name}: ${caught && caught.message}`;
+    }
+    results.push({ name, pass: !error, message: error, ms: (typeof performance !== "undefined" ? performance.now() : Date.now()) - started });
+  };
+  new Function("test", "assert", "code", '"use strict";\n' + script)(test, assert, code);
+  return results;
+}
+
+/** Runs a recorded test script against recorded code. */
+export function runRecorded(codeSource, script) {
+  return runScriptAgainst(instantiateRecorded(codeSource), script);
+}
+
+/** Mutation testing on recorded code: every small break, every given test script re-run against it. */
+export function mutationTestRecorded(codeSource, scripts) {
+  return mutate(codeSource, (source) => {
+    const code = instantiateRecorded(source);
+    return scripts.flatMap((script) => runScriptAgainst(code, script));
+  });
 }
 
 /** The text a test runner prints for these results. */
