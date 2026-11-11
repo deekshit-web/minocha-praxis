@@ -70,5 +70,6 @@
   "finalReview": {
     "findings": [],
     "strengths": "The decision correctly applies K-2, confirms the passport expired 41 days before review and the 2026-06-02 bill falls outside the 2026-08-10 window, and requests new documents rather than refusing a standard-risk customer with no sanctions match."
-  }
+  },
+  "finalCheckedAt": "2026-11-11T16:49:58.118Z"
 }

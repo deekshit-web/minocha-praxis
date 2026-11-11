@@ -56,6 +56,8 @@ export const RecordingSchema = z.object({
   /** The final check: Model B reviews the merged document once more, and Model A fixes what it raised. */
   finalReview: Review.optional(),
   finalFix: Fix.optional(),
+  /** When the final check ran, which can be later than the rest of the panel. */
+  finalCheckedAt: z.string().optional(),
 });
 export type Recording = z.infer<typeof RecordingSchema>;
 export type RecordedCall = z.infer<typeof Call>;
@@ -227,13 +229,19 @@ export async function recordPanel(spec: WorkflowSpec, panel: Panel, now = () => 
  * The final check on a recorded panel: Model B reviews the merged document once more, under the same strict
  * severity rule, and Model A fixes what it raised, if anything. Adds to the recording; changes nothing in it.
  */
-export async function finalCheck(recording: Recording, panel: { grok: ModelProvider; fixer: ModelProvider }, onProgress: PanelProgress = () => {}): Promise<Recording> {
+export async function finalCheck(
+  recording: Recording,
+  panel: { grok: ModelProvider; fixer: ModelProvider },
+  onProgress: PanelProgress = () => {},
+  now = () => new Date(),
+): Promise<Recording> {
   const step = stepper(onProgress);
   const document = recording.merge.document;
   const checked = await step(panel.grok, "critiqueOfA", `Review this final document. Number findings D-F1, D-F2, ...\n\n${document}`, (json) => renderReview(renumber(Review.parse(json), "D-F"), "D-F"), "finalReview");
   const finalReview = renumber(Review.parse(checked.json), "D-F");
   const calls = [...recording.calls.filter((call) => call.role !== "finalReview" && call.role !== "finalFix"), checked.call];
-  const { finalFix: _stale, ...rest } = recording;
+  const { finalFix: _stale, ...previous } = recording;
+  const rest = { ...previous, finalCheckedAt: now().toISOString() };
   if (!finalReview.findings.length) return RecordingSchema.parse({ ...rest, calls, finalReview });
   const fixed = await step(
     panel.fixer,

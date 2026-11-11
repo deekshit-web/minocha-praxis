@@ -177,7 +177,7 @@ export interface Workflow {
   /** For a build replayed from real recorded stages: the model-written code and test scripts, to rerun. */
   build: { firstCode: string; finalCode: string; unitScript: string; testScript: string; contract: string } | null;
   /** When the panel is replayed from a real recording: when it was made, what it cost, how long it took. */
-  recording: { recordedAt: string; costUsd: number; seconds: number; calls: number } | null;
+  recording: { recordedAt: string; finalCheckedAt: string | null; costUsd: number; seconds: number; calls: number } | null;
   phases: string[];
   /** What each model's role is, keyed by model id. */
   models: typeof MODELS;
@@ -643,6 +643,7 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
     recording: recording
       ? {
           recordedAt: recording.recordedAt,
+          finalCheckedAt: recording.finalCheckedAt ?? null,
           costUsd: recording.calls.reduce((total, call) => total + call.costUsd, 0),
           seconds: recording.calls.reduce((total, call) => total + call.seconds, 0),
           calls: recording.calls.length,

@@ -96,5 +96,6 @@
         "note": "Q3 settles the format as a non-empty DOC-### id. REQ-2 now states that rule directly instead of treating it as an assumption awaiting confirmation. AC-2 now rejects DOC-12 because it is not in DOC-### form, not because of an assumed rule. Nothing else changed. The 2024-03-01 + 90 = 2024-05-30 calculation was rechecked and is correct."
       }
     ]
-  }
+  },
+  "finalCheckedAt": "2026-11-11T16:54:03.754Z"
 }

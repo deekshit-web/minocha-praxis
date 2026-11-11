@@ -412,7 +412,7 @@
       </section>
 
       <footer>
-        How to read this page: the drafting, review and coding models' outputs were written in advance to show how the workflow behaves, and cost nothing. Model C's small decisions run live when a decision-model key is set, for a fraction of a cent, and say so. The code checks and the build workflows' tests are different: they are real code, and they run in your browser. Model times and costs are estimates of a live run, from the same price table the live runs use. The live, metered version of this pipeline exists for the healthcare requirements step and is run on request.
+        How to read this page: the drafts, reviews, merges and final checks are recordings of real model runs, replayed so the page costs nothing; each step says whether it is recorded, and shows the real time, tokens and cost of the call it replays. Model C's small decisions run live when a decision-model key is set, for a fraction of a cent, and say so. The code checks and the build workflows' tests are real code, and they run in your browser. Steps marked replay or simulated show estimates from the same price table the live runs use. With a passcode, the panel also runs live on your own request.
       </footer>
     </div>
 
@@ -966,7 +966,7 @@
           const rows = step.recorded
             ? [
                 ["Model", step.actor + " · " + vendor.api],
-                ["Request", "A recorded live call, " + new Date(flow.recording.recordedAt).toISOString().slice(0, 16).replace("T", " ") + " UTC"],
+                ["Request", "A recorded live call, " + new Date((step.id.startsWith("final") && flow.recording.finalCheckedAt) || flow.recording.recordedAt).toISOString().slice(0, 16).replace("T", " ") + " UTC"],
                 ["Tokens", step.tokens.input.toLocaleString() + " in · " + step.tokens.output.toLocaleString() + " out"],
                 ["Timing", "took " + duration(step.seconds)],
                 ["Stop reason", vendor.stop],
@@ -1702,7 +1702,7 @@
           title.textContent = flow.deliverable;
           const meta = document.createElement("p");
           meta.className = "meta";
-          meta.textContent = "What this run hands over, after both reviews, the code checks and a person's approval. Like every model step on this page, it was written in advance; no model produced it just now.";
+          meta.textContent = "What this run hands over, after both reviews, " + (flow.steps.some((step) => step.id === "finalCheck") ? "the final check, " : "") + "the code checks and a person's approval. " + (flow.recording ? "The models wrote it in a recorded real run on " + new Date(flow.recording.recordedAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + "; it is replayed here, so nothing is billed now." : "It was prepared in advance to show how the workflow behaves; no model produced it just now.");
           const doc = document.createElement("div");
           doc.className = "doc";
           let list = null;

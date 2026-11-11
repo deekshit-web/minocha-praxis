@@ -60,8 +60,9 @@ draft, one P1 (REQ-1 only tells an applicant the outcome when both rules pass, w
 Then **Final check**: Model B reviews the merged result once more, under a strict rule (any wrong figure, date,
 threshold or rule is serious), and Model A fixes what it raises.
 
-> "We measured this. On 8 requirements documents, this last check still found serious faults in every one that a
-> strict all-Claude panel had already passed. It costs about a cent here."
+> "We measured this. On 8 full requirements documents that a strict all-Claude panel had already passed, this last
+> check raised 16 serious faults. Checked by hand, 7 really were serious, like a rule that is mandatory in one
+> requirement and optional in another, and 6 more were real but minor. It costs about a cent here."
 
 On the recorded workflows it is honest about what it found: 8 of 10 came back clean, and in two builds (healthcare
 and logistics) it found 3 smaller gaps, such as a test that would pass without the date the requirement demands,
@@ -143,8 +144,8 @@ in Model A's draft: it claimed a penalty week had passed when only six days had.
   same. Model C earns its keep on calls with no labels, like routing.
 - **"How often does cross-review actually catch things?"** Measured (`docs/eval-results.md`, about $42 of real
   calls): on 36 planted defects Model A caught 35 and Model B 36. On 8 real briefs every review setup fixed the
-  gate failures a single draft had, and a final check by the other vendor still found serious faults in all 8 that a
-  strict all-Claude panel had passed. Claude reviewing its own work found most of its mistakes but rated 4 of 5
+  gate failures a single draft had, and a final check by the other vendor raised 16 serious faults that a strict
+  all-Claude panel had passed; checked by hand, 7 were serious, 6 real but minor, 3 wrong. Claude reviewing its own work found most of its mistakes but rated 4 of 5
   serious ones as minor; that is why the final check comes from a different vendor.
 - **"What stops the models colluding?"** They are different vendors, they never see each other's drafts, the
   checks are code, the tests are written from the PRD and not the code, and a person approves at four gates.

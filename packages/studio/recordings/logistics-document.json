@@ -70,5 +70,6 @@
   "finalReview": {
     "findings": [],
     "strengths": "The decision correctly refunds the invoice value of 1,200 under R-4 and limits the carrier claim to 450 (18 kg times 25) under C-7, with the filing deadline correctly set at 2026-12-03."
-  }
+  },
+  "finalCheckedAt": "2026-11-11T17:00:44.389Z"
 }

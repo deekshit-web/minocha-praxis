@@ -70,5 +70,6 @@
   "finalReview": {
     "findings": [],
     "strengths": "The letter correctly appeals CLM-221 under LS-14 with DOC-318, the exact therapy dates, the 2026-08-20 service date, and the 2026-11-18 deadline, without changing the diagnosis."
-  }
+  },
+  "finalCheckedAt": "2026-11-11T16:56:09.641Z"
 }

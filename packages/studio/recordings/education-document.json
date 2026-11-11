@@ -108,5 +108,6 @@
   "finalReview": {
     "findings": [],
     "strengths": "Every unit-rate calculation checks out, the five-part flow matches the department guide, and the timed sections add to 45 minutes."
-  }
+  },
+  "finalCheckedAt": "2026-11-11T16:48:17.820Z"
 }
