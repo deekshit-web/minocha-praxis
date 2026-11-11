@@ -233,6 +233,24 @@
       .codeview .add { background: #d5ecdf; display: block; }
       .mutants { margin-top: 6px; font-size: 13.5px; }
       .mutants li { margin: 3px 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+      .livebrief { margin: 0 0 16px; border-color: var(--teal); }
+      .livebrief h2 { margin: 2px 0 6px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
+      .livebrief form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; margin-top: 8px; }
+      .livebrief label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; font-weight: 650; color: var(--teal-deep); }
+      .livebrief label.wide { grid-column: 1 / -1; }
+      .livebrief input, .livebrief select, .livebrief textarea { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; font-weight: 400; color: var(--ink); }
+      .livebrief textarea { min-height: 70px; resize: vertical; }
+      .livebrief .go { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; }
+      .livebrief .go button { border: 0; border-radius: 999px; padding: 10px 20px; background: var(--teal); color: #f7fffe; font: inherit; font-weight: 650; cursor: pointer; }
+      .livebrief .go button:disabled { opacity: 0.5; cursor: default; }
+      .livebrief .events { margin: 10px 0 0; padding: 0; list-style: none; }
+      .livebrief .events li { margin: 6px 0; padding: 8px 12px; border-radius: 8px; background: #fff; border: 1px solid var(--line); }
+      .livebrief .events li.pending { color: var(--muted); border-style: dashed; }
+      .livebrief .events .head { font-weight: 650; }
+      .livebrief .events .head span { font-weight: 400; color: var(--muted); }
+      .livebrief pre { margin: 6px 0 0; white-space: pre-wrap; font: 14px/1.5 ui-sans-serif, system-ui, sans-serif; }
+      .livebrief .final { margin-top: 10px; padding: 10px 14px; border-left: 3px solid var(--moss); background: #f3faf6; }
+      @media (max-width: 760px) { .livebrief form { grid-template-columns: 1fr; } }
       .testlab { margin-top: 14px; }
       .testlab h2 { margin: 2px 0 4px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
       .testlab .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
@@ -318,6 +336,21 @@
       </header>
 
       <section class="card proof" id="proof" hidden></section>
+
+      <section class="card livebrief" id="livebrief" hidden>
+        <p class="eyebrow">Live · your own brief</p>
+        <h2>Run the real panel on your own request</h2>
+        <p class="meta">Real models, right now: Model C routes it, then Model A and Model B draft, review each other and merge. About $0.10 and 3 to 6 minutes (Model B is the slow one). Please use made-up names and ids, never personal data.</p>
+        <form id="liveform">
+          <label>Passcode<input type="password" name="passcode" autocomplete="off" required /></label>
+          <label>Domain<select name="domain" id="livedomain"></select></label>
+          <label>What you want<select name="kind"><option value="document">A document or decision</option><option value="build">Requirements for a feature</option></select></label>
+          <label class="wide">Your brief<textarea name="brief" maxlength="1500" required placeholder="For example: Draft a reply to a supplier who delivered 120 of 200 cartons, asking for the rest within 5 days and a 10% credit."></textarea></label>
+          <label class="wide">Facts it should rely on (optional)<textarea name="facts" maxlength="2000" placeholder="Contract terms, policy rules, figures, dates."></textarea></label>
+          <div class="go"><button type="submit" id="livego">Run it live</button><span id="livemsg" class="meta"></span></div>
+        </form>
+        <div id="liveout"></div>
+      </section>
 
       <nav class="domains" id="domains" aria-label="Domains"></nav>
       <p id="domain-blurb" class="domain-blurb"></p>
@@ -1921,6 +1954,107 @@
           if (flow) render();
         })
         .catch(() => {});
+
+      // Live runs on a visitor's brief, shown only when the server has them switched on.
+      fetch("/api/live")
+        .then((response) => (response.ok ? response.json() : null))
+        .then((status) => {
+          if (!status || !status.enabled) return;
+          byId("livebrief").hidden = false;
+          const select = byId("livedomain");
+          fetch("/api/catalog")
+            .then((response) => response.json())
+            .then((catalog) => {
+              for (const domain of catalog) {
+                const option = document.createElement("option");
+                option.value = domain.id;
+                option.textContent = domain.name;
+                select.appendChild(option);
+              }
+            });
+        })
+        .catch(() => {});
+
+      const LIVE_STEPS = [
+        ["analystA", "Model A writes draft A"],
+        ["analystB", "Model B writes draft B"],
+        ["critiqueOfB", "Model A reviews draft B"],
+        ["critiqueOfA", "Model B reviews draft A"],
+        ["synthesizer", "Model A merges both drafts"],
+      ];
+      function renderLiveJob(job) {
+        const out = byId("liveout");
+        clear(out);
+        const add = (tag, value, className) => {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (value !== undefined) node.textContent = value;
+          return node;
+        };
+        if (job.route) {
+          const route = add("div", undefined, "final");
+          route.style.borderLeftColor = "var(--teal)";
+          route.style.background = "var(--sky)";
+          route.append(add("div", "Model C routed it, live:", "meta"), add("pre", job.route.text));
+          out.appendChild(route);
+        } else if (job.status === "running" && !job.events.length) out.appendChild(add("p", "Model C is judging how risky this is…", "meta"));
+        const list = add("ol", undefined, "events");
+        const steps = job.route && job.route.path === "single" ? [["single", "Model A writes it (one model, routed as low risk)"]] : LIVE_STEPS;
+        for (const [role, label] of steps) {
+          const event = job.events.find((item) => item.role === role);
+          const item = add("li", undefined, event ? "" : "pending");
+          const head = add("div", undefined, "head");
+          head.append(document.createTextNode((event ? "✓ " : job.status === "running" ? "… " : "– ") + label + " "), add("span", event ? "· " + event.model + " · " + event.seconds + " s · $" + event.costUsd.toFixed(4) : job.status === "running" ? "· working" : ""));
+          item.appendChild(head);
+          if (event && role !== "synthesizer") {
+            const details = add("details");
+            details.append(add("summary", "Show what it wrote"), add("pre", event.text));
+            item.appendChild(details);
+          }
+          list.appendChild(item);
+        }
+        out.appendChild(list);
+        if (job.status === "done") {
+          const final = add("div", undefined, "final");
+          final.append(add("div", "The result · " + (job.route && job.route.path === "single" ? "one model" : job.findings + " finding" + (job.findings === 1 ? "" : "s") + " raised in review") + " · $" + job.costUsd.toFixed(3) + " · " + job.seconds + " s, all real", "meta"), add("pre", job.final || ""));
+          out.appendChild(final);
+        }
+        if (job.status === "failed") out.appendChild(add("p", "The run stopped: " + (job.error || "an error") + ". Nothing more was charged.", "meta"));
+      }
+      byId("liveform").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const form = new FormData(event.target);
+        const body = Object.fromEntries(form.entries());
+        byId("livego").disabled = true;
+        text("livemsg", "Starting…");
+        fetch("/api/live/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })
+          .then((response) => response.json().then((json) => ({ ok: response.ok, json })))
+          .then(({ ok, json }) => {
+            if (!ok) {
+              text("livemsg", json.error || "It could not start.");
+              byId("livego").disabled = false;
+              return;
+            }
+            text("livemsg", "Running live. You can watch each call arrive.");
+            const poll = () =>
+              fetch("/api/live/jobs/" + json.jobId)
+                .then((response) => response.json())
+                .then((job) => {
+                  renderLiveJob(job);
+                  if (job.status === "running") setTimeout(poll, 1500);
+                  else {
+                    text("livemsg", job.status === "done" ? "Done." : "Stopped.");
+                    byId("livego").disabled = false;
+                  }
+                })
+                .catch(() => setTimeout(poll, 3000));
+            poll();
+          })
+          .catch(() => {
+            text("livemsg", "The server could not be reached.");
+            byId("livego").disabled = false;
+          });
+      });
 
       fetch("/api/evidence")
         .then((response) => (response.ok ? response.json() : null))
