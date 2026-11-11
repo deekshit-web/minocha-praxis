@@ -1,0 +1,46 @@
+{
+  "id": "education-document",
+  "risk": "medium",
+  "skippedReviewOfA": true,
+  "mergePath": "full-merge",
+  "decisions": [
+    {
+      "gate": "skip-review",
+      "question": "Does draft A fully and correctly meet the brief, with no wrong figure, no broken rule and nothing important missing?",
+      "answer": "yes",
+      "confidence": 0.7,
+      "ms": 5292,
+      "costUsd": 0.000029694000000000004
+    },
+    {
+      "gate": "skip-merge",
+      "question": "Reviewers rate findings P0 (blocking), P1 (should be fixed before approval) or P2 (optional). Does any finding here have to be fixed before this is approved?",
+      "answer": "yes",
+      "confidence": 0.87,
+      "ms": 308,
+      "costUsd": 0.000024066000000000003
+    },
+    {
+      "gate": "cheap-merge",
+      "question": "Can every finding here be resolved by adding or clarifying text, without changing a figure, a rule, a date or the decision itself?",
+      "answer": "yes",
+      "confidence": 0.51,
+      "ms": 308,
+      "costUsd": 0.000023688000000000004
+    }
+  ],
+  "full": {
+    "costUsd": 0.18491375,
+    "seconds": 284.4,
+    "findings": 5,
+    "final": "Lesson Plan: Unit Rates with Fractions\nGrade 7. Standard 7.RP.A.1: compute unit rates associated with ratios of fractions, including ratios of lengths, areas and other quantities measured in like or different units.\nClass: 28 students. 4 need reading support. All word problems use short sentences, the teacher reads each item aloud once, and these 4 students are paired with a partner for guided and independent practice.\nTotal time: 45 minutes (5 + 10 + 10 + 12 + 8). Order: warm-up, worked example, guided practice, independent practice, exit quiz.\n\nWarm-up (5 min): 1/2 cup of flour makes 1/4 batch. Cups per batch? Share answers aloud. Answer: 2 cups per batch.\n\nWorked example (10 min): A car goes 2/3 mile in 1/4 hour. Divide 2/3 by 1/4. Multiply by the reciprocal: 2/3 x 4 = 8/3. Rate is 8/3 miles per hour.\n\nGuided practice (10 min): Pairs solve two problems. Teacher checks each pair.\nG1. A painter covers 3/4 square foot in 1/2 minute. Square feet per minute? Answer: 3/2.\nG2. A painter covers 2/3 wall in 1/3 hour. Walls per hour? Answer: 2.\n\nIndependent practice (12 min): Students solve four problems alone.\nI1. 1/2 liter flows in 1/5 minute. Liters per minute? Answer: 5/2.\nI2. A snail moves 5/6 yard in 1/3 hour. Yards per hour? Answer: 5/2.\nI3. Rope: 1/5 kilogram costs 2 dollars. Dollars per kilogram? Answer: 10.\nI4. Paint covers 1/2 square meter with 1/4 liter. Square meters per liter? Answer: 2.\n\nExit quiz (8 min): 5 questions below.\n\nQuiz\n1. A recipe uses 3/4 cup flour for 1/2 batch. Cups per batch?\n2. Paint: 2/5 cup covers 1/10 wall. Cups per wall?\n3. A beetle walks 1/3 meter in 1/6 minute. Meters per minute?\n4. A bus goes 7/8 km in 1/4 hour. Km per hour?\n5. Paint covers 3/5 square meter with 1/4 liter. Square meters per liter?\n\nAnswer Key\n1. 3/4 divided by 1/2 = 3/2 cups per batch\n2. 2/5 divided by 1/10 = 4 cups per wall\n3. 1/3 divided by 1/6 = 2 meters per minute\n4. 7/8 divided by 1/4 = 7/2 km per hour\n5. 3/5 divided by 1/4 = 12/5 square meters per liter"
+  },
+  "gated": {
+    "costUsd": 0.18119119800000003,
+    "seconds": 159.90800000000002,
+    "findings": 3,
+    "final": "Lesson Plan: Unit Rates with Fractions\nGrade 7. Standard 7.RP.A.1: compute unit rates associated with ratios of fractions, including ratios of lengths, areas and other quantities measured in like or different units.\nClass: 28 students. 4 need reading support. All word problems use short sentences, the teacher reads each item aloud once, and these 4 students are paired with a partner for guided and independent practice.\nTotal time: 45 minutes (5 + 10 + 10 + 12 + 8). Order: warm-up, worked example, guided practice, independent practice, exit quiz.\n\nWarm-up (5 min): 1/2 cup of flour makes 1/4 batch. Cups per batch? Share answers aloud. Answer: 2 cups per batch.\n\nWorked example (10 min): A car goes 2/3 mile in 1/4 hour. Divide 2/3 by 1/4. Multiply by the reciprocal: 2/3 x 4 = 8/3. Rate is 8/3 miles per hour.\n\nGuided practice (10 min): Pairs solve two problems. Teacher checks each pair.\nG1. A painter covers 3/4 square foot in 1/2 minute. Square feet per minute? Answer: 3/2.\nG2. A painter covers 2/3 wall in 1/3 hour. Walls per hour? Answer: 2.\n\nIndependent practice (12 min): Students solve four problems alone.\nI1. 1/2 liter flows in 1/5 minute. Liters per minute? Answer: 5/2.\nI2. A snail moves 5/6 yard in 1/3 hour. Yards per hour? Answer: 5/2.\nI3. Rope: 1/5 kilogram costs 2 dollars. Dollars per kilogram? Answer: 10.\nI4. Paint covers 1/2 square meter with 1/4 liter. Square meters per liter? Answer: 2.\n\nExit quiz (8 min): 5 questions below.\n\nQuiz\n1. A recipe uses 3/4 cup flour for 1/2 batch. Cups per batch?\n2. Paint: 2/5 cup covers 1/10 wall. Cups per wall?\n3. A beetle walks 1/3 meter in 1/6 minute. Meters per minute?\n4. A bus goes 7/8 km in 1/4 hour. Km per hour?\n5. Paint covers 3/5 square meter with 1/4 liter. Square meters per liter?\n\nAnswer Key\n1. 3/4 divided by 1/2 = 3/2 cups per batch\n2. 2/5 divided by 1/10 = 4 cups per wall\n3. 1/3 divided by 1/6 = 2 meters per minute\n4. 7/8 divided by 1/4 = 7/2 km per hour\n5. 3/5 divided by 1/4 = 12/5 square meters per liter",
+    "newCalls": []
+  },
+  "judges": null
+}

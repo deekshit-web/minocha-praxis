@@ -1,0 +1,46 @@
+{
+  "id": "logistics-build",
+  "risk": "medium",
+  "skippedReviewOfA": false,
+  "mergePath": "full-merge",
+  "decisions": [
+    {
+      "gate": "skip-review",
+      "question": "Does draft A fully and correctly meet the brief, with no wrong figure, no broken rule and nothing important missing?",
+      "answer": "no",
+      "confidence": 0.75,
+      "ms": 397,
+      "costUsd": 0.000029820000000000002
+    },
+    {
+      "gate": "skip-merge",
+      "question": "Reviewers rate findings P0 (blocking), P1 (should be fixed before approval) or P2 (optional). Does any finding here have to be fixed before this is approved?",
+      "answer": "yes",
+      "confidence": 0.95,
+      "ms": 310,
+      "costUsd": 0.000027342000000000004
+    },
+    {
+      "gate": "cheap-merge",
+      "question": "Can every finding here be resolved by adding or clarifying text, without changing a figure, a rule, a date or the decision itself?",
+      "answer": "yes",
+      "confidence": 0.61,
+      "ms": 305,
+      "costUsd": 0.000026964000000000005
+    }
+  ],
+  "full": {
+    "costUsd": 0.16634725,
+    "seconds": 217.1,
+    "findings": 3,
+    "final": "REQ-1 Trigger: send a delay notification when the carrier's latest ETA is more than 2 hours after the promised delivery time; a gap of exactly 2 hours or less does not trigger.\nREQ-2 Source of truth is the carrier's latest ETA only, received in UTC.\nREQ-3 Comparison: convert the promised time and the ETA to a common basis (UTC) before measuring lateness, since the ETA arrives in UTC and the promised time is local.\nREQ-4 Display: every time shown to the customer (promised time and new estimate) is rendered in the delivery address's local time.\nREQ-5 Count: at most two notifications per shipment. The first on the initial breach; the second only if a new ETA is more than 2 hours later than the ETA used in the first notification. No third notification. (The requester did not state the exact boundary for the further slip; it is aligned with REQ-1's strict \"more than\".)\nAC-1 Promised 2024-06-10 15:00 local at a New York address (UTC-4) = 19:00 UTC; carrier ETA 21:30 UTC is 2h30m late, so notify, showing new estimate 17:30 local on 2024-06-10.\nAC-2 Same shipment, carrier ETA 21:00 UTC is exactly 2h late: no notification.\nAC-3 After the AC-1 notification (ETA 21:30 UTC), a new ETA of 23:30 UTC is a further slip of exactly 2h: no second notification.\nAC-4 After the AC-1 notification, a new ETA of 23:31 UTC is a 2h01m further slip: send the second notification showing 19:31 local; no further notifications for this shipment.\nAC-5 After the AC-1 notification, a new ETA of 23:00 UTC is only a 1h30m slip: no second notification, even though it is 4 hours past the promised time.\nAC-6 Promised 12:00 local at a UTC-4 delivery address; ETA 18:01 UTC = 14:01 local, 2h01m late: notify and show 14:01 local."
+  },
+  "gated": {
+    "costUsd": 0.166431376,
+    "seconds": 218.112,
+    "findings": 3,
+    "final": "REQ-1 Trigger: send a delay notification when the carrier's latest ETA is more than 2 hours after the promised delivery time; a gap of exactly 2 hours or less does not trigger.\nREQ-2 Source of truth is the carrier's latest ETA only, received in UTC.\nREQ-3 Comparison: convert the promised time and the ETA to a common basis (UTC) before measuring lateness, since the ETA arrives in UTC and the promised time is local.\nREQ-4 Display: every time shown to the customer (promised time and new estimate) is rendered in the delivery address's local time.\nREQ-5 Count: at most two notifications per shipment. The first on the initial breach; the second only if a new ETA is more than 2 hours later than the ETA used in the first notification. No third notification. (The requester did not state the exact boundary for the further slip; it is aligned with REQ-1's strict \"more than\".)\nAC-1 Promised 2024-06-10 15:00 local at a New York address (UTC-4) = 19:00 UTC; carrier ETA 21:30 UTC is 2h30m late, so notify, showing new estimate 17:30 local on 2024-06-10.\nAC-2 Same shipment, carrier ETA 21:00 UTC is exactly 2h late: no notification.\nAC-3 After the AC-1 notification (ETA 21:30 UTC), a new ETA of 23:30 UTC is a further slip of exactly 2h: no second notification.\nAC-4 After the AC-1 notification, a new ETA of 23:31 UTC is a 2h01m further slip: send the second notification showing 19:31 local; no further notifications for this shipment.\nAC-5 After the AC-1 notification, a new ETA of 23:00 UTC is only a 1h30m slip: no second notification, even though it is 4 hours past the promised time.\nAC-6 Promised 12:00 local at a UTC-4 delivery address; ETA 18:01 UTC = 14:01 local, 2h01m late: notify and show 14:01 local.",
+    "newCalls": []
+  },
+  "judges": null
+}

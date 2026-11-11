@@ -174,6 +174,12 @@ export async function recordPanel(spec: WorkflowSpec, panel: Panel, now = () => 
 
 const RECORDING_DIR = () => join(repoRoot(), "packages/studio/recordings");
 
+/** The Jev-gated comparison for a workflow, if it has been run (see gated.ts). */
+export function gatedFor(id: string, dir = RECORDING_DIR()): unknown | null {
+  const path = join(dir, "gated", `${id}.json`);
+  return existsSync(path) ? (JSON.parse(readFileSync(path, "utf8")) as unknown) : null;
+}
+
 /** A workflow's recording, if one has been made. */
 export function recordingFor(id: string, dir = RECORDING_DIR()): Recording | null {
   const path = join(dir, `${id}.json`);

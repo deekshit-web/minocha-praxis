@@ -12,7 +12,8 @@
     "rcm": "node scripts/rcm.mjs",
     "live-prd": "node scripts/live-prd.mjs",
     "studio": "node scripts/studio.mjs",
-    "record-panels": "node scripts/record-panels.mjs"
+    "record-panels": "node scripts/record-panels.mjs",
+    "compare-gated": "node scripts/compare-gated.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

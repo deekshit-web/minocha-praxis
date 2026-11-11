@@ -1,0 +1,112 @@
+{
+  "id": "education-build",
+  "risk": "high",
+  "skippedReviewOfA": false,
+  "mergePath": "cheap-merge",
+  "decisions": [
+    {
+      "gate": "skip-merge",
+      "question": "Reviewers rate findings P0 (blocking), P1 (should be fixed before approval) or P2 (optional). Does any finding here have to be fixed before this is approved?",
+      "answer": "yes",
+      "confidence": 0.93,
+      "ms": 380,
+      "costUsd": 0.000028980000000000004
+    },
+    {
+      "gate": "cheap-merge",
+      "question": "Can every finding here be resolved by adding or clarifying text, without changing a figure, a rule, a date or the decision itself?",
+      "answer": "yes",
+      "confidence": 0.83,
+      "ms": 373,
+      "costUsd": 0.000028602000000000005
+    }
+  ],
+  "full": {
+    "costUsd": 0.15450524999999998,
+    "seconds": 160,
+    "findings": 4,
+    "final": "REQ-1: For each year 7 student, the system evaluates two signals each school day: attendance percentage over the last 20 school days, and the count of failing grades in the current term.\nREQ-2: A student is flagged at risk if either condition holds: attendance below 90% over the last 20 school days, OR two or more failing grades in the current term. Either condition alone is sufficient.\nREQ-3: The flag is visible only to the student's assigned counsellor and the head of year 7; it is not shown to any other staff, the student, or parents.\nREQ-4: The flag appears in the counsellor's and head of year's view on the school day the condition is first met, so follow-up can occur within a week.\nREQ-5: The flag clears automatically when neither condition has held for 10 consecutive school days; it does not clear earlier, needs no manual action, and any recurrence of either condition within the window restarts the 10-day count.\nAC-1: Student present 17 of the last 20 school days (85%) with no failing grades -> flagged, on the attendance condition alone.\nAC-2: Student present 18 of the last 20 school days (exactly 90%) with one failing grade this term -> not flagged, because 90% is not below 90% and 1 is fewer than 2.\nAC-3: Student present 20 of the last 20 school days (100%) with exactly two failing grades this term -> flagged, on the grades condition alone; the flag is visible to the counsellor and head of year 7 the same school day, leaving the rest of the week for follow-up.\nAC-4: Student at 85% attendance with three failing grades (both conditions, grades above the threshold) -> flagged once, and remains flagged while either condition holds.\nAC-5: For a flagged student, the assigned counsellor and the head of year 7 see the flag; a class teacher, office staff, the student, and a parent opening the same record see no flag and no indication one exists.\nAC-6: A flagged student whose attendance returns to 92% and who has one failing grade: the flag is still shown on school day 9 after both conditions stopped holding, and clears automatically at the end of school day 10 provided neither condition recurred; if attendance drops to 88% on day 6, the 10-day count restarts from that day."
+  },
+  "gated": {
+    "costUsd": 0.095615332,
+    "seconds": 293.46299999999997,
+    "findings": 4,
+    "final": "REQ-1: For each year 7 student, the system evaluates two signals each school day: attendance percentage over the last 20 school days, and count of failing grades in the current term.\nREQ-2: A student is flagged at risk if either condition holds: attendance below 90% over the last 20 school days, or two or more failing grades in the current term. Either condition alone is sufficient, so the counsellor can follow up within a week.\nREQ-3: The flag is visible only to the student's assigned counsellor and the head of year 7; it is not shown to any other staff, the student, or parents.\nREQ-4: The flag clears automatically when neither condition has held for 10 consecutive school days; it does not clear earlier, a recurring condition restarts the count, and it needs no manual action.\nAC-1: Student present 17 of the last 20 school days (85%) with no failing grades is flagged on the attendance condition alone; the flag is visible only to that student's counsellor and the head of year 7, not to teachers, office staff, the student, or parents.\nAC-2: Student present 18 of the last 20 school days (exactly 90%) with one failing grade this term is not flagged, because 90% is not below 90% and 1 is fewer than 2.\nAC-3: Student present 19 of the last 20 school days (95%) with three failing grades this term is flagged on the grades condition alone; a student present 17 of 20 (85%) with two failing grades is flagged because both conditions hold; the flag appears in the counsellor's and head of year's view the same school day, so follow-up can occur within a week.\nAC-4: A flagged student at 19 of the last 20 school days (95%) with one failing grade still shows the flag on school day 9 after both conditions stopped holding, and the flag clears automatically at the end of school day 10 if neither condition recurred; if attendance is 17 of the last 20 (85%) on day 6, the 10-day count restarts.",
+    "newCalls": [
+      {
+        "role": "cheap-merge",
+        "model": "grok-4.7",
+        "seconds": 161.41,
+        "costUsd": 0.00852
+      }
+    ]
+  },
+  "judges": {
+    "claude": {
+      "findings": [
+        {
+          "id": "D-B1",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B2",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B3",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B4",
+          "version1": "addressed",
+          "version2": "addressed"
+        }
+      ],
+      "errorsInVersion1": [
+        "AC-3 tests the exactly-two-failing-grades boundary only in a case where attendance is also 85%, so both conditions hold at once; the minimum grade threshold is never isolated with passing attendance (one-grade no-flag and three-grade flag are covered, exactly two alone is not).",
+        "ACs bundle several distinct checks into one criterion (AC-3 covers grades-only, both-conditions and same-day timeliness), which weakens their use as discrete pass/fail tests, though no rule or figure is wrong."
+      ],
+      "errorsInVersion2": [
+        "AC-6 uses 92% attendance over the last 20 school days; with a 20-day window only multiples of 5% are possible (18/20 = 90%, 19/20 = 95%), so this test case cannot be constructed.",
+        "AC-6 also uses 88% attendance on day 6; again not achievable over 20 school days (17/20 = 85%, 18/20 = 90%). The intent (below 90%) is clear but the figure is wrong.",
+        "REQ-4 and AC-3 establish same-day visibility to the counsellor but still define no notification mechanism, so 'reaches them in time' rests on the counsellor opening the view."
+      ],
+      "preferred": "2",
+      "reason": "Version 2 covers the same rules and thresholds correctly but gives the two P1 gaps dedicated, independently testable coverage (REQ-4 for the within-a-week timeline and AC-5 for the negative visibility test) plus separate criteria for the exactly-two and three-grade cases, which outweighs its two impossible attendance percentages in AC-6 (92% and 88% are unattainable over a 20-day window).",
+      "costUsd": 0.0843075
+    },
+    "grok": {
+      "findings": [
+        {
+          "id": "D-B1",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B2",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B3",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B4",
+          "version1": "addressed",
+          "version2": "addressed"
+        }
+      ],
+      "errorsInVersion1": [],
+      "errorsInVersion2": [],
+      "preferred": "2",
+      "reason": "Version 2 is better because it makes same-day counsellor visibility its own requirement and gives separate tests for unauthorized access, the exact two-grade boundary, three failing grades with both conditions, and a consecutive ten-day clear that restarts on recurrence, while Version 1 only embeds those checks in other cases.",
+      "costUsd": 0.005626
+    },
+    "fullIsVersion": "2"
+  }
+}

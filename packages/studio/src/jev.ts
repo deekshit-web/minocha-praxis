@@ -45,6 +45,39 @@ function readAnswer(raw: unknown): DecisionAnswer | null {
   return null;
 }
 
+/** One question for askJev: a yes/no, or a choice between named options. */
+export interface JevQuestion {
+  type: "noul" | "choice";
+  instructions: string;
+  criteria?: Record<string, string>;
+}
+
+/** Asks the decision model typed questions about some state, and returns its answers, tokens and time. */
+export async function askJev(
+  state: string,
+  questions: Record<string, JevQuestion>,
+  options: { apiKey?: string; fetchImpl?: typeof fetch } = {},
+): Promise<{ answers: Record<string, DecisionAnswer>; inputTokens: number; ms: number; model: string }> {
+  const apiKey = options.apiKey ?? process.env.JEV_API_KEY;
+  if (!apiKey) throw new Error("JEV_API_KEY is not set.");
+  const started = Date.now();
+  const response = await (options.fetchImpl ?? fetch)(ENDPOINT, {
+    method: "POST",
+    headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+    body: JSON.stringify({ model: JEV_MODEL, state, questions }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) throw new Error(`jev ${response.status}`);
+  const body = (await response.json()) as { model?: string; answers?: Record<string, unknown>; usage?: { input_tokens?: number } };
+  const answers: Record<string, DecisionAnswer> = {};
+  for (const key of Object.keys(questions)) {
+    const answer = readAnswer(body.answers?.[key]);
+    if (!answer) throw new Error(`jev answer unreadable: ${key}`);
+    answers[key] = answer;
+  }
+  return { answers, inputTokens: body.usage?.input_tokens ?? 0, ms: Date.now() - started, model: body.model ?? JEV_MODEL };
+}
+
 /**
  * Model C's decisions, live when a key is set. Each workflow's questions are fixed, so visitors cannot send
  * their own text; answers are cached, and a daily cap bounds the spend. Anything else falls back to the replay.

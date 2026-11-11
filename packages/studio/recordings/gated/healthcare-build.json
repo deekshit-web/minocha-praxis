@@ -1,0 +1,95 @@
+{
+  "id": "healthcare-build",
+  "risk": "high",
+  "skippedReviewOfA": false,
+  "mergePath": "cheap-merge",
+  "decisions": [
+    {
+      "gate": "skip-merge",
+      "question": "Reviewers rate findings P0 (blocking), P1 (should be fixed before approval) or P2 (optional). Does any finding here have to be fixed before this is approved?",
+      "answer": "yes",
+      "confidence": 0.77,
+      "ms": 305,
+      "costUsd": 0.000029736000000000005
+    },
+    {
+      "gate": "cheap-merge",
+      "question": "Can every finding here be resolved by adding or clarifying text, without changing a figure, a rule, a date or the decision itself?",
+      "answer": "yes",
+      "confidence": 0.79,
+      "ms": 310,
+      "costUsd": 0.000029358000000000003
+    }
+  ],
+  "full": {
+    "costUsd": 0.1668965,
+    "seconds": 150,
+    "findings": 3,
+    "final": "REQ-1: The readiness gate applies only to CO-50 medical-necessity denials; denials of any other class are unaffected.\nREQ-2: On a CO-50 denial, \"Mark appeal packet ready\" is blocked unless both are present: a non-empty clinical-note reference in DOC-### form, and a filing-deadline date. A value that is blank, whitespace, or not in DOC-### form counts as missing.\nREQ-3: The filing deadline is date of service plus 90 days (Northwind Health timely filing); the system computes it from DOS and stores it as the deadline field.\nREQ-4: No role may override the gate in v1; when blocked, the button label names exactly which of the two items is missing.\nAC-1: CO-50, DOS 2024-03-01 gives deadline 2024-05-30, note ref DOC-204 present: button is enabled and the packet is marked ready. (Date checks: DOS 2025-01-15 gives 2025-04-15; DOS 2025-01-01 gives 2025-04-01.)\nAC-2: CO-50 with deadline 2024-05-30 present but note ref blank: blocked, button reads \"Add clinical note reference\".\nAC-3: CO-50 with deadline present and note ref \"DOC-\", \"ABC-123\", or \" \": each is treated as missing, blocked, button reads \"Add clinical note reference\".\nAC-4: CO-50 with DOC-204 present but no deadline: blocked, button reads \"Add filing deadline\".\nAC-5: CO-50 with both items missing: blocked, button reads \"Add clinical note reference and filing deadline\".\nAC-6: A non-CO-50 denial with both fields empty can still be marked ready.\nAC-7: A specialist, and any other role, attempting to mark a blocked CO-50 packet ready (including by direct action outside the button) is refused; the packet stays not ready and no override path exists."
+  },
+  "gated": {
+    "costUsd": 0.09609834399999999,
+    "seconds": 219.178,
+    "findings": 3,
+    "final": "REQ-1: The readiness gate applies only to CO-50 medical-necessity denials; denials of any other class are unaffected by it.\nREQ-2: On a CO-50 denial, Mark appeal packet ready is blocked unless both are present: a non-empty clinical-note id in DOC-### form, and a filing-deadline date. A blank, whitespace, or malformed value (for example \" \", \"DOC-\", or \"ABC-123\") is not a DOC-### id and counts as missing.\nREQ-3: The filing deadline is date of service plus 90 days (Northwind Health timely filing); the system computes it from the date of service and stores it as the deadline field.\nREQ-4: No role may override the gate in v1. When blocked, the button names exactly what is missing.\nAC-1: CO-50 with DOC-204 and date of service 2024-03-01 stores deadline 2024-05-30 and may be marked ready. Date of service 2025-01-15 stores 2025-04-15. Date of service 2025-01-01 stores 2025-04-01.\nAC-2: CO-50 with a deadline present but note id blank, \" \", \"DOC-\", or \"ABC-123\" is blocked, and the button reads \"Add clinical note reference\".\nAC-3: CO-50 with DOC-204 and no date of service is blocked, and the button reads \"Add filing deadline\".\nAC-4: CO-50 missing both the note id and the deadline is blocked, and the button reads \"Add clinical note reference and filing deadline\".\nAC-5: A non-CO-50 denial with both fields empty can still be marked ready.\nAC-6: A specialist or any other role who tries to bypass a blocked CO-50 fails; the packet stays not ready and there is no override path.",
+    "newCalls": [
+      {
+        "role": "cheap-merge",
+        "model": "grok-4.7",
+        "seconds": 100.863,
+        "costUsd": 0.007744
+      }
+    ]
+  },
+  "judges": {
+    "claude": {
+      "findings": [
+        {
+          "id": "D-B1",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B2",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B3",
+          "version1": "addressed",
+          "version2": "addressed"
+        }
+      ],
+      "errorsInVersion1": [],
+      "errorsInVersion2": [],
+      "preferred": "1",
+      "reason": "Both are factually correct (CO-50 only, DOC-### required, DOS+90 deadlines 2024-05-30, 2025-04-15 and 2025-04-01 all verified, no override), but Version 1 splits the scenarios more finely, giving blank values, malformed values, each single-missing case, the both-missing case, the non-CO-50 exemption and the override attempt their own pass/fail criteria, whereas Version 2 still bundles blank and three malformed values into one compound criterion.}",
+      "costUsd": 0.03859125
+    },
+    "grok": {
+      "findings": [
+        {
+          "id": "D-B1",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B2",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B3",
+          "version1": "addressed",
+          "version2": "addressed"
+        }
+      ],
+      "errorsInVersion1": [],
+      "errorsInVersion2": [],
+      "preferred": "1",
+      "reason": "Version 1 is better because it isolates malformed note ids, a missing deadline, the non-CO-50 exemption, and a failed override into separate pass/fail tests, while Version 2 still bundles blank and malformed ids and tests a missing date of service rather than a missing deadline.",
+      "costUsd": 0.005278
+    },
+    "fullIsVersion": "1"
+  }
+}
