@@ -30,16 +30,28 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { FEATURE_B_BRIEF, RULES, groundedCitations, questionPanel } from "./panels.ts";
 
+/** One decision from the question round: what was asked and what the requester chose. */
+export interface Decision {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+/** Feature B's question round with the suggested answers chosen, as the factory runs it. */
+export function featureBDecisions(): Decision[] {
+  return questionPanel().synthesis.questions.map((question) => {
+    const option = question.options.find((item) => item.id === question.defaultOptionId);
+    return { id: question.id, question: question.prompt, answer: `${option?.label}. ${option?.consequence ?? ""}`.trim() };
+  });
+}
+
 /**
  * Everything every PRD seat is told: the brief, the question-round answers, the CARC table,
  * the pack files retrieval finds for the brief, and the document conventions. The gates are not
  * restated as rules to satisfy; they judge the result.
  */
-export function prdContext(brief: string): string {
-  const answers = questionPanel().synthesis.questions.map((question) => {
-    const option = question.options.find((item) => item.id === question.defaultOptionId);
-    return `- ${question.id} ${question.prompt} Answer: ${option?.label}. ${option?.consequence ?? ""}`;
-  });
+export function prdContext(brief: string, decisions: Decision[] = featureBDecisions()): string {
+  const answers = decisions.map((item) => `- ${item.id} ${item.question} Answer: ${item.answer}`);
   const carc = CARC_RULES.map((rule) => `| ${rule.code} | ${rule.carcClass} | ${rule.meaning} | ${rule.nextAction} |`);
   const pack = relevant(loadPack(join(repoRoot(), "packages/knowledge/pack")), intakeNouns(brief)).map(
     (chunk) => `### pack/${chunk.path}\n\n${chunk.text}`,
@@ -58,7 +70,7 @@ export function prdContext(brief: string): string {
       "- Every P0 criterion is exercised by at least one scenario. A scenario names the role acting, the starting state, the steps, and the expected result.",
       "- Propose three screens, each tied to the scenarios it serves.",
       "- Use only synthetic identifiers shaped PAT-###, CLM-###, and DOC-###. Never write a real name, SSN, MRN, phone number, email address, or date of birth.",
-      "- List anything still undecided under openQuestions.",
+      "- When the decisions above do not settle something, you may propose an answer, but list it under openQuestions as \"Proposed: <answer>. Needs sign-off.\" and never state it elsewhere as agreed. Anything you cannot propose goes under openQuestions as \"Open: <question>\".",
     ].join("\n"),
   ].join("\n\n");
 }
@@ -96,7 +108,7 @@ export function livePrdSeats(): Record<PanelRole, SeatSpec> {
         "In the rationale, say what you kept from A and from B, and what you rejected and why.",
         "List every defect id raised in either critique as resolved or unresolved. Resolve every P0.",
         "Write one finding per quality attribute saying how the merged PRD meets it.",
-        "The merged PRD goes to approval, so it leaves no open questions.",
+        "Anything the decisions did not settle stays under openQuestions as a flagged proposal or open question for the approver; never state it as agreed.",
       ].join(" "),
       schema: synthesisSchema(PrdSchema),
       // A PRD nested in the synthesis wrapper is too large for the API to compile into a grammar.
@@ -269,4 +281,82 @@ export function withChains(runs: LiveRunSummary[]): LiveRunSummary[] {
     }
     return { ...run, chainCostUsd: cost, chainDurationMs: duration };
   });
+}
+
+/** One seat of a live run as the factory shows it: who answered, the real time and cost of the call that succeeded. */
+export interface LiveSeat {
+  role: PanelRole;
+  model: string | null;
+  durationMs: number | null;
+  costUsd: number | null;
+  quality: SeatQuality | null;
+}
+
+/** The latest live PRD run whose gates passed, ready to show beside the recorded run. */
+export interface LiveShowcase {
+  file: string;
+  brief: string;
+  /** Runs in its resume chain that made a model call. A free re-check does not count. */
+  paidAttempts: number;
+  chainCostUsd: number | null;
+  chainDurationMs: number | null;
+  panel: ReviewPanel<Prd>;
+  seats: LiveSeat[];
+}
+
+const SEATS: PanelRole[] = ["analystA", "analystB", "critiqueOfA", "critiqueOfB", "synthesizer"];
+
+/**
+ * A re-check replays every seat in no time, so a seat's real time and cost come from the attempt where it ran
+ * live and succeeded. In a failed attempt a seat succeeded only if its answer was saved; the seat it stopped on
+ * is skipped there, though its cost still counts in the chain.
+ */
+export function loadLiveShowcase(dir = join(repoRoot(), "runs/live")): LiveShowcase | null {
+  const summaries = readLiveRuns(dir);
+  const best = summaries.find((run) => run.verdict === "pass");
+  if (!best) return null;
+  const load = (file: string): SavedLiveRun | null => {
+    try {
+      const saved = JSON.parse(readFileSync(join(dir, file), "utf8")) as SavedLiveRun;
+      return "format" in saved ? saved : null;
+    } catch {
+      return null;
+    }
+  };
+  const latest = load(best.file);
+  if (!latest?.panel) return null;
+  const chain: SavedLiveRun[] = [];
+  const seen = new Set<string>();
+  for (let file: string | undefined = best.file; file && !seen.has(file); ) {
+    seen.add(file);
+    const run = load(file);
+    if (!run) break;
+    chain.unshift(run);
+    file = run.resumedFrom;
+  }
+  const seats = SEATS.map((role): LiveSeat => {
+    let ran: CallMetric | undefined;
+    for (const run of chain) {
+      const succeeded = !run.failure || (run.answers ?? []).some((answer) => answer.role === role);
+      const metric = run.metrics.find((item) => item.role === role && item.source === "live");
+      if (metric && succeeded) ran = metric;
+    }
+    const final = latest.metrics.find((metric) => metric.role === role);
+    return {
+      role,
+      model: ran?.model ?? final?.model ?? null,
+      durationMs: ran?.durationMs ?? null,
+      costUsd: ran?.costUsd ?? null,
+      quality: latest.quality?.[role] ?? null,
+    };
+  });
+  return {
+    file: best.file,
+    brief: latest.brief,
+    paidAttempts: chain.filter((run) => run.metrics.some((metric) => metric.source === "live")).length,
+    chainCostUsd: best.chainCostUsd,
+    chainDurationMs: best.chainDurationMs,
+    panel: latest.panel,
+    seats,
+  };
 }

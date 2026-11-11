@@ -1,0 +1,67 @@
+{
+  "about": "Part A: does a review catch a planted defect the code gates cannot? baseline = Claude Opus 5.5 reviews; v1 = Grok 4.7 reviews.",
+  "metrics": [
+    {
+      "id": "detected",
+      "label": "Detected",
+      "kind": "float",
+      "scale": 1
+    },
+    {
+      "id": "detected_p0",
+      "label": "Caught as P0",
+      "kind": "float",
+      "scale": 1
+    },
+    {
+      "id": "p0_raised",
+      "label": "P0s raised",
+      "kind": "float",
+      "scale": 10,
+      "better": "lower"
+    },
+    {
+      "id": "defects_raised",
+      "label": "Defects",
+      "kind": "float",
+      "scale": 20
+    }
+  ],
+  "perf_fields": [
+    {
+      "id": "cost_usd",
+      "label": "Model cost",
+      "unit": "$"
+    },
+    {
+      "id": "judge_cost_usd",
+      "label": "Jury cost",
+      "unit": "$"
+    },
+    {
+      "id": "latency_s",
+      "label": "Model time",
+      "unit": "s"
+    },
+    {
+      "id": "calls",
+      "label": "Calls"
+    }
+  ],
+  "harness_paths": [
+    "packages/harness/src/evalMain.ts",
+    "packages/harness/src/evalRun.ts",
+    "packages/harness/src/evalCases.ts",
+    "packages/harness/src/live.ts",
+    "packages/orchestrator/src/claude.ts",
+    "packages/orchestrator/src/grok.ts",
+    "packages/orchestrator/src/provider.ts",
+    "packages/orchestrator/src/schemas.ts",
+    "packages/orchestrator/src/pricing.ts",
+    "evals/prd-panel/part-a.json",
+    "evals/prd-panel/part-b.json",
+    "evals/prd-panel/bases/live-synthesis.json",
+    "evals/prd-panel/bases/recorded.json"
+  ],
+  "harness_sha": "65c0151fd455684bae24c9b41c423e8443bcb226d236709493b4e4ab46318345"
+}

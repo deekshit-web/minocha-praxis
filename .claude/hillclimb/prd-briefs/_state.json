@@ -1,0 +1,59 @@
+{
+  "about": "Part B: final PRD quality on new briefs. baseline = single Claude draft; v1 = self-review; v2 = all-Claude panel; v3 = Claude + Grok panel.",
+  "metrics": [
+    {
+      "id": "checklist",
+      "label": "Checklist",
+      "kind": "float",
+      "scale": 1
+    },
+    {
+      "id": "gates_pass",
+      "label": "Gates pass",
+      "kind": "binary"
+    },
+    {
+      "id": "win_vs_single",
+      "label": "Beats single",
+      "kind": "float",
+      "scale": 1
+    }
+  ],
+  "perf_fields": [
+    {
+      "id": "cost_usd",
+      "label": "Model cost",
+      "unit": "$"
+    },
+    {
+      "id": "judge_cost_usd",
+      "label": "Jury cost",
+      "unit": "$"
+    },
+    {
+      "id": "latency_s",
+      "label": "Model time",
+      "unit": "s"
+    },
+    {
+      "id": "calls",
+      "label": "Calls"
+    }
+  ],
+  "harness_paths": [
+    "packages/harness/src/evalMain.ts",
+    "packages/harness/src/evalRun.ts",
+    "packages/harness/src/evalCases.ts",
+    "packages/harness/src/live.ts",
+    "packages/orchestrator/src/claude.ts",
+    "packages/orchestrator/src/grok.ts",
+    "packages/orchestrator/src/provider.ts",
+    "packages/orchestrator/src/schemas.ts",
+    "packages/orchestrator/src/pricing.ts",
+    "evals/prd-panel/part-a.json",
+    "evals/prd-panel/part-b.json",
+    "evals/prd-panel/bases/live-synthesis.json",
+    "evals/prd-panel/bases/recorded.json"
+  ],
+  "harness_sha": "83f5dd07c01c36c4b7de897219d9706bf67803bd1c96cc4021d580ea270e8816"
+}

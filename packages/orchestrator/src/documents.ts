@@ -190,9 +190,15 @@ export function prdIssues(prd: Prd, knownCitations: Set<string>, rules: readonly
   return issues;
 }
 
+/**
+ * A PRD may leave something open, or propose an answer the decisions did not make, as long as it says so:
+ * every open question starts with "Proposed:" or "Open:", so the approver can see what was not agreed.
+ */
 export function prdGateIssues(prd: Prd, structural: string[]): string[] {
   const issues = [...structural];
-  if (prd.openQuestions.length > 0) issues.push("open-questions");
+  for (const question of prd.openQuestions) {
+    if (!/^(Proposed|Open):/.test(question.text.trim())) issues.push(`open-question-unflagged:${question.id}`);
+  }
   return issues;
 }
 

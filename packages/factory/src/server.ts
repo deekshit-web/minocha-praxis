@@ -3,7 +3,7 @@ import { rm } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
-import { readLiveRuns } from "@northwind/harness";
+import { loadLiveShowcase, readLiveRuns, type LiveShowcase } from "@northwind/harness";
 import { repoRoot } from "@northwind/orchestrator";
 import { foreignRequest, renderProposedScreen, type ProposedScreenId } from "@northwind/rcm";
 import { DEFAULT_WORKBENCH, FactorySession, type FactoryAct } from "./session.ts";
@@ -77,6 +77,15 @@ function recordOfStrings(value: unknown): Record<string, string> | undefined {
   return choices;
 }
 
+/** The latest live run that passed, read fresh for each new session so a new run shows up without a restart. */
+function showcase(): LiveShowcase | null {
+  try {
+    return loadLiveShowcase();
+  } catch {
+    return null;
+  }
+}
+
 async function resetFactory(sessions: Map<string, FactorySession>, sandboxRoot: string, workbench: string): Promise<FactoryView> {
   sessions.clear();
   await rm(sandboxDir(sandboxRoot), { recursive: true, force: true });
@@ -87,7 +96,7 @@ async function resetFactory(sessions: Map<string, FactorySession>, sandboxRoot: 
   } catch {
     workbenchCleared = false;
   }
-  const session = new FactorySession(undefined, workbench);
+  const session = new FactorySession(undefined, workbench, showcase());
   sessions.set(session.id, session);
   session.banner = workbenchCleared
     ? "Factory run cleared. Workbench ready marks cleared. The domain file was not changed."
@@ -127,12 +136,16 @@ async function handle(
       send(res, 200, renderProposedScreen(proposed[1] as ProposedScreenId), "text/html; charset=utf-8");
       return;
     }
+    if (req.method === "GET" && url.pathname === "/api/showcase") {
+      send(res, 200, showcase());
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/live-runs") {
       send(res, 200, readLiveRuns());
       return;
     }
     if (req.method === "POST" && url.pathname === "/api/session") {
-      const session = new FactorySession(undefined, workbench);
+      const session = new FactorySession(undefined, workbench, showcase());
       sessions.set(session.id, session);
       send(res, 201, session.view());
       return;

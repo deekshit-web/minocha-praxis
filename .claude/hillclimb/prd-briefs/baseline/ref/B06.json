@@ -1,0 +1,307 @@
+{
+  "problem": "The PFS lead has no single view of open claim lines by CARC class and cannot see how many appealable denials have already passed their filing deadline. Denial specialists track deadlines line by line in the workqueue, so the lead cannot tell where deadline risk sits without opening rows.",
+  "users": [
+    "PFS lead (primary reader of the summary; read-only)",
+    "Denial specialist (works the appealable denials the overdue count describes; relies on the same deadline rule in the workqueue)",
+    "Biller (resubmits CO-16 and CO-4 lines counted in the denial class)"
+  ],
+  "inScope": [
+    "Count of open lines per CARC class: denial, patient responsibility, informational, mapped from the six-code demo CARC table",
+    "Count of appealable denials whose filing deadline (date of service plus 90 days) has passed",
+    "Keeping PR-1 lines out of the appealable denial and overdue counts",
+    "Keeping OA-23 lines in the informational class and out of the denial counts",
+    "A read-only summary with no line actions",
+    "Using the same filing-deadline calculation as the denial specialist workqueue so the two views agree",
+    "Synthetic identifiers only (PAT-###, CLM-###, DOC-###)"
+  ],
+  "outOfScope": [
+    "Any line action from the summary: resubmit, appeal, mark appeal-ready, post, write off, reassign",
+    "Changing diagnosis codes, modifiers, or CPT/ICD suggestions",
+    "Deciding medical necessity for CO-50",
+    "Net collection rate or other A/R financial metrics",
+    "Inventing meanings or classes for CARC codes outside the demo table",
+    "Emitting 837 claims or loading live 835/ERA clearinghouse files",
+    "Overriding the CO-50 readiness gate"
+  ],
+  "assumptions": [
+    {
+      "answerId": "Q-1",
+      "text": "The summary counts three classes: denial, patient responsibility, and informational, matching the classes in the CARC table."
+    },
+    {
+      "answerId": "Q-2",
+      "text": "The PFS lead cannot act on lines from the summary; the summary is read-only."
+    },
+    {
+      "answerId": "Q-3",
+      "text": "A line is overdue when its filing deadline, date of service plus 90 days, has passed."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "statement": "The summary shows the number of open lines in each CARC class (denial, patient responsibility, informational), assigning each line to a class only through the demo CARC table.",
+      "rationale": "Q-1 and pack/patterns/summary.md define the lead summary as counts by these three CARC classes."
+    },
+    {
+      "id": "REQ-2",
+      "statement": "The summary shows the number of open appealable denials whose filing deadline (date of service plus 90 days) has passed.",
+      "rationale": "The brief asks for the overdue appealable denial count; Q-3 defines overdue, and pack/glossary.md says timely filing is counted from the date of service."
+    },
+    {
+      "id": "REQ-3",
+      "statement": "PR-1 lines are counted only under patient responsibility, and OA-23 lines only under informational; neither is included in the appealable denial count or the overdue count.",
+      "rationale": "pack/patterns/summary.md says patient responsibility is not added to the appealable denial count; pack/claim-states.md says PR-1 does not enter denied for appeal and OA-23 is not worked as a denial."
+    },
+    {
+      "id": "REQ-4",
+      "statement": "The summary is read-only: it offers the PFS lead no control that changes a line, claim state, or packet.",
+      "rationale": "Q-2 makes the summary read-only, and pack/roles.md says the PFS lead sees counts by CARC class and does not mark packets ready."
+    },
+    {
+      "id": "REQ-5",
+      "statement": "Lines whose CARC is not in the demo table stay unmapped and are never assigned to a class or given a meaning.",
+      "rationale": "pack/carc-demo.md says an unknown code stays unmapped and the product must not invent a meaning."
+    },
+    {
+      "id": "REQ-6",
+      "statement": "The overdue count uses the same filing-deadline calculation as the days-remaining value in the denial specialist workqueue, so a line overdue in the summary shows a passed deadline in the workqueue.",
+      "rationale": "pack/patterns/workqueue.md sorts appealable denials by days remaining to the filing deadline; if the two views disagree, the lead and the specialists act on different numbers."
+    },
+    {
+      "id": "REQ-7",
+      "statement": "The summary and its seed data show only synthetic identifiers shaped PAT-###, CLM-###, and DOC-###.",
+      "rationale": "pack/phi-policy.md allows only these identifiers and blocks runs that contain PHI-shaped data."
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "requirementId": "REQ-1",
+      "given": "Open lines exist: CLM-101 CO-50, CLM-102 CO-16, CLM-103 CO-4, CLM-104 CO-197, CLM-105 PR-1, CLM-106 OA-23",
+      "when": "The PFS lead opens the summary",
+      "then": "Denial shows 4, patient responsibility shows 1, informational shows 1",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-2",
+      "requirementId": "REQ-1",
+      "given": "CLM-107 has a CO-16 line in state paid and CLM-108 has a CO-16 line in state denied",
+      "when": "The PFS lead opens the summary",
+      "then": "Only the CLM-108 line is included in the denial count",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-3",
+      "requirementId": "REQ-2",
+      "given": "Today is 2024-04-15; CLM-101 CO-50 has date of service 2024-01-02 (deadline 2024-04-01) and CLM-102 CO-16 has date of service 2024-03-01 (deadline 2024-05-30)",
+      "when": "The PFS lead opens the summary",
+      "then": "The overdue appealable denial count is 1 and includes CLM-101 only",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-4",
+      "requirementId": "REQ-2",
+      "given": "Today is 2024-04-15 and CLM-109 CO-50 has date of service 2024-01-16 (deadline 2024-04-15)",
+      "when": "The PFS lead opens the summary",
+      "then": "CLM-109 is not counted as overdue on its deadline day",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-5",
+      "requirementId": "REQ-3",
+      "given": "Today is 2024-04-15; CLM-105 PR-1 and CLM-106 OA-23 both have date of service 2023-12-01, so their date of service plus 90 days has passed",
+      "when": "The PFS lead opens the summary",
+      "then": "Neither line is in the denial count or the overdue count; CLM-105 is counted under patient responsibility and CLM-106 under informational",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-6",
+      "requirementId": "REQ-4",
+      "given": "The PFS lead is signed in and viewing the summary",
+      "when": "The lead inspects every count and panel on the summary",
+      "then": "There is no control to resubmit, appeal, mark appeal-ready, post, write off, or change any line, and no line's claim state changes",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-7",
+      "requirementId": "REQ-5",
+      "given": "CLM-110 has an open line with CARC CO-999, which is not in the demo table",
+      "when": "The PFS lead opens the summary",
+      "then": "CLM-110 is not counted in denial, patient responsibility, or informational, and no meaning is shown for CO-999",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-8",
+      "requirementId": "REQ-6",
+      "given": "Today is 2024-04-15 and CLM-101 CO-50 has date of service 2024-01-02",
+      "when": "The PFS lead views the overdue count and a denial specialist views CLM-101 in the workqueue",
+      "then": "CLM-101 is counted as overdue in the summary, and the workqueue shows its filing deadline as passed",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-9",
+      "requirementId": "REQ-7",
+      "given": "The summary is loaded with demo seed data",
+      "when": "Any claim, patient, or document identifier is displayed",
+      "then": "Every identifier matches PAT-###, CLM-###, or DOC-###, and no SSN, email, phone, MRN, or labelled birth date appears",
+      "priority": "P0"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "SCN-1",
+      "criterionIds": [
+        "AC-1",
+        "AC-5",
+        "AC-9"
+      ],
+      "role": "PFS lead",
+      "startingState": "Seed data contains open lines CLM-101 CO-50, CLM-102 CO-16, CLM-103 CO-4, CLM-104 CO-197, CLM-105 PR-1, CLM-106 OA-23; CLM-105 and CLM-106 have date of service 2023-12-01; today is 2024-04-15",
+      "steps": [
+        "Sign in as the PFS lead",
+        "Open the lead summary",
+        "Read the count for each CARC class",
+        "Read the overdue appealable denial count",
+        "Check that every displayed identifier is synthetic"
+      ],
+      "expected": "Denial 4, patient responsibility 1, informational 1; CLM-105 and CLM-106 are excluded from the denial and overdue counts; all identifiers are CLM-### shaped"
+    },
+    {
+      "id": "SCN-2",
+      "criterionIds": [
+        "AC-3",
+        "AC-8"
+      ],
+      "role": "PFS lead, then denial specialist",
+      "startingState": "Today is 2024-04-15; CLM-101 CO-50 has date of service 2024-01-02 and CLM-102 CO-16 has date of service 2024-03-01",
+      "steps": [
+        "PFS lead opens the summary and reads the overdue count",
+        "Denial specialist opens the workqueue sorted by days remaining",
+        "Denial specialist finds CLM-101 and CLM-102"
+      ],
+      "expected": "Summary overdue count is 1 (CLM-101); the workqueue shows CLM-101 with its filing deadline passed and CLM-102 with days remaining"
+    },
+    {
+      "id": "SCN-3",
+      "criterionIds": [
+        "AC-6"
+      ],
+      "role": "PFS lead",
+      "startingState": "Summary is loaded with seed data, including overdue CLM-101 CO-50 in state denied",
+      "steps": [
+        "Open the lead summary",
+        "Look for any action control on counts and panels",
+        "Ask a denial specialist to reopen CLM-101 in the workqueue"
+      ],
+      "expected": "No action controls are present on the summary; CLM-101 remains in state denied"
+    },
+    {
+      "id": "SCN-4",
+      "criterionIds": [
+        "AC-7"
+      ],
+      "role": "PFS lead",
+      "startingState": "Seed data includes CLM-110 with an open line carrying CARC CO-999",
+      "steps": [
+        "Open the lead summary",
+        "Compare the class counts with the seed data"
+      ],
+      "expected": "CLM-110 appears in none of the three class counts, and no meaning is displayed for CO-999"
+    }
+  ],
+  "screens": [
+    {
+      "id": "SCR-1",
+      "title": "Lead summary",
+      "purpose": "Read-only tiles showing open-line counts for denial, patient responsibility, and informational, plus the overdue appealable denial count. No action controls.",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-3",
+        "SCN-4"
+      ]
+    },
+    {
+      "id": "SCR-2",
+      "title": "Overdue denial breakdown",
+      "purpose": "Read-only panel on the summary splitting the overdue appealable denial count by denial code (CO-16, CO-50, CO-197, CO-4), so the lead can see which kind of denial work is behind schedule.",
+      "scenarioIds": [
+        "SCN-2",
+        "SCN-3"
+      ]
+    },
+    {
+      "id": "SCR-3",
+      "title": "Denial specialist workqueue",
+      "purpose": "Dense table of appealable denials sorted by days remaining to the filing deadline, with patient responsibility in a separate group. Used to confirm it agrees with the summary's overdue count.",
+      "scenarioIds": [
+        "SCN-2"
+      ]
+    }
+  ],
+  "openQuestions": [
+    {
+      "id": "OQ-1",
+      "text": "Proposed: 'appealable denials' for the overdue count means all open lines in the denial class (CO-16, CO-50, CO-197, CO-4), including lines whose next action is resubmission rather than a formal appeal. Needs sign-off."
+    },
+    {
+      "id": "OQ-2",
+      "text": "Proposed: an open line is one whose claim is in denied, appeal-ready, or appeal-submitted, or that carries a PR-1 or OA-23 line not yet closed; paid, closed, upheld, and overturned lines are not counted. Needs sign-off."
+    },
+    {
+      "id": "OQ-3",
+      "text": "Proposed: the deadline has 'passed' when today is later than date of service plus 90 calendar days, so a line on its deadline day is not yet overdue. Needs sign-off."
+    },
+    {
+      "id": "OQ-4",
+      "text": "Proposed: lines with unmapped CARCs are shown as a separate 'unmapped' count outside the three classes so they are not hidden. Needs sign-off."
+    },
+    {
+      "id": "OQ-5",
+      "text": "Proposed: the overdue breakdown by denial code (SCR-2) is read-only and does not link into the workqueue. Needs sign-off."
+    },
+    {
+      "id": "OQ-6",
+      "text": "Open: Should appeal-submitted lines count as overdue once the deadline passes, or does submission before the deadline remove them from the overdue count?"
+    },
+    {
+      "id": "OQ-7",
+      "text": "Open: Does the 90-day filing window vary by payer, or does it apply to every payer in this demo?"
+    }
+  ],
+  "citations": [
+    "pack/patterns/summary.md",
+    "pack/carc-demo.md",
+    "pack/claim-states.md",
+    "pack/roles.md",
+    "pack/glossary.md",
+    "pack/patterns/workqueue.md",
+    "pack/phi-policy.md"
+  ],
+  "carcReferences": [
+    {
+      "code": "CO-16",
+      "nextAction": "Correct the missing element named by the remark and resubmit the claim."
+    },
+    {
+      "code": "CO-50",
+      "nextAction": "Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product."
+    },
+    {
+      "code": "CO-197",
+      "nextAction": "Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request."
+    },
+    {
+      "code": "CO-4",
+      "nextAction": "Correct the modifier and resubmit. Do not invent a modifier in this product."
+    },
+    {
+      "code": "PR-1",
+      "nextAction": "Post the amount to patient responsibility. Do not open an appeal."
+    },
+    {
+      "code": "OA-23",
+      "nextAction": "Confirm the prior payer adjudication. Do not work this as a denial."
+    }
+  ]
+}

@@ -1,0 +1,329 @@
+{
+  "problem": "Denial specialists at Northwind Imaging see OA-23 (informational) lines mixed in with real denials on synthetic remits. These lines carry the impact of the prior payer's adjudication, including payments and adjustments. They are not denials. If they are worked as denials, the specialist wastes time, the appeal path receives lines that should never reach it, and denial totals are overstated. The workbench must show each OA-23 line's prior payer adjudication, limit the specialist's work to confirming it, keep it off the appeal path, and leave it out of denial totals.",
+  "users": [
+    "Denial specialist: works appealable denials daily and confirms prior payer adjudication on OA-23 lines.",
+    "PFS lead: reviews counts by CARC class and needs denial totals that exclude informational lines.",
+    "Biller: resubmits corrected claims and must not see OA-23 lines as resubmission work.",
+    "Coder: owns modifiers and diagnosis pointers and has no action on OA-23 lines."
+  ],
+  "inScope": [
+    "Showing OA-23 lines with class, meaning, fixture remark, and the prior payer adjudication (payments and adjustments) as carried on the remit.",
+    "A single confirm action on an OA-23 line that shows the exact OA-23 next action text.",
+    "Blocking OA-23 lines from denied, appeal-ready, and appeal-submitted states, and from every appeal control.",
+    "Excluding OA-23 lines from denial totals and from the appealable-denial table in the workqueue.",
+    "Showing OA-23 lines to the PFS lead under the informational class, separate from denial counts.",
+    "Synthetic identifiers only (PAT-###, CLM-###, DOC-###)."
+  ],
+  "outOfScope": [
+    "Appealing, resubmitting, correcting, or writing off any OA-23 line.",
+    "Recomputing or editing the prior payer's adjudication amounts.",
+    "Coordination-of-benefits billing to a secondary payer, clearinghouse routing, or portal submission.",
+    "Any medical-necessity decision, CPT or ICD suggestion, or diagnosis code change.",
+    "Gate overrides for CO-50 packets (unchanged by this feature).",
+    "Production use of the CARC or remark lists without confirmation against the current X12 external code list."
+  ],
+  "assumptions": [
+    {
+      "answerId": "Q-1",
+      "text": "The denial specialist's only action on an OA-23 line is to confirm the prior payer adjudication. No other action is offered."
+    },
+    {
+      "answerId": "Q-2",
+      "text": "An OA-23 line can never reach the appeal path. No route exists to denied, appeal-ready, or appeal-submitted for it."
+    },
+    {
+      "answerId": "Q-3",
+      "text": "OA-23 lines do not count toward denial totals anywhere in the product."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "statement": "Every OA-23 line shows its class (informational), its meaning, its fixture remark, and the prior payer's adjudication (payments and adjustments) exactly as carried on the remit, without opening a separate document.",
+      "rationale": "Brief: OA-23 lines must show the prior payer's adjudication. The meaning comes from pack/carc-demo.md."
+    },
+    {
+      "id": "REQ-2",
+      "statement": "The only action available on an OA-23 line is 'Confirm prior payer adjudication', shown with the next action text 'Confirm the prior payer adjudication. Do not work this as a denial.' No other action is offered to any role, including resubmit, correct, appeal, post to patient responsibility, or write off.",
+      "rationale": "Q-1 answer, the CARC table next action, and pack/roles.md (nobody may write off a balance)."
+    },
+    {
+      "id": "REQ-3",
+      "statement": "An OA-23 line can never enter the denied, appeal-ready, or appeal-submitted state. No appeal control is shown on it, and any attempt to add it to an appeal packet is rejected.",
+      "rationale": "Q-2 answer and pack/claim-states.md: an OA-23 line is informational and is not worked as a denial."
+    },
+    {
+      "id": "REQ-4",
+      "statement": "OA-23 lines are excluded from every denial total and from the appealable-denial table in the workqueue. Where counts by CARC class are shown, OA-23 appears only under the informational class.",
+      "rationale": "Q-3 answer, pack/patterns/workqueue.md (the table lists appealable denials), and pack/roles.md (PFS lead sees counts by CARC class)."
+    },
+    {
+      "id": "REQ-5",
+      "statement": "The product never invents or derives prior payer adjudication values. Only values present on the remit are shown.",
+      "rationale": "pack/carc-demo.md: the product must not invent a meaning. The same principle applies to adjudication data."
+    },
+    {
+      "id": "REQ-6",
+      "statement": "All OA-23 fixtures, screens, and stored records use only synthetic identifiers shaped PAT-###, CLM-###, and DOC-###.",
+      "rationale": "pack/phi-policy.md."
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "requirementId": "REQ-1",
+      "given": "Claim CLM-101 for PAT-101 has a line adjusted OA-23 with prior payer paid and adjustment amounts on remit DOC-101",
+      "when": "The denial specialist opens the line detail for CLM-101",
+      "then": "The line shows class 'informational', the OA-23 meaning, remark N4, and the prior payer paid and adjustment amounts matching DOC-101",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-2",
+      "requirementId": "REQ-1",
+      "given": "The OA-23 line on CLM-101 is listed in the workqueue",
+      "when": "The denial specialist views the workqueue without opening the row",
+      "then": "The row shows the OA-23 code and the informational class label",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-3",
+      "requirementId": "REQ-2",
+      "given": "An unconfirmed OA-23 line on CLM-101",
+      "when": "The denial specialist views the available actions",
+      "then": "Exactly one action, 'Confirm prior payer adjudication', is shown with the text 'Confirm the prior payer adjudication. Do not work this as a denial.'",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-4",
+      "requirementId": "REQ-2",
+      "given": "An OA-23 line on CLM-101",
+      "when": "A biller, coder, denial specialist, or PFS lead views the line",
+      "then": "No resubmit, correct, appeal, post-to-patient-responsibility, or write-off control is present",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-5",
+      "requirementId": "REQ-2",
+      "given": "An unconfirmed OA-23 line on CLM-101",
+      "when": "The denial specialist selects 'Confirm prior payer adjudication'",
+      "then": "The line is shown as confirmed, and the prior payer amounts are unchanged",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-6",
+      "requirementId": "REQ-3",
+      "given": "Claim CLM-102 has one CO-50 line and one OA-23 line",
+      "when": "The denial specialist builds an appeal packet for CLM-102",
+      "then": "Only the CO-50 line can be added, and the OA-23 line is not selectable",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-7",
+      "requirementId": "REQ-3",
+      "given": "An OA-23 line on CLM-101",
+      "when": "A request tries to move the line to denied, appeal-ready, or appeal-submitted",
+      "then": "The request is rejected and the line state is unchanged",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-8",
+      "requirementId": "REQ-4",
+      "given": "A seed set of three CO-50 lines, one CO-197 line, and two OA-23 lines",
+      "when": "The denial specialist opens the workqueue",
+      "then": "The appealable-denial table lists four lines, and neither OA-23 line appears in it",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-9",
+      "requirementId": "REQ-4",
+      "given": "The same seed set",
+      "when": "The PFS lead opens counts by CARC class",
+      "then": "The denial total is 4, and OA-23 shows 2 under the informational class and nowhere in the denial total",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-10",
+      "requirementId": "REQ-5",
+      "given": "An OA-23 line on CLM-103 whose remit DOC-103 carries no prior payer adjustment amount",
+      "when": "The denial specialist opens the line detail",
+      "then": "The adjustment field shows that the value is not on the remit, and no computed or default amount appears",
+      "priority": "P1"
+    },
+    {
+      "id": "AC-11",
+      "requirementId": "REQ-6",
+      "given": "The OA-23 seed data and screens",
+      "when": "The PHI scanner runs over the seed data and the screens are reviewed",
+      "then": "No hits are reported, and only PAT-###, CLM-###, and DOC-### identifiers appear",
+      "priority": "P0"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "SCN-1",
+      "criterionIds": [
+        "AC-1",
+        "AC-2",
+        "AC-3",
+        "AC-5"
+      ],
+      "role": "Denial specialist",
+      "startingState": "CLM-101 for PAT-101 has an unconfirmed OA-23 line with prior payer amounts on remit DOC-101.",
+      "steps": [
+        "Open the workqueue and find the OA-23 row for CLM-101 outside the appealable-denial table.",
+        "Open the line detail.",
+        "Compare the shown prior payer paid and adjustment amounts with DOC-101.",
+        "Select 'Confirm prior payer adjudication'."
+      ],
+      "expected": "The detail shows class informational, remark N4, and the DOC-101 amounts. Exactly one action, with the exact OA-23 next action text, is offered. After confirming, the line shows as confirmed with its amounts unchanged."
+    },
+    {
+      "id": "SCN-2",
+      "criterionIds": [
+        "AC-4",
+        "AC-7"
+      ],
+      "role": "Biller, then denial specialist",
+      "startingState": "CLM-101 has an OA-23 line.",
+      "steps": [
+        "The biller opens the CLM-101 line and looks for resubmit or correct controls.",
+        "The denial specialist opens the same line and looks for appeal, post-to-patient-responsibility, or write-off controls.",
+        "A request is sent to move the line to appeal-ready."
+      ],
+      "expected": "Neither role sees any control other than the single confirm action. The state change request is rejected, and the line state is unchanged."
+    },
+    {
+      "id": "SCN-3",
+      "criterionIds": [
+        "AC-6"
+      ],
+      "role": "Denial specialist",
+      "startingState": "CLM-102 has a CO-50 line and an OA-23 line.",
+      "steps": [
+        "Start an appeal packet for CLM-102.",
+        "Try to select the OA-23 line for the packet."
+      ],
+      "expected": "Only the CO-50 line can be added. The OA-23 line is not selectable and never enters denied or the appeal path."
+    },
+    {
+      "id": "SCN-4",
+      "criterionIds": [
+        "AC-8",
+        "AC-9"
+      ],
+      "role": "Denial specialist, then PFS lead",
+      "startingState": "Seed set: three CO-50 lines, one CO-197 line, and two OA-23 lines.",
+      "steps": [
+        "The denial specialist opens the workqueue and counts rows in the appealable-denial table.",
+        "The PFS lead opens counts by CARC class."
+      ],
+      "expected": "The workqueue table lists four lines. The denial total is 4, and OA-23 appears only as 2 under informational."
+    },
+    {
+      "id": "SCN-5",
+      "criterionIds": [
+        "AC-10"
+      ],
+      "role": "Denial specialist",
+      "startingState": "CLM-103 has an OA-23 line, and remit DOC-103 carries no prior payer adjustment amount.",
+      "steps": [
+        "Open the CLM-103 line detail."
+      ],
+      "expected": "The adjustment field shows that the value is not on the remit, and no invented amount appears."
+    },
+    {
+      "id": "SCN-6",
+      "criterionIds": [
+        "AC-11"
+      ],
+      "role": "Release reviewer",
+      "startingState": "OA-23 seed data and screens are prepared.",
+      "steps": [
+        "Run the PHI scanner over the seed data.",
+        "Review every screen for identifiers."
+      ],
+      "expected": "The scanner reports no hits, and only PAT-###, CLM-###, and DOC-### identifiers appear."
+    }
+  ],
+  "screens": [
+    {
+      "id": "SCR-1",
+      "title": "Denial workqueue",
+      "purpose": "A dense table of appealable denials sorted by days to the filing deadline, a separate patient-responsibility group, and OA-23 lines kept out of the denial table and labelled informational.",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-2",
+        "SCN-4",
+        "SCN-6"
+      ]
+    },
+    {
+      "id": "SCR-2",
+      "title": "Claim line detail",
+      "purpose": "Shows the OA-23 class, meaning, remark, and prior payer paid and adjustment amounts as carried on the remit, with the single confirm action and the exact next action text. Appeal-packet building here can add denial lines only.",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-2",
+        "SCN-3",
+        "SCN-5",
+        "SCN-6"
+      ]
+    },
+    {
+      "id": "SCR-3",
+      "title": "CARC class counts",
+      "purpose": "The PFS lead's view of counts by CARC class. Denial totals exclude OA-23, which is shown only under informational.",
+      "scenarioIds": [
+        "SCN-4",
+        "SCN-6"
+      ]
+    }
+  ],
+  "openQuestions": [
+    {
+      "id": "OQ-1",
+      "text": "Proposed: confirming an OA-23 line records who confirmed it and when, on the line only, and does not change the claim state (the claim-state list has no confirmed state). Needs sign-off."
+    },
+    {
+      "id": "OQ-2",
+      "text": "Proposed: OA-23 lines appear in the workqueue in their own collapsed 'Informational – confirm prior payer' group, separate from both appealable denials and patient responsibility. Needs sign-off."
+    },
+    {
+      "id": "OQ-3",
+      "text": "Proposed: only the denial specialist can select the confirm action; other roles see the OA-23 line read-only. Needs sign-off."
+    },
+    {
+      "id": "OQ-4",
+      "text": "Proposed: OA-23 lines show no filing-deadline risk badge, because they are not worked as denials. Needs sign-off."
+    },
+    {
+      "id": "OQ-5",
+      "text": "Open: can a confirmation be undone, and if so, by which role?"
+    },
+    {
+      "id": "OQ-6",
+      "text": "Open: which remit fields make up 'prior payer adjudication' for display (for example paid amount, adjustment amount, prior payer name placeholder), given that the Northwind payer has no real plan id?"
+    },
+    {
+      "id": "OQ-7",
+      "text": "Proposed: when a prior payer value is absent from the remit, the field reads 'Not on remit' rather than blank or zero. Needs sign-off."
+    }
+  ],
+  "citations": [
+    "pack/carc-demo.md",
+    "pack/claim-states.md",
+    "pack/patterns/workqueue.md",
+    "pack/roles.md",
+    "pack/phi-policy.md"
+  ],
+  "carcReferences": [
+    {
+      "code": "OA-23",
+      "nextAction": "Confirm the prior payer adjudication. Do not work this as a denial."
+    },
+    {
+      "code": "CO-50",
+      "nextAction": "Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product."
+    }
+  ]
+}

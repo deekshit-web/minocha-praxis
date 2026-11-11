@@ -168,6 +168,15 @@
       #tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
       #proposed-links { display: flex; flex-wrap: wrap; gap: 8px; }
       #document a { display: block; margin: 8px 0; color: var(--teal); }
+      #document iframe {
+        display: block;
+        width: 100%;
+        height: 440px;
+        margin: 10px 0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+      }
       #proposed-links a { text-decoration: none; }
       #reset {
         border: 1px solid var(--line);
@@ -303,6 +312,104 @@
         font-size: 14px;
         cursor: pointer;
       }
+      #pipeline { padding: 14px 16px 16px; }
+      .pipe-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+      .pipe-head h2 { margin: 0; }
+      .pipe-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .pipe-controls button, .pipe-controls select {
+        border: 1px solid var(--line);
+        background: var(--paper);
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font: inherit;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .pipe-controls button.primary { background: var(--teal); border-color: var(--teal); color: #f7fffe; font-weight: 650; }
+      .pipe-caption {
+        margin: 10px 0 0;
+        padding: 8px 12px;
+        border-left: 3px solid var(--teal);
+        background: #f4faf9;
+        font-size: 17px;
+        min-height: 1.5em;
+      }
+      .pipe-scroll { overflow-x: auto; margin-top: 14px; }
+      .pipe {
+        position: relative;
+        display: grid;
+        grid-template-columns: 0.8fr 1.15fr 1.15fr 1fr 0.9fr 0.85fr;
+        grid-template-rows: auto 26px auto;
+        column-gap: 36px;
+        min-width: 900px;
+      }
+      .pipe svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+      .pipe path { fill: none; stroke: var(--line); stroke-width: 2; }
+      .pipe path.lit { stroke: var(--teal); }
+      .node {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 9px 11px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper);
+        color: var(--muted);
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s, color 0.2s;
+      }
+      .node.span { grid-row: 1 / 4; align-self: center; }
+      .node-kicker { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+      .node-name { font-weight: 650; font-size: 15px; color: inherit; }
+      .node-meta { font-size: 13px; font-variant-numeric: tabular-nums; }
+      .node-state { font-size: 12px; font-weight: 650; }
+      .node.done { background: var(--paper-2); color: var(--ink); border-color: #b9cfc6; }
+      .node.done .node-state { color: var(--moss); }
+      .node.flagged { background: var(--paper-2); color: var(--ink); border-color: #e2b3a6; }
+      .node.flagged .node-state { color: var(--clay); }
+      .node.running { background: #eef7f5; color: var(--ink); border-color: var(--teal); animation: pulse 1.2s ease-in-out infinite; }
+      .node.running .node-state { color: var(--teal-deep); }
+      .node.turn { background: #eef7f5; color: var(--ink); border-color: var(--teal); }
+      .node.selected { outline: 2px solid var(--teal-deep); outline-offset: 2px; }
+      @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(14, 107, 102, 0.28); } 50% { box-shadow: 0 0 0 7px rgba(14, 107, 102, 0); } }
+      @media (prefers-reduced-motion: reduce) { .node.running { animation: none; } }
+      .wall {
+        grid-column: 2;
+        grid-row: 2;
+        align-self: center;
+        border-top: 2px dashed var(--clay);
+        position: relative;
+        z-index: 1;
+      }
+      .wall span {
+        position: absolute;
+        left: 50%;
+        top: -10px;
+        transform: translateX(-50%);
+        padding: 0 6px;
+        background: var(--paper-2);
+        color: var(--clay);
+        font-size: 11px;
+        font-weight: 650;
+        white-space: nowrap;
+      }
+      .pipe-detail { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+      .pipe-detail h3 { margin: 0 0 4px; font: 18px/1.2 Palatino, Georgia, serif; font-weight: 500; }
+      .pipe-detail .label { margin: 10px 0 2px; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--teal-deep); }
+      .pipe-detail pre {
+        margin: 0;
+        max-height: 240px;
+        overflow: auto;
+        white-space: pre-wrap;
+        font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+      }
+      .cursor { display: inline-block; width: 8px; height: 1em; margin-left: 2px; background: var(--teal); vertical-align: text-bottom; animation: blink 1s steps(2) infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
       @media (max-width: 980px) {
         header, #dock { flex-direction: column; align-items: flex-start; }
         .scoreboard { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 4px 16px 16px; }
@@ -354,7 +461,7 @@
         <span class="tile-sub" id="live-sub">npm run live-prd</span>
       </a>
     </section>
-    <p id="how" class="how">Both analysts returned the same document. The two drafts split on the architecture step.</p>
+    <p id="how" class="how" hidden></p>
     <div class="layout">
       <aside class="rail">
         <p class="rail-kicker">Where you are</p>
@@ -367,6 +474,39 @@
           <h2 id="now-title"></h2>
           <p id="now-body"></p>
           <p id="latest" class="quiet" hidden></p>
+        </section>
+        <section id="pipeline" class="card" hidden>
+          <div class="pipe-head">
+            <div>
+              <h2>How this step works</h2>
+              <p id="pipe-sub" class="quiet"></p>
+            </div>
+            <div class="pipe-controls" id="pipe-controls" hidden>
+              <button type="button" id="pipe-play" class="primary">▶ Replay the real run</button>
+              <select id="pipe-speed" aria-label="Replay speed">
+                <option value="10">10×</option>
+                <option value="30" selected>30×</option>
+                <option value="60">60×</option>
+              </select>
+              <button type="button" id="pipe-skip">Skip to end</button>
+            </div>
+          </div>
+          <p id="pipe-caption" class="pipe-caption"></p>
+          <div class="pipe-scroll">
+            <div class="pipe" id="pipe">
+              <svg id="pipe-lines" aria-hidden="true"></svg>
+              <button type="button" class="node span" data-node="brief" style="grid-column: 1"></button>
+              <button type="button" class="node" data-node="analystA" style="grid-column: 2; grid-row: 1"></button>
+              <div class="wall"><span>cannot see each other</span></div>
+              <button type="button" class="node" data-node="analystB" style="grid-column: 2; grid-row: 3"></button>
+              <button type="button" class="node" data-node="critiqueOfB" style="grid-column: 3; grid-row: 1"></button>
+              <button type="button" class="node" data-node="critiqueOfA" style="grid-column: 3; grid-row: 3"></button>
+              <button type="button" class="node span" data-node="synthesizer" style="grid-column: 4"></button>
+              <button type="button" class="node span" data-node="gates" style="grid-column: 5"></button>
+              <button type="button" class="node span" data-node="you" style="grid-column: 6"></button>
+            </div>
+          </div>
+          <div id="pipe-detail" class="pipe-detail" hidden></div>
         </section>
         <p id="banner" hidden></p>
         <div id="questions"></div>
@@ -462,6 +602,11 @@
         brief: "This is the feature the factory was given. The workbench already calls the fixed function.",
         record: "Recording stores a local result. It does not serve the workbench.",
         matrix: "Each row is one requirement, the case that ran, and the screen it opened.",
+        "live-overview": "A real two-model run on the same brief, shown for comparison. You approve the recorded requirements.",
+        "live-a": "Draft A as the first model wrote it, without seeing draft B.",
+        "live-b": "Draft B as the second model wrote it, without seeing draft A.",
+        "live-synthesis": "Both drafts merged using both critiques. Every PRD gate passed on this document.",
+        product: "The fixed rule, live in the running denial workbench.",
       };
       const ACTION_LABEL = {
         begin: "Start",
@@ -504,6 +649,21 @@
       }
 
       function lineNode(line) {
+        if (line.startsWith("frame:")) {
+          const src = line.slice("frame:".length);
+          let allowed = false;
+          try {
+            allowed = Boolean(view) && new URL(src).origin === new URL(view.workbench).origin;
+          } catch {
+            allowed = false;
+          }
+          if (allowed) {
+            const frame = document.createElement("iframe");
+            frame.src = src;
+            frame.title = "Denial workbench";
+            return frame;
+          }
+        }
         if (line.startsWith("link:")) {
           const rest = line.slice("link:".length);
           const splitAt = rest.indexOf(" ");
@@ -534,7 +694,14 @@
           return ["Answer five questions", "Nothing is selected. The suggested answer is marked on each question. Choose each one, including Nobody in v1 for the override. The answers become assumptions in the requirements.", "Choose the suggested answers, then continue."];
         }
         if (next.state === "prd_gate" || next.state === "prd_draft") {
-          return ["Approve the requirements", "Both analysts returned the same document. Approve locks it. The three screens under the document are marked Proposed.", "Approve the requirements, or send them back."];
+          const live = next.tabs.find((tab) => tab.id === "live-overview");
+          return [
+            "Approve the requirements",
+            live
+              ? "Approve locks the recorded requirements the rest of this run is built on. The " + live.label + " tab shows a real two-model run on the same brief: separate drafts, cross-critiques, and a merge that passed every gate."
+              : "Approve locks these requirements. The three screens under the document are marked Proposed.",
+            "Approve the requirements, or send them back.",
+          ];
         }
         if (next.state === "architecture_gate" || next.state === "architecture_draft") {
           const approveAction = (next.actions || []).find((action) => action.id === "approve");
@@ -565,7 +732,11 @@
             : ["The record is closed", "A priority case failed on the workbench, so the result stays unrecorded.", "The record stays shut until the workbench cases pass."];
         }
         if (next.state === "recorded") {
-          return ["The result is recorded", "This run is closed. The denial workbench is not served from this screen.", "Nothing left to approve."];
+          return [
+            "It works in the product",
+            "The rule is live in the denial workbench below. DEN-01 has no clinical note, so the page names what is missing and the appeal cannot be marked ready.",
+            "Nothing left to approve.",
+          ];
         }
         return ["Working", "The factory is between gates.", "Working"];
       }
@@ -940,7 +1111,434 @@
         }
       }
 
+      // How a panel step works, drawn as the seats it runs. At the requirements step it replays
+      // the saved real two-model run on its real timeline, sped up; other steps show their recorded calls.
+      const PIPE_STAGE = {
+        clarifying: "Questions",
+        prd_draft: "PRD",
+        prd_gate: "PRD",
+        architecture_draft: "Architecture",
+        architecture_gate: "Architecture",
+        implementing: "Implementation plan",
+        unit_loop: "Implementation plan",
+        test_design: "Test design",
+        test_gate: "Test design",
+      };
+      const PIPE_SEATS = ["analystA", "analystB", "critiqueOfA", "critiqueOfB", "synthesizer"];
+      const MODEL_LABEL = { "claude-opus-5": "Claude Opus 5", "grok-4.7": "Grok 4.7" };
+      const GATE_CHECKS = [
+        "Every citation names a knowledge-pack file retrieval found for this brief",
+        "Every payer code is in the CARC table, with its next action copied exactly",
+        "Every requirement has acceptance criteria, and every must-pass criterion has a scenario",
+        "Three proposed screens, each tied to scenarios",
+        "No open questions left for the approver",
+        "No patient data: SSN, email, phone, MRN, or date of birth",
+        "Every serious (P0) defect from both reviews resolved",
+      ];
+      let showcase = null;
+      let selectedNode = null;
+      const replay = { mode: "idle", t: 0, last: 0, speed: 30, frame: 0, drawn: 0 };
+
+      function modelLabel(model) {
+        return model ? MODEL_LABEL[model] || model : "Model";
+      }
+
+      function shortModel(model) {
+        return modelLabel(model).split(" ")[0];
+      }
+
+      function liveStage(next) {
+        return Boolean(showcase) && Boolean(next) && (next.state === "prd_gate" || next.state === "prd_draft");
+      }
+
+      function seatOf(role) {
+        return (showcase && showcase.seats.find((seat) => seat.role === role)) || {};
+      }
+
+      /** The real run, seat after seat, as the panel ran it. Gates get two seconds of screen time. */
+      function timeline() {
+        let start = 0;
+        const seats = PIPE_SEATS.map((role) => {
+          const seat = seatOf(role);
+          const item = { role, seat, start, end: start + (seat.durationMs || 0) };
+          start = item.end;
+          return item;
+        });
+        return { seats, modelEnd: start, end: start + 2000 * replay.speed };
+      }
+
+      function money(value) {
+        return value === null || value === undefined ? "price unknown" : "$" + value.toFixed(2);
+      }
+
+      function prdText(prd) {
+        const p0 = prd.acceptanceCriteria.filter((item) => item.priority === "P0").length;
+        return [
+          "Problem: " + prd.problem,
+          "",
+          "Requirements:",
+          ...prd.requirements.map((item) => "  " + item.id + "  " + item.statement),
+          "",
+          "Acceptance criteria: " + prd.acceptanceCriteria.length + " (" + p0 + " must pass before release)",
+          ...prd.acceptanceCriteria.slice(0, 5).map((item) => "  " + item.id + "  Given " + item.given + ". When " + item.when + ". Then " + item.then + "."),
+          prd.acceptanceCriteria.length > 5 ? "  … and " + (prd.acceptanceCriteria.length - 5) + " more" : "",
+          "",
+          "Scenarios: " + prd.scenarios.length + " · Proposed screens: " + prd.screens.length,
+          "Cites: " + prd.citations.join(", "),
+        ].join("\n");
+      }
+
+      function critiqueText(critique) {
+        return [
+          ...critique.defects.map((item) => item.id + " · " + item.severity + " · " + item.code + "\n  " + item.point),
+          "",
+          ...critique.attributes.map((item) => item.attribute + ": " + (item.met ? "met" : "not met") + ". " + item.note),
+        ].join("\n");
+      }
+
+      function synthesisText(panel) {
+        const reasons = panel.rationale;
+        const resolved = reasons.defects.filter((item) => item.disposition === "resolved").length;
+        return [
+          "Defects resolved: " + resolved + " of " + reasons.defects.length,
+          "",
+          ...reasons.takenFromA.map((item) => "Kept from draft A: " + item),
+          ...reasons.takenFromB.map((item) => "Kept from draft B: " + item),
+          ...reasons.rejected.map((item) => "Dropped: " + item),
+          "",
+          prdText(panel.synthesis),
+        ].join("\n");
+      }
+
+      /** What each node was given, what it produced, and the plain-language caption while it works. */
+      function nodeStory(node) {
+        // Model names belong to the live run only; recorded steps were not written by any named model.
+        const live = liveStage(view);
+        const a = live ? shortModel(seatOf("analystA").model) : "analyst A";
+        const b = live ? shortModel(seatOf("analystB").model) : "analyst B";
+        const merger = live ? shortModel(seatOf("synthesizer").model) : "The synthesizer";
+        const panel = showcase && showcase.panel;
+        const stories = {
+          brief: {
+            title: "The brief",
+            given: "What the requester asked for, plus the five answers chosen in the question round.",
+            produced: showcase ? showcase.brief : "",
+            caption: "Everything starts from one brief and the answers to five clarifying questions.",
+          },
+          analystA: {
+            title: "Draft A · " + modelLabel(seatOf("analystA").model),
+            given: "The brief, the five answers, the payer's CARC table, and the knowledge-pack files retrieval found. Not " + b + "'s draft.",
+            produced: panel ? prdText(panel.proposalA) : "",
+            caption: a + " is writing a first draft of the requirements from the brief. It cannot see the other draft.",
+          },
+          analystB: {
+            title: "Draft B · " + modelLabel(seatOf("analystB").model),
+            given: "The same brief, answers, table, and files. Not " + a + "'s draft.",
+            produced: panel ? prdText(panel.proposalB) : "",
+            caption: b + " writes its own draft, separately. Two different models bring two different sets of blind spots.",
+          },
+          critiqueOfA: {
+            title: b + " reviews draft A",
+            given: "Draft A only, as " + a + " wrote it. A model never reviews its own draft.",
+            produced: panel ? critiqueText(panel.critiqueOfA) : "",
+            caption: b + " is reviewing " + a + "'s draft and listing its defects.",
+          },
+          critiqueOfB: {
+            title: a + " reviews draft B",
+            given: "Draft B only, as " + b + " wrote it.",
+            produced: panel ? critiqueText(panel.critiqueOfB) : "",
+            caption: a + " reviews " + b + "'s draft the same way.",
+          },
+          synthesizer: {
+            title: "Synthesis · " + modelLabel(seatOf("synthesizer").model),
+            given: "Both drafts and both reviews.",
+            produced: panel ? synthesisText(panel) : "",
+            caption: merger + " merges both drafts and has to resolve every serious (P0) defect either review raised.",
+          },
+          gates: {
+            title: "Automated checks",
+            given: "The merged requirements. No model is involved here: these are plain code checks.",
+            produced: GATE_CHECKS.map((item) => "✓ " + item).join("\n"),
+            caption: "Plain code checks verify the result: real citations, payer codes that match the table, no patient data.",
+          },
+          you: {
+            title: "You",
+            given: "The checked requirements, the drafts they came from, and both reviews.",
+            produced: "Approve locks the document by its hash. Send it back and nothing moves forward.",
+            caption: "A person approves. Nothing moves forward without it.",
+          },
+        };
+        return stories[node];
+      }
+
+      /** Each node's look at the current point of the replay (live) or as recorded (other steps). */
+      function nodeStates(next) {
+        const states = {};
+        const turn = yourTurn(next);
+        if (liveStage(next)) {
+          const line = timeline();
+          const t = replay.mode === "idle" ? line.end : replay.t;
+          states.brief = { cls: "done", kicker: "Input", name: "The brief", meta: "+ 5 answers · pack files", state: "given" };
+          for (const item of line.seats) {
+            const seat = item.seat;
+            const label = PIPE_SEATS.indexOf(item.role) < 2 ? (item.role === "analystA" ? "Draft A" : "Draft B") : item.role === "synthesizer" ? "Synthesis" : item.role === "critiqueOfA" ? "Review of A" : "Review of B";
+            const duration = item.end - item.start;
+            if (t < item.start) {
+              states[item.role] = { cls: "", kicker: label, name: modelLabel(seat.model), meta: "waiting", state: "" };
+            } else if (t < item.end) {
+              const share = duration ? (t - item.start) / duration : 1;
+              states[item.role] = {
+                cls: "running",
+                kicker: label,
+                name: modelLabel(seat.model),
+                meta: formatMs(t - item.start) + " · " + money((seat.costUsd || 0) * share),
+                state: "thinking…",
+                share,
+              };
+            } else {
+              // A draft is only flagged once the other model's review of it has finished.
+              const review = line.seats.find((entry) => entry.role === { analystA: "critiqueOfA", analystB: "critiqueOfB" }[item.role]);
+              const flagged = seat.quality && seat.quality.verdict !== "pass" && (!review || t >= review.end);
+              states[item.role] = {
+                cls: flagged ? "flagged" : "done",
+                kicker: label,
+                name: modelLabel(seat.model),
+                meta: formatMs(duration) + " · " + money(seat.costUsd),
+                state: flagged ? "flagged by review" : "done",
+              };
+            }
+          }
+          states.gates =
+            t < line.modelEnd
+              ? { cls: "", kicker: "Checks", name: "7 gates", meta: "waiting", state: "" }
+              : t < line.end
+                ? { cls: "running", kicker: "Checks", name: "7 gates", meta: "no model", state: "checking…" }
+                : { cls: "done", kicker: "Checks", name: "7 gates", meta: "no model · $0", state: "all passed" };
+          states.you =
+            t < line.end
+              ? { cls: "", kicker: "Approval", name: "You", meta: "waiting", state: "" }
+              : { cls: turn ? "turn" : "done", kicker: "Approval", name: "You", meta: turn ? "approve or send back" : "", state: turn ? "your turn" : "" };
+          return states;
+        }
+        const stage = PIPE_STAGE[next.state];
+        const rows = next.calls.filter((call) => call.stage === stage);
+        if (rows.length === 0) return null;
+        states.brief = { cls: "done", kicker: "Input", name: "The brief", meta: "and earlier steps", state: "given" };
+        for (const role of PIPE_SEATS) {
+          const row = rows.find((call) => call.role === role);
+          const flagged = row && row.quality && row.quality.verdict !== "pass";
+          states[role] = {
+            cls: !row ? "" : flagged ? "flagged" : "done",
+            kicker: SEAT_LABEL[role],
+            name: "Recorded replay",
+            meta: row ? formatMs(row.durationMs) + " · $0" : "waiting",
+            state: !row ? "" : flagged ? "flagged by review" : "done",
+          };
+        }
+        const synthesis = rows.find((call) => call.role === "synthesizer");
+        const passed = Boolean(synthesis && synthesis.quality && synthesis.quality.verdict === "pass");
+        states.gates = { cls: passed ? "done" : "flagged", kicker: "Checks", name: "Stage gates", meta: "no model", state: passed ? "passed" : "issues" };
+        states.you = { cls: turn ? "turn" : "done", kicker: "Approval", name: "You", meta: turn ? "your move" : "", state: turn ? "your turn" : "" };
+        return states;
+      }
+
+      function drawLines() {
+        const pipe = document.getElementById("pipe");
+        const svg = document.getElementById("pipe-lines");
+        clear(svg);
+        if (document.getElementById("pipeline").hidden) return;
+        const box = pipe.getBoundingClientRect();
+        const at = (node) => pipe.querySelector('[data-node="' + node + '"]');
+        const edges = [
+          ["brief", "analystA"],
+          ["brief", "analystB"],
+          ["analystA", "critiqueOfA"],
+          ["analystB", "critiqueOfB"],
+          ["critiqueOfA", "synthesizer"],
+          ["critiqueOfB", "synthesizer"],
+          ["synthesizer", "gates"],
+          ["gates", "you"],
+        ];
+        for (const [from, to] of edges) {
+          const source = at(from).getBoundingClientRect();
+          const target = at(to).getBoundingClientRect();
+          const x1 = source.right - box.left;
+          const y1 = source.top + source.height / 2 - box.top;
+          const x2 = target.left - box.left;
+          const y2 = target.top + target.height / 2 - box.top;
+          const bend = (x2 - x1) / 2;
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("d", "M" + x1 + " " + y1 + " C" + (x1 + bend) + " " + y1 + " " + (x2 - bend) + " " + y2 + " " + x2 + " " + y2);
+          const lit = at(from).classList.contains("done") || at(from).classList.contains("flagged");
+          if (lit) path.setAttribute("class", "lit");
+          svg.appendChild(path);
+        }
+      }
+
+      function renderDetail(states, activeNode) {
+        const detail = document.getElementById("pipe-detail");
+        const node = activeNode || selectedNode;
+        clear(detail);
+        detail.hidden = !node;
+        if (!node) return;
+        const story = nodeStory(node);
+        const state = states[node] || {};
+        const live = liveStage(view);
+        const heading = document.createElement("h3");
+        heading.textContent = live ? story.title : node === "gates" || node === "brief" || node === "you" ? story.title : SEAT_LABEL[node] + " · recorded replay";
+        const meta = document.createElement("p");
+        meta.className = "quiet";
+        meta.textContent = [state.meta, state.state].filter(Boolean).join(" · ");
+        detail.append(heading, meta);
+        const section = (label, body, share) => {
+          const title = document.createElement("p");
+          title.className = "label";
+          title.textContent = label;
+          const pre = document.createElement("pre");
+          if (share !== undefined && share < 1) {
+            pre.textContent = body.slice(0, Math.floor(body.length * share));
+            const cursor = document.createElement("span");
+            cursor.className = "cursor";
+            pre.appendChild(cursor);
+          } else {
+            pre.textContent = body;
+          }
+          detail.append(title, pre);
+          return pre;
+        };
+        section("Given", story.given);
+        if (live || node === "gates" || node === "you" || node === "brief") {
+          if (state.cls === "" && node !== "brief") section("Produced", "Not started yet.");
+          else {
+            const pre = section(node === "gates" ? "Checks" : "Produced", story.produced, state.cls === "running" ? state.share : undefined);
+            if (state.cls === "running") pre.scrollTop = pre.scrollHeight;
+          }
+        } else {
+          const row = view.calls.find((call) => call.stage === PIPE_STAGE[view.state] && call.role === node);
+          section("Checked", row && row.quality ? row.quality.summary + (row.quality.findings.length ? "\n\n" + row.quality.findings.join("\n") : "") : "Not run yet.");
+        }
+      }
+
+      function renderPipeline(next) {
+        const card = document.getElementById("pipeline");
+        const states = next && PIPE_STAGE[next.state] ? nodeStates(next) : null;
+        card.hidden = !states;
+        if (!states) {
+          stopReplay();
+          return;
+        }
+        const live = liveStage(next);
+        document.getElementById("pipe-controls").hidden = !live;
+        let active = null;
+        for (const node of ["brief", ...PIPE_SEATS, "gates", "you"]) {
+          const element = document.querySelector('#pipe [data-node="' + node + '"]');
+          const state = states[node];
+          element.className = "node" + (element.classList.contains("span") ? " span" : "") + (state.cls ? " " + state.cls : "") + (selectedNode === node ? " selected" : "");
+          clear(element);
+          for (const [className, value] of [["node-kicker", state.kicker], ["node-name", state.name], ["node-meta", state.meta], ["node-state", state.state]]) {
+            if (!value) continue;
+            const span = document.createElement("span");
+            span.className = className;
+            span.textContent = value;
+            element.appendChild(span);
+          }
+          if (state.cls === "running") active = node;
+        }
+        const play = document.getElementById("pipe-play");
+        play.textContent = replay.mode === "playing" ? "❚❚ Pause" : replay.mode === "paused" ? "▶ Resume" : "▶ Replay the real run";
+        if (live) {
+          const line = timeline();
+          const spent = line.seats.reduce((sum, item) => sum + (item.seat.costUsd || 0), 0);
+          const models = [...new Set(showcase.seats.map((seat) => modelLabel(seat.model)))].join(" and ");
+          text("pipe-sub", "A real run: " + models + " · " + formatMs(line.modelEnd) + " of model time · " + money(spent) + " for these five calls");
+          if (replay.mode === "idle") {
+            text("pipe-caption", "These requirements were really written and checked by " + models + ". Press Replay to watch the run at " + replay.speed + "× speed.");
+          } else {
+            const shown = Math.min(replay.t, line.modelEnd);
+            const sofar = line.seats.reduce((sum, item) => sum + (item.seat.costUsd || 0) * Math.max(0, Math.min(1, (replay.t - item.start) / Math.max(1, item.end - item.start))), 0);
+            const story = active ? nodeStory(active).caption : replay.mode === "done" ? nodeStory("you").caption : "";
+            text(
+              "pipe-caption",
+              (story ? story + " " : "") + "(Replay at " + replay.speed + "× · " + formatMs(shown) + " of " + formatMs(line.modelEnd) + " real time · " + money(sofar) + " so far)",
+            );
+          }
+        } else {
+          text("pipe-sub", PIPE_STAGE[next.state] + " step · recorded replay");
+          text(
+            "pipe-caption",
+            "This step replays saved answers instantly, so there is nothing to watch here." + (showcase ? " The requirements step replays a real two-model run." : ""),
+          );
+        }
+        renderDetail(states, replay.mode === "playing" ? active : null);
+        drawLines();
+      }
+
+      function stopReplay() {
+        cancelAnimationFrame(replay.frame);
+        if (replay.mode === "playing") replay.mode = "paused";
+      }
+
+      function tick(now) {
+        if (replay.mode !== "playing") return;
+        replay.t += (now - replay.last) * replay.speed;
+        replay.last = now;
+        const end = timeline().end;
+        if (replay.t >= end) {
+          replay.t = end;
+          replay.mode = "done";
+        }
+        if (now - replay.drawn > 60 || replay.mode === "done") {
+          replay.drawn = now;
+          renderPipeline(view);
+        }
+        if (replay.mode === "playing") replay.frame = requestAnimationFrame(tick);
+      }
+
+      document.getElementById("pipe-play").addEventListener("click", () => {
+        if (replay.mode === "playing") {
+          stopReplay();
+        } else {
+          if (replay.mode === "idle" || replay.mode === "done") replay.t = 0;
+          replay.mode = "playing";
+          replay.last = performance.now();
+          selectedNode = null;
+          replay.frame = requestAnimationFrame(tick);
+        }
+        renderPipeline(view);
+      });
+      document.getElementById("pipe-skip").addEventListener("click", () => {
+        cancelAnimationFrame(replay.frame);
+        replay.mode = "done";
+        replay.t = timeline().end;
+        renderPipeline(view);
+      });
+      document.getElementById("pipe-speed").addEventListener("change", (event) => {
+        replay.speed = Number(event.target.value) || 30;
+        renderPipeline(view);
+      });
+      for (const element of document.querySelectorAll("#pipe .node")) {
+        element.addEventListener("click", () => {
+          const node = element.dataset.node;
+          selectedNode = selectedNode === node ? null : node;
+          if (replay.mode === "playing") stopReplay();
+          renderPipeline(view);
+        });
+      }
+      window.addEventListener("resize", drawLines);
+
+      async function loadShowcase() {
+        try {
+          const response = await fetch("/api/showcase");
+          showcase = response.ok ? await response.json() : null;
+        } catch {
+          showcase = null;
+        }
+        if (view) renderPipeline(view);
+      }
+
       function preferredTab(next) {
+        if (next.state === "recorded" && next.tabs.some((tab) => tab.id === "product")) return "product";
+        if ((next.state === "prd_gate" || next.state === "prd_draft") && next.tabs.some((tab) => tab.id === "live-overview")) return "live-overview";
         if ((next.state === "unit_loop" || next.state === "implementing") && next.tabs.some((tab) => tab.id === "unit")) return "unit";
         if (next.tabs.some((tab) => tab.id === "matrix")) return "matrix";
         if (next.tabs.some((tab) => tab.id === "synthesis")) return "synthesis";
@@ -966,12 +1564,18 @@
         document.getElementById("workbench-link").href = workbench + "/";
         document.getElementById("eligibility-link").href = workbench + "/eligibility";
         const split = next.state === "architecture_gate" || next.state === "architecture_draft";
+        const prd = next.state === "prd_gate" || next.state === "prd_draft";
+        const live = next.tabs.some((tab) => tab.id === "live-overview");
         document.getElementById("how").hidden = next.state === "intake";
         text(
           "how",
           split
             ? "Two drafts are written apart. Each one critiques the other. You approve only the combined result."
-            : "Both analysts returned the same document. The two drafts split on the architecture step.",
+            : prd && live
+              ? "The requirements this run is built on are recorded. Beside them is a real run where two different models wrote and critiqued separate drafts."
+              : next.state === "recorded"
+                ? "The run is closed. What it built is running in the product."
+                : "Each stage replays recorded drafts and critiques. The drafts differ at the architecture step.",
         );
         const words = guide(next);
         text("now-title", words[0]);
@@ -1173,6 +1777,7 @@
         }
         if (next.state === "clarifying") refreshAnswers();
         renderCalls(next);
+        renderPipeline(next);
 
         const log = document.getElementById("log");
         clear(log);
@@ -1215,6 +1820,7 @@
       });
 
       document.getElementById("live-refresh").addEventListener("click", loadLiveRuns);
+      loadShowcase();
       setInterval(renderClock, 1000);
       loadLiveRuns();
 

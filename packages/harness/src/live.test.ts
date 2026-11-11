@@ -10,7 +10,7 @@ import {
   recordedLines,
   type Prd,
 } from "@northwind/orchestrator";
-import { livePrdSeats, prdContext, runLivePrd, summarizeLiveRun, withChains } from "./live.ts";
+import { livePrdSeats, loadLiveShowcase, prdContext, runLivePrd, summarizeLiveRun, withChains } from "./live.ts";
 import { FEATURE_B_BRIEF, prdPanel } from "./panels.ts";
 
 interface FakeReply {
@@ -108,14 +108,17 @@ test("a refusal or a truncated answer stops the panel with the seat and the reas
   await assert.rejects(runLivePrd(truncated), /model-truncated:analystA/);
 });
 
-test("the gates judge a live PRD: an ungrounded citation, an open question, and leaked PHI are refused", async () => {
+test("the gates judge a live PRD: an ungrounded citation, an unflagged open question, and leaked PHI are refused", async () => {
   const lines = recordedLines(prdPanel());
   const wrapped = JSON.parse(lines[4] ?? "{}") as { synthesis: Prd; rationale: unknown };
   wrapped.synthesis.citations = [...wrapped.synthesis.citations, "pack/glossary.md"];
-  wrapped.synthesis.openQuestions = [{ id: "OQ-1", text: "Who owns the override?" }];
+  wrapped.synthesis.openQuestions = [
+    { id: "OQ-1", text: "Who owns the override?" },
+    { id: "OQ-2", text: "Proposed: the PFS lead owns overrides. Needs sign-off." },
+  ];
   wrapped.synthesis.problem = `${wrapped.synthesis.problem} Call 415-555-0134 for help.`;
   const result = await runLivePrd(new FixturePlayer([...lines.slice(0, 4), JSON.stringify(wrapped)]));
-  assert.deepEqual(result.issues, ["missing-citation:pack/glossary.md", "open-questions", "phi:phone:415-555-0134"]);
+  assert.deepEqual(result.issues, ["missing-citation:pack/glossary.md", "open-question-unflagged:OQ-1", "phi:phone:415-555-0134"]);
 });
 
 test("the synthesizer answers in plain JSON checked against its schema, since its compiled grammar is too large", async () => {
@@ -194,4 +197,77 @@ test("a resumed or re-checked run reports what the whole chain of attempts cost 
   assert.equal(chained[0]?.chainCostUsd?.toFixed(2), "2.08");
   assert.equal(chained[0]?.chainDurationMs, 1_772_500);
   assert.equal(chained[3]?.chainCostUsd, 0.3);
+});
+
+test("the showcase takes each seat's time and cost from the attempt where it succeeded", async () => {
+  const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const dir = mkdtempSync(join(tmpdir(), "live-showcase-"));
+  try {
+    const lines = recordedLines(prdPanel());
+    const panel = prdPanel();
+    const metric = (role: string, model: string, durationMs: number, costUsd: number, source = "live") => ({
+      role,
+      source,
+      model,
+      durationMs,
+      usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      costUsd,
+    });
+    const seats = ["analystA", "analystB", "critiqueOfA", "critiqueOfB", "synthesizer"];
+    // Attempt 1: analyst A finished; analyst B failed before a metric was recorded.
+    writeFileSync(
+      join(dir, "prd-1.json"),
+      JSON.stringify({
+        format: 2,
+        model: "m",
+        brief: FEATURE_B_BRIEF,
+        startedAt: "2026-11-09T01:00:00.000Z",
+        durationMs: 400_000,
+        metrics: [metric("analystA", "claude-opus-5", 125_000, 0.3)],
+        failure: "xai-network: UND_ERR_HEADERS_TIMEOUT",
+        answers: [{ role: "analystA", prompt: "p", text: lines[0] }],
+      }),
+    );
+    // Attempt 2: resumed, the other four seats ran live and the gates passed.
+    writeFileSync(
+      join(dir, "prd-2.json"),
+      JSON.stringify({
+        format: 2,
+        model: "m",
+        brief: FEATURE_B_BRIEF,
+        startedAt: "2026-11-09T02:00:00.000Z",
+        durationMs: 900_000,
+        resumedFrom: "prd-1.json",
+        metrics: [
+          metric("analystA", "claude-opus-5", 0, 0, "resumed"),
+          metric("analystB", "grok-4.7", 500_000, 0.06),
+          metric("critiqueOfA", "grok-4.7", 259_000, 0.02),
+          metric("critiqueOfB", "claude-opus-5", 94_000, 0.27),
+          metric("synthesizer", "claude-opus-5", 319_000, 0.87),
+        ],
+        issues: [],
+        calls: seats.map((role) => ({ role, prompt: "p" })),
+        panel,
+      }),
+    );
+    const show = loadLiveShowcase(dir);
+    assert.ok(show);
+    assert.equal(show.file, "prd-2.json");
+    assert.equal(show.paidAttempts, 2);
+    assert.equal(show.chainCostUsd?.toFixed(2), "1.52");
+    assert.deepEqual(
+      show.seats.map((seat) => [seat.role, seat.model, seat.durationMs, seat.costUsd]),
+      [
+        ["analystA", "claude-opus-5", 125_000, 0.3],
+        ["analystB", "grok-4.7", 500_000, 0.06],
+        ["critiqueOfA", "grok-4.7", 259_000, 0.02],
+        ["critiqueOfB", "claude-opus-5", 94_000, 0.27],
+        ["synthesizer", "claude-opus-5", 319_000, 0.87],
+      ],
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
