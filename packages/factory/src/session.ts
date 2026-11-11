@@ -53,10 +53,12 @@ import {
   questionPanel,
   recordInput,
   testCasePanel,
+  type LiveShowcase,
 } from "@northwind/harness";
 import {
   RAIL_LABELS,
   architectureBlocks,
+  liveTabs,
   panelTabs,
   prdBlocks,
   questionBlocks,
@@ -118,9 +120,14 @@ export class FactorySession {
   private tree: FeatureBTree | null = null;
   private fingerprints: string[] = [];
 
+  /**
+   * The server passes the latest passing live run. Without one, the PRD step shows only the recorded panel,
+   * so a session never depends on what happens to be saved on the machine.
+   */
   constructor(
     id?: string,
     readonly workbench: string = DEFAULT_WORKBENCH,
+    readonly showcase: LiveShowcase | null = null,
   ) {
     sequence += 1;
     this.id = id ?? `feature-b-${sequence}`;
@@ -425,7 +432,7 @@ export class FactorySession {
       return;
     }
     this.finishedAt = Date.now();
-    this.log.push("Result recorded. The workbench build is not served in this slice.");
+    this.log.push("Result recorded. The denial workbench runs this rule, and the priority checks just proved it there.");
   }
 
   private probe(brief: string): FactoryView {
@@ -582,7 +589,9 @@ export class FactorySession {
   private tabs(): ViewTab[] {
     const state = this.run.state;
     if (state === "clarifying") return panelTabs("questions", this.run, (set) => questionBlocks(set as QuestionSet));
-    if (state === "prd_gate" || state === "prd_draft") return panelTabs("prd", this.run, (prd) => prdBlocks(prd as Prd));
+    if (state === "prd_gate" || state === "prd_draft") {
+      return [...panelTabs("prd", this.run, (prd) => prdBlocks(prd as Prd)), ...(this.showcase ? liveTabs(this.showcase) : [])];
+    }
     if (state === "architecture_gate" || state === "architecture_draft") {
       return panelTabs("architecture", this.run, (architecture) => architectureBlocks(architecture as Architecture));
     }
@@ -623,6 +632,24 @@ export class FactorySession {
     if (state === "record_gate" || state === "recorded") {
       const decision = recordDecision(recordInput(this.run, { unitGreen: this.unitGreen, p0Green: this.p0Green }));
       return [
+        ...(state === "recorded"
+          ? [
+              {
+                id: "product",
+                label: "In the product",
+                blocks: [
+                  {
+                    heading: "The rule, working in the denial workbench",
+                    lines: [
+                      "DEN-01 is a CO-50 denial with no clinical-note reference. The page names what is missing, and Mark appeal ready stays disabled until a clinical-note reference is present.",
+                      `frame:${this.link("/denial/DEN-01")}`,
+                      `link:${this.link("/")} Open the full workqueue`,
+                    ],
+                  },
+                ],
+              },
+            ]
+          : []),
         { id: "matrix", label: "Trace", blocks: this.matrixBlocks() },
         {
           id: "record",

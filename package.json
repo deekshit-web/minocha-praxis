@@ -15,7 +15,8 @@
     "record-panels": "node scripts/record-panels.mjs",
     "compare-gated": "node scripts/compare-gated.mjs",
     "compare-levers": "node scripts/compare-levers.mjs",
-    "record-builds": "node scripts/record-builds.mjs"
+    "record-builds": "node scripts/record-builds.mjs",
+    "eval-prd": "node scripts/eval-prd.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

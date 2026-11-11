@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { prdPanel, type LiveShowcase } from "@northwind/harness";
 import type { Block } from "./view.ts";
 import { FactorySession } from "./session.ts";
 
@@ -45,7 +46,7 @@ test("Feature B pauses at each human gate and records only after the P0 trace is
     ["synthesis", "critiques"],
   );
   const requirements = view.tabs.find((tab) => tab.id === "synthesis")?.blocks.map((block) => [block.heading, ...block.lines].join(" ")).join("\n") ?? "";
-  assert.match(requirements, /Both analysts returned the same document/);
+  assert.match(requirements, /This recording uses one draft for both analysts/);
   assert.match(requirements, /Q-2: Nobody in v1/);
   assert.equal(view.tabs.some((tab) => tab.id === "proposal-a"), false);
   assert.equal(view.approvals.find((item) => item.gate === "prd")?.matches, false);
@@ -125,7 +126,7 @@ test("Feature B pauses at each human gate and records only after the P0 trace is
   session.p0Green = true;
   view = await session.act({ type: "record" });
   assert.equal(view.state, "recorded");
-  assert.match(view.log.join("\n"), /not served/);
+  assert.match(view.log.join("\n"), /The denial workbench runs this rule/);
   assert.equal(view.approvals.every((item) => item.matches), true);
 });
 
@@ -171,4 +172,58 @@ test("workbench links follow the configured workbench", () => {
   const lines = view.tabs.flatMap((tab) => tab.blocks.flatMap((block) => block.lines));
   assert.ok(lines.includes("link:http://127.0.0.1:9999/summary Lead summary"));
   assert.equal(lines.some((line) => line.includes("4173")), false);
+});
+
+test("a live run shows beside the recorded requirements, and a recorded run ends in the product", async () => {
+  const seat = (role: LiveShowcase["seats"][number]["role"], model: string, durationMs: number, costUsd: number) => ({
+    role,
+    model,
+    durationMs,
+    costUsd,
+    quality: null,
+  });
+  const showcase: LiveShowcase = {
+    file: "prd-live.json",
+    brief: "the brief",
+    paidAttempts: 3,
+    chainCostUsd: 2.08,
+    chainDurationMs: 1_772_500,
+    panel: prdPanel(),
+    seats: [
+      seat("analystA", "claude-opus-5", 125_000, 0.3),
+      seat("analystB", "grok-4.7", 500_000, 0.06),
+      seat("critiqueOfA", "grok-4.7", 259_000, 0.02),
+      seat("critiqueOfB", "claude-opus-5", 94_000, 0.27),
+      seat("synthesizer", "claude-opus-5", 319_000, 0.87),
+    ],
+  };
+  const session = new FactorySession("showcase", "http://127.0.0.1:9999", showcase);
+  await session.act({ type: "begin" });
+  let view = await session.act({ type: "answers", choices: SUGGESTED });
+  assert.equal(view.state, "prd_gate");
+  const overview = view.tabs.find((tab) => tab.id === "live-overview");
+  assert.equal(overview?.label, "Claude vs Grok");
+  const lines = overview?.blocks.flatMap((block) => block.lines).join("\n") ?? "";
+  assert.match(lines, /Claude Opus 5 wrote draft A and Grok 4.7 wrote draft B/);
+  assert.match(lines, /\$2\.08 and 29 min 33 s across 3 paid attempts/);
+  assert.match(lines, /Draft B · Grok 4\.7 · 8 min 20 s · \$0\.06/);
+  assert.deepEqual(
+    view.tabs.map((tab) => tab.id),
+    ["synthesis", "critiques", "live-overview", "live-a", "live-b", "live-synthesis"],
+  );
+
+  view = await session.act({ type: "approve" });
+  view = await session.act({ type: "accept-suggestion" });
+  view = await session.act({ type: "approve" });
+  view = await session.act({ type: "repair" });
+  view = await session.act({ type: "approve" });
+  view = await session.act({ type: "record" });
+  assert.equal(view.state, "recorded");
+  const product = view.tabs.find((tab) => tab.id === "product");
+  assert.ok(product?.blocks[0]?.lines.includes("frame:http://127.0.0.1:9999/denial/DEN-01"));
+
+  const plain = new FactorySession("no-showcase");
+  await plain.act({ type: "begin" });
+  const recordedOnly = await plain.act({ type: "answers", choices: SUGGESTED });
+  assert.equal(recordedOnly.tabs.some((tab) => tab.id.startsWith("live-")), false);
 });

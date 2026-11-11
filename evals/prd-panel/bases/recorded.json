@@ -1,0 +1,240 @@
+{
+  "problem": "Specialists can mark a CO-50 appeal ready without the clinical-note reference and filing deadline the payer packet needs.",
+  "users": [
+    "Denial specialist",
+    "PFS lead"
+  ],
+  "inScope": [
+    "CO-50 readiness gate",
+    "Named missing items",
+    "PR-1 kept off the appeal path"
+  ],
+  "outOfScope": [
+    "Diagnosis changes",
+    "Real clearinghouse submit",
+    "Lead override"
+  ],
+  "assumptions": [
+    {
+      "answerId": "Q-1",
+      "text": "The gate applies to CO-50 only."
+    },
+    {
+      "answerId": "Q-2",
+      "text": "Nobody can override the gate in v1."
+    },
+    {
+      "answerId": "Q-3",
+      "text": "A clinical-note reference is a non-empty DOC-### id."
+    },
+    {
+      "answerId": "Q-4",
+      "text": "The deadline is the date of service plus 90 days, and a blank deadline is missing."
+    },
+    {
+      "answerId": "Q-5",
+      "text": "The blocked action names the missing items."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "statement": "A CO-50 denial can be marked appeal-ready only when a clinical-note reference and a filing deadline are both present.",
+      "rationale": "Those are the two fields the packet checker will look for."
+    },
+    {
+      "id": "REQ-2",
+      "statement": "CO-16, CO-197, and CO-4 are unchanged by this gate.",
+      "rationale": "The question round limited the gate to CO-50."
+    },
+    {
+      "id": "REQ-3",
+      "statement": "PR-1 and OA-23 cannot be marked appeal-ready.",
+      "rationale": "The demo table classes them as patient responsibility and informational."
+    },
+    {
+      "id": "REQ-4",
+      "statement": "When the gate blocks, the specialist sees the names of the missing items.",
+      "rationale": "A disabled control with no reason cannot be tested from the scenario."
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "requirementId": "REQ-1",
+      "given": "A CO-50 denial with no clinical-note reference and a filing deadline",
+      "when": "The specialist marks the appeal ready",
+      "then": "The packet stays not ready and the missing item is the clinical-note reference",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-2",
+      "requirementId": "REQ-1",
+      "given": "A CO-50 denial with a clinical-note reference and no filing deadline",
+      "when": "The specialist marks the appeal ready",
+      "then": "The packet stays not ready and the missing item is the filing deadline",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-3",
+      "requirementId": "REQ-1",
+      "given": "A CO-50 denial with both a clinical-note reference and a filing deadline",
+      "when": "The specialist marks the appeal ready",
+      "then": "The packet becomes appeal-ready",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-4",
+      "requirementId": "REQ-2",
+      "given": "A CO-16 denial with neither field",
+      "when": "The specialist marks the appeal ready",
+      "then": "This gate does not require a clinical-note reference",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-5",
+      "requirementId": "REQ-3",
+      "given": "A PR-1 deductible line",
+      "when": "The specialist looks for the appeal action",
+      "then": "The line is not appealable",
+      "priority": "P0"
+    },
+    {
+      "id": "AC-6",
+      "requirementId": "REQ-4",
+      "given": "A blocked CO-50 denial",
+      "when": "The specialist reads the ready action",
+      "then": "The missing field names are visible",
+      "priority": "P1"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "SCN-1",
+      "criterionIds": [
+        "AC-1"
+      ],
+      "role": "Denial specialist",
+      "startingState": "CO-50 denial DEN-01 has a deadline and no DOC id",
+      "steps": [
+        "Open the denial",
+        "Choose mark ready"
+      ],
+      "expected": "Ready stays off and clinical-note reference is named"
+    },
+    {
+      "id": "SCN-2",
+      "criterionIds": [
+        "AC-2"
+      ],
+      "role": "Denial specialist",
+      "startingState": "CO-50 denial has DOC-014 and a blank deadline",
+      "steps": [
+        "Open the denial",
+        "Choose mark ready"
+      ],
+      "expected": "Ready stays off and filing deadline is named"
+    },
+    {
+      "id": "SCN-3",
+      "criterionIds": [
+        "AC-3"
+      ],
+      "role": "Denial specialist",
+      "startingState": "CO-50 denial has DOC-003 and a deadline",
+      "steps": [
+        "Open the denial",
+        "Choose mark ready"
+      ],
+      "expected": "The denial becomes appeal-ready"
+    },
+    {
+      "id": "SCN-4",
+      "criterionIds": [
+        "AC-4"
+      ],
+      "role": "Denial specialist",
+      "startingState": "Workqueue contains a CO-16 denial",
+      "steps": [
+        "Filter to denials",
+        "Open the CO-16 row",
+        "Choose mark ready"
+      ],
+      "expected": "The CO-50 note rule is not applied"
+    },
+    {
+      "id": "SCN-5",
+      "criterionIds": [
+        "AC-5"
+      ],
+      "role": "Denial specialist",
+      "startingState": "A PR-1 line is on the remit",
+      "steps": [
+        "Open the line"
+      ],
+      "expected": "No appeal-ready action is offered"
+    },
+    {
+      "id": "SCN-6",
+      "criterionIds": [
+        "AC-6"
+      ],
+      "role": "PFS lead",
+      "startingState": "Summary is open and a CO-50 row is blocked",
+      "steps": [
+        "Open the blocked denial"
+      ],
+      "expected": "The missing item names are on the screen"
+    }
+  ],
+  "screens": [
+    {
+      "id": "SCR-1",
+      "title": "Workqueue",
+      "purpose": "Find the denial and its deadline risk",
+      "scenarioIds": [
+        "SCN-4"
+      ]
+    },
+    {
+      "id": "SCR-2",
+      "title": "Denial detail",
+      "purpose": "Read the next action and the checklist",
+      "scenarioIds": [
+        "SCN-1",
+        "SCN-2",
+        "SCN-3",
+        "SCN-5"
+      ]
+    },
+    {
+      "id": "SCR-3",
+      "title": "Lead summary",
+      "purpose": "Count lines by CARC class",
+      "scenarioIds": [
+        "SCN-6"
+      ]
+    }
+  ],
+  "openQuestions": [],
+  "citations": [
+    "pack/carc-demo.md",
+    "pack/payer-northwind.md",
+    "pack/phi-policy.md",
+    "pack/roles.md"
+  ],
+  "carcReferences": [
+    {
+      "code": "CO-50",
+      "nextAction": "Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product."
+    },
+    {
+      "code": "CO-16",
+      "nextAction": "Correct the missing element named by the remark and resubmit the claim."
+    },
+    {
+      "code": "PR-1",
+      "nextAction": "Post the amount to patient responsibility. Do not open an appeal."
+    }
+  ]
+}

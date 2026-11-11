@@ -29,7 +29,7 @@ test("the factory page and one act are served over HTTP", async () => {
     assert.equal(page.headers.get("content-type"), "text/html; charset=utf-8");
     assert.match(html, /Recorded run/);
     assert.match(html, /does not start the denial workbench/);
-    assert.match(html, /Both analysts returned the same document/);
+    assert.match(html, /Your turn/);
     assert.match(html, /Record the result/);
     assert.match(html, /id="reset"/);
     assert.match(html, /Confirm reset/);
@@ -153,5 +153,18 @@ test("a cross-site page cannot reset the factory", async () => {
     const refused = await fetch(`${origin}/api/reset`, { method: "POST", headers: { origin: "https://evil.example" } });
     assert.equal(refused.status, 403);
     assert.equal((await fetch(`${origin}/api/session/${session.id}`)).status, 200);
+  });
+});
+
+test("the page can read the saved real run without making a call", async () => {
+  await withServer(async (port) => {
+    const response = await fetch(`http://127.0.0.1:${port}/api/showcase`);
+    assert.equal(response.status, 200);
+    const showcase = (await response.json()) as { seats?: unknown[]; panel?: unknown } | null;
+    // Null on a machine with no passing live run saved; otherwise all five seats and the panel to replay.
+    if (showcase !== null) {
+      assert.equal(showcase.seats?.length, 5);
+      assert.ok(showcase.panel);
+    }
   });
 });
