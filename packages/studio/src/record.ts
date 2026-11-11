@@ -10,7 +10,7 @@ import type { WorkflowSpec } from "./workflows.ts";
  * caught. The page replays these recordings in place of the prepared panel.
  */
 
-const Draft = z.object({ text: z.string() });
+export const Draft = z.object({ text: z.string() });
 const Finding = z.object({
   id: z.string(),
   severity: z.enum(["P0", "P1", "P2"]),
@@ -18,7 +18,7 @@ const Finding = z.object({
   detail: z.string(),
   quote: z.string(),
 });
-const Review = z.object({ findings: z.array(Finding), strengths: z.string() });
+export const Review = z.object({ findings: z.array(Finding), strengths: z.string() });
 const Merge = z.object({
   document: z.string(),
   keptFromA: z.string(),
@@ -64,13 +64,13 @@ export function panelContext(spec: WorkflowSpec, domain: string): string {
   ].join("\n\n");
 }
 
-function draftInstructions(spec: WorkflowSpec): string {
+export function draftInstructions(spec: WorkflowSpec): string {
   return spec.kind === "build"
     ? "Write the requirements for this feature as numbered lines: REQ-1, REQ-2, ... for requirements, then AC-1, AC-2, ... for acceptance criteria with concrete worked examples using real numbers or dates from the brief and answers. At most 8 lines in all."
     : `Write the ${spec.deliverable.toLowerCase()} itself, ready to use, from the sources only. At most 220 words.`;
 }
 
-const REVIEW_INSTRUCTIONS =
+export const REVIEW_INSTRUCTIONS =
   "Review the draft for defects against the brief, the facts and the rules. Recompute every number and date yourself. " +
   "Rate each finding P0 (would cause harm, break a rule, policy or law, or state a wrong figure), P1 (should be fixed before approval) or P2 (optional). " +
   "Title each finding in at most six words, explain it in at most 50 words, and quote the exact text at fault from the draft. " +

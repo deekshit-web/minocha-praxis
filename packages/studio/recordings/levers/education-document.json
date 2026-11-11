@@ -1,0 +1,423 @@
+{
+  "id": "education-document",
+  "baseline": {
+    "mergeSeconds": 40.2,
+    "mergeCostUsd": 0.104935,
+    "draftBSeconds": 96.3,
+    "draftBCostUsd": 0.00386,
+    "reviewASeconds": 147.9,
+    "reviewACostUsd": 0.0038
+  },
+  "merges": [
+    {
+      "variant": "opus-5-5",
+      "model": "claude-opus-5-5",
+      "mode": "rewrite",
+      "seconds": 34,
+      "costUsd": 0.088392,
+      "outputTokens": 3850,
+      "document": "Lesson Plan: Unit Rates with Fractions\nGrade 7. Standard 7.RP.A.1: compute unit rates associated with ratios of fractions, including ratios of lengths, areas and other quantities measured in like or different units.\nClass: 28 students. 4 need reading support, so all word problems use short sentences.\nTotal time: 45 minutes (5 + 10 + 10 + 12 + 8).\n\nWarm-up (5 min): A car goes 10 miles in 2 hours. Miles per hour? Share answers aloud. Answer: 5 miles per hour.\nWorked example (10 min): Teacher models 2/3 mile in 1/4 hour. Divide 2/3 by 1/4. Multiply by the reciprocal: 2/3 x 4 = 8/3. Rate is 8/3 (2 2/3) miles per hour.\nGuided practice (10 min): Pairs solve two problems. Teacher checks each pair.\nG1. A painter covers 3/4 square foot in 1/2 minute. Square feet per minute? Answer: 3/2.\nG2. 1/2 cup of flour makes 1/4 batch. Cups per batch? Answer: 2.\nIndependent practice (12 min): Students solve four problems alone. The teacher reads each problem aloud to the 4 reading-support students at a side table.\nP1. A tap fills 1/2 liter in 1/5 minute. Liters per minute? Answer: 5/2.\nP2. A snail moves 5/6 yard in 1/3 hour. Yards per hour? Answer: 5/2.\nP3. A photo is 1/2 foot wide. It is 1/3 foot tall. Feet of width per foot of height? Answer: 3/2.\nP4. 1/4 kilogram of rice costs 3/4 dollar. Dollars per kilogram? Answer: 3.\nExit quiz (8 min): 5 questions below. Read aloud for reading-support students.\n\nQuiz\n1. A runner goes 1/2 mile in 1/4 hour. Miles per hour?\n2. A recipe uses 3/4 cup flour for 1/2 batch. Cups per batch?\n3. Paint covers 2/3 square meter with 1/6 liter. Square meters per liter?\n4. Rope: 1/5 kilogram costs 3/2 dollars. Dollars per kilogram?\n5. A flag is 2/3 meter long. It is 1/2 meter wide. Meters of length per meter of width?\n\nAnswer Key\n1. 2 miles per hour\n2. 3/2 (1 1/2) cups per batch\n3. 4 square meters per liter\n4. 15/2 (7 1/2) dollars per kilogram\n5. 4/3 (1 1/3) meters of length per meter of width",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-A2",
+              "version1": "addressed",
+              "version2": "not addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B3",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [
+            "Quiz Q1 (3/4 cup for 1/2 batch, answer 3/2) is the identical computation to guided practice G1 (3/4 square foot in 1/2 minute, answer 3/2), so one of five quiz items re-tests a problem already worked with the teacher.",
+            "No quiz or practice item uses a ratio of like units (e.g. length per length), so the 'like or different units' part of 7.RP.A.1 is only half covered.",
+            "Minor: warm-up and all items otherwise verified correct - 2 cups, 8/3, 3/2, 2, 5/2, 5/2, 10, 2, and quiz answers 3/2, 4, 2, 7/2, 12/5 all recompute correctly; segments total 45 minutes in the required order."
+          ],
+          "errorsInVersion2": [
+            "Quiz Q1 is still the flagged item: 1/2 mile in 1/4 hour with answer 2, and it exactly duplicates guided practice G2 (1/2 cup makes 1/4 batch, answer 2), so the finding about the quiz repeating a modelled computation is not resolved.",
+            "Quiz Q2 (3/4 cup for 1/2 batch, answer 3/2) also duplicates guided practice G1 (3/4 square foot in 1/2 minute, answer 3/2); two of five quiz items therefore add no new assessment value.",
+            "Warm-up uses whole numbers only (10 miles in 2 hours), which does not exercise the ratios-of-fractions focus of 7.RP.A.1, though the stated answer of 5 miles per hour is correct.",
+            "All other figures verified correct: 8/3, 3/2, 2, 5/2, 5/2, 3/2, 3, and quiz answers 2, 3/2, 4, 15/2, 4/3; segments total 45 minutes in the required order."
+          ],
+          "preferred": "1",
+          "reason": "Version 1 is better because it resolves all five findings - including removing the flagged 1/2-in-1/4 quiz item and giving concrete read-aloud plus pairing support - and keeps five distinct, correct quiz computations, whereas Version 2 reintroduces the flagged item (answer 2) and repeats a second guided-practice problem on the quiz, despite its better like-unit coverage.",
+          "costUsd": 0.127486
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-A2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B3",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [
+            "No practice or quiz item uses like units, so ratios measured in like units, which 7.RP.A.1 includes, are missing."
+          ],
+          "errorsInVersion2": [],
+          "preferred": "2",
+          "reason": "Both versions fix every listed defect and recompute correctly, but version 2 better matches 7.RP.A.1 by assessing like-unit length ratios as well as different-unit and area rates, which version 1 never does.",
+          "costUsd": 0.006532
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "sonnet-5-5",
+      "model": "claude-sonnet-5-5",
+      "mode": "rewrite",
+      "seconds": 17.2,
+      "costUsd": 0.030566,
+      "outputTokens": 2487,
+      "document": "Lesson Plan: Unit Rates with Fractions. Grade 7, 45 minutes (5 + 10 + 10 + 10 + 10), standard 7.RP.A.1: compute unit rates associated with ratios of fractions, including ratios of lengths, areas and other quantities measured in like or different units. Class of 28. Four students need reading support, so all word problems use short sentences. Order: warm-up, worked example, guided practice, independent practice, exit quiz. Warm-up, 5 min. 1/2 cup of flour makes 1/4 batch. How much flour for 1 batch? Share briefly. Answer: 2 cups. Worked example, 10 min. A car goes 2/3 mile in 1/4 hour. Divide 2/3 by 1/4. Multiply by the reciprocal: 2/3 x 4 = 8/3. Rate: 8/3 miles per hour. Guided practice, 10 min. A painter covers 3/4 square foot in 1/2 minute. Find square feet per minute together. Answer: 3/2 square feet per minute. Independent practice, 10 min. Students work alone on two items: (a) 1/2 liter in 1/5 minute. Liters per minute? (b) 5/6 yard in 1/3 hour. Yards per hour? Answers: (a) 5/2 liters per minute, (b) 5/2 yards per hour. Reading support: the teacher reads each item aloud to the four students at the start, and each is paired with a partner who rereads it. Exit quiz, 10 min. Quiz. 1. A runner goes 1/2 mile in 1/4 hour. Miles per hour? 2. A painter covers 3/4 square foot in 1/2 hour. Square feet per hour? 3. 2/5 cup of paint covers 1/10 wall. Cups per wall? 4. 1/5 kilogram of rope costs 2 dollars. Dollars per kilogram? 5. A snail crawls 1/3 meter in 1/6 minute. Meters per minute? Answer key. Q1: 2 miles per hour. Q2: 3/2 square feet per hour. Q3: 4 cups per wall. Q4: 10 dollars per kilogram. Q5: 2 meters per minute.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-A2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B3",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [
+            "Quiz Q1 (3/4 cup per 1/2 batch, answer 3/2) repeats the exact computation of guided practice G1 (3/4 divided by 1/2), so one quiz item re-tests a just-modeled calculation.",
+            "Independent items I1 (1/2 divided by 1/5) and I2 (5/6 divided by 1/3) both yield 5/2, slightly narrowing practice variety (computations differ, so this is minor).",
+            "No numeric errors: 5+10+10+12+8 = 45, and all stated answers (2, 8/3, 3/2, 2, 5/2, 5/2, 10, 2; quiz 3/2, 4, 2, 7/2, 12/5) recompute correctly."
+          ],
+          "errorsInVersion2": [
+            "Quiz Q2 (3/4 square foot in 1/2 hour, answer 3/2) duplicates the guided practice item (3/4 square foot in 1/2 minute) with only the time unit changed, so the quiz again re-tests a modeled item rather than new learning.",
+            "Quiz Q1 is still the 1/2 mile in 1/4 hour item flagged in review, answer 2, which is also the same simple halving pattern as the warm-up (1/2 divided by 1/4 = 2).",
+            "Practice content is thin for the time allotted: one guided problem for 10 minutes and two independent items for 10 minutes, so 20 minutes of class is underspecified.",
+            "No numeric errors: 5+10+10+10+10 = 45, and all stated answers (2, 8/3, 3/2, 5/2, 5/2; quiz 2, 3/2, 4, 10, 2) recompute correctly."
+          ],
+          "preferred": "1",
+          "reason": "Both fix all five findings with correct arithmetic and a 45-minute five-part sequence, but Version 1 supplies far more written practice (two guided plus four independent items) and a quiz with wider, non-duplicated coverage of like and different units, whereas Version 2 leaves 20 minutes thinly specified and still reuses a modeled computation on the quiz.",
+          "costUsd": 0.105795
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-A2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B3",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "1",
+          "reason": "Version 1 is better for the department lead because it fills guided and independent practice with six written problems and a more varied quiz, while both versions follow the 45-minute sequence, support the four readers, and give correct answers.",
+          "costUsd": 0.006126
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "haiku-5-5",
+      "model": "claude-haiku-5-5",
+      "mode": "rewrite",
+      "seconds": 26.9,
+      "costUsd": 0.0035933000000000002,
+      "outputTokens": 6617,
+      "document": "Lesson Plan: Unit Rates with Fractions. Grade 7. Standard 7.RP.A.1: compute unit rates associated with ratios of fractions, including ratios of lengths, areas and other quantities measured in like or different units. Class: 28 students. 4 need reading support, so all word problems use short sentences. Read each problem aloud to these students and pair them with a partner. Total time: 45 minutes (5 + 10 + 10 + 12 + 8). Warm-up (5 min): Students find the unit rate for 10 miles in 2 hours. Share answers aloud. Answer: 5 miles per hour. Worked example (10 min): Teacher models 1/2 mile in 1/4 hour. Divide: 1/2 divided by 1/4 = 2. Rate is 2 miles per hour. Guided practice (10 min): Pairs solve two problems, and the teacher checks each pair. G1: A painter covers 3/4 square foot in 1/2 minute. Square feet per minute? Answer: 3/2. G2: A tap fills 2/3 liter in 1/6 minute. Liters per minute? Answer: 4. Independent practice (12 min): Students solve four problems alone. I1: A pump moves 1/2 liter in 1/5 minute. Liters per minute? Answer: 5/2. I2: A machine packs 3/4 box in 1/8 hour. Boxes per hour? Answer: 6. I3: A child walks 5/6 yard in 1/3 hour. Yards per hour? Answer: 5/2. I4: A hose fills 1/2 gallon in 1/4 hour. Gallons per hour? Answer: 2. Exit quiz (8 min): 5 questions below. Quiz. 1. A cyclist rides 3/5 mile in 1/5 hour. Miles per hour? 2. A recipe uses 3/4 cup flour for 1/2 batch. Cups per batch? 3. A painter covers 2/3 wall in 1/3 hour. Walls per hour? 4. A hiker walks 2/5 kilometer in 1/2 hour. Kilometers per hour? 5. Paint covers 1/2 square meter with 1/4 liter. Square meters per liter? Answer Key. 1. 3 miles per hour. 2. 1 1/2 cups per batch. 3. 2 walls per hour. 4. 4/5 kilometer per hour. 5. 2 square meters per liter.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-A2",
+              "version1": "addressed",
+              "version2": "not addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B3",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [
+            "No calculation errors found: warm-up 2, worked example 8/3, guided 3/2 and 2, independent 5/2, 5/2, 10, 2, and quiz answers 3/2, 4, 2, 7/2, 12/5 all recompute correctly; segments 5+10+10+12+8 total 45 minutes in the required order.",
+            "Minor overlap: quiz Q1 (3/4 divided by 1/2 = 3/2) repeats the exact computation of guided item G1, so one quiz item adds little new assessment value."
+          ],
+          "errorsInVersion2": [
+            "Quiz Q5 (1/2 square meter per 1/4 liter = 2) repeats the exact computation and answer of the worked example (1/2 divided by 1/4 = 2) and of independent item I4, so the original D-A2 problem persists, only moved from Q1 to Q5.",
+            "Quiz Q2 (3/4 divided by 1/2 = 3/2) repeats guided item G1 exactly, further narrowing the assessment.",
+            "Warm-up uses whole numbers (10 miles in 2 hours), which is off-standard for 7.RP.A.1 ratios of fractions, where the prior version used a fraction warm-up.",
+            "Everything is run together in one unbroken paragraph with no line breaks, making the five segments and the quiz hard for a teacher to use in class; arithmetic itself is correct (5, 2, 3/2, 4, 5/2, 6, 5/2, 2 and quiz 3, 1 1/2, 2, 4/5, 2) and the times total 45 minutes."
+          ],
+          "preferred": "1",
+          "reason": "Version 1 is accurate on every figure, keeps the quiz free of items already modeled or practiced, and is laid out in a usable segment-by-segment format, whereas Version 2 recycles the worked example and a guided item on the quiz, uses a whole-number warm-up off the fractions standard, and is presented as one dense paragraph.",
+          "costUsd": 0.100041
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-A2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B3",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "1",
+          "reason": "Version 1 is better because every problem stays on fractional unit rates, the worked example teaches the reciprocal method, quiz items do not repeat that model, and partner support is limited to practice so the exit quiz stays independent.",
+          "costUsd": 0.006198
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "opus-5-edit",
+      "model": "claude-opus-5",
+      "mode": "edit",
+      "seconds": 42.6,
+      "costUsd": 0.1063,
+      "outputTokens": 3680,
+      "document": "Lesson Plan: Unit Rates with Fractions\nGrade 7. Standard 7.RP.A.1: compute unit rates associated with ratios of fractions, including ratios of lengths, areas and other quantities measured in like or different units.\nClass: 28 students. 4 need reading support. All word problems use short sentences. Those 4 students hear every item read aloud and sit with a partner in all three practice segments and the quiz.\nTotal time: 45 minutes (5 + 10 + 10 + 12 + 8).\n\nWarm-up (5 min): Students find the unit rate for 10 miles in 2 hours. Answer: 5 miles per hour. Share answers aloud.\nWorked example (10 min): Teacher models 1/2 mile in 1/4 hour. Divide 1/2 by 1/4. Multiply by the reciprocal: 1/2 times 4 = 2. Rate is 2 miles per hour.\nGuided practice (10 min): Pairs solve these two problems. Teacher checks each pair.\n  G1. A painter covers 3/4 square foot in 1/2 minute. Square feet per minute? Answer: 1 1/2.\n  G2. A tap fills 1/2 liter in 1/5 minute. Liters per minute? Answer: 2 1/2.\nIndependent practice (12 min): Students solve these four problems alone.\n  I1. A walker goes 5/6 mile in 1/3 hour. Miles per hour? Answer: 2 1/2.\n  I2. A snail moves 1/3 meter in 1/6 minute. Meters per minute? Answer: 2.\n  I3. A recipe uses 3/8 cup sugar for 1/4 batch. Cups per batch? Answer: 1 1/2.\n  I4. Tiles cover 2/5 square meter with 1/2 box. Square meters per box? Answer: 4/5.\nExit quiz (8 min): 5 questions below. Each uses a different computation from the worked example.\n\nQuiz\n1. A cyclist goes 3/4 mile in 1/2 hour. Miles per hour?\n2. A recipe uses 2/3 cup flour for 1/4 batch. Cups per batch?\n3. A painter covers 2/3 wall in 1/3 hour. Walls per hour?\n4. Rope: 1/5 kilogram costs 2 dollars. Dollars per kilogram?\n5. Paint covers 3/5 square meter with 1/10 liter. Square meters per liter?\n\nAnswer Key\n1. 1 1/2 miles per hour\n2. 2 2/3 cups per batch\n3. 2 walls per hour\n4. 10 dollars per kilogram\n5. 6 square meters per liter",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-A2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B3",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [
+            "Quiz Q1 (3/4 divided by 1/2) repeats the exact computation of guided practice G1, so one quiz item re-tests practised work rather than widening coverage.",
+            "Context mismatch in I2: a snail moving 5/6 yard in 1/3 hour is implausible, though the arithmetic (5/2 yards per hour) is correct.",
+            "No other errors found: all rates (2, 8/3, 3/2, 2, 5/2, 5/2, 10, 2) and quiz answers (3/2, 4, 2, 7/2, 12/5) recompute correctly and segments total 45 minutes in the required order."
+          ],
+          "errorsInVersion2": [
+            "Warm-up uses whole numbers (10 miles in 2 hours) rather than a ratio of fractions, so the opening segment does not practise 7.RP.A.1 content.",
+            "Quiz Q1 (3/4 divided by 1/2) repeats the exact computation of guided practice G1, duplicating practised work on the assessment.",
+            "Reading-support note places the 4 students with a partner during the exit quiz, which undermines the quiz as an individual check of learning.",
+            "All computed values (3/2, 5/2, 5/2, 2, 3/2, 4/5 and quiz answers 3/2, 8/3, 2, 10, 6) recompute correctly and segments total 45 minutes in the required order."
+          ],
+          "preferred": "1",
+          "reason": "Both versions fix every finding with correct arithmetic and 45-minute pacing, but Version 1 is slightly stronger for the department because its warm-up already uses fraction ratios as the standard requires, its answer key shows the division step teachers can model, and it does not pair students during the exit quiz.",
+          "costUsd": 0.104581
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-A2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B3",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [
+            "Reading support says the four students partner in all three practice segments, but the plan has only two practice segments: guided practice and independent practice."
+          ],
+          "preferred": "1",
+          "reason": "Version 1 is better because every segment uses ratios of fractions, reading support matches the real segments, and the answer key shows the work, while Version 2 opens with a whole-number rate and miscounts the practice segments.",
+          "costUsd": 0.006452
+        },
+        "fullIsVersion": "1"
+      }
+    }
+  ],
+  "fastB": {
+    "model": "grok-4.20-0309-non-reasoning",
+    "draft": {
+      "seconds": 2.8,
+      "costUsd": 0,
+      "text": "Lesson plan: 45 min on 7.RP.A.1 unit rates with fractions. 28 students, 4 need short sentences. Warm-up (5 min): Compute 3/4 divided by 6. Worked example (10 min): A car travels 5/8 mile in 1/4 hour. Rate is (5/8)/(1/4)=2.5 mph. Guided practice (10 min): Pairs solve 3 problems with short sentences. Independent practice (15 min): 4 problems on ratios of lengths and areas. Exit quiz (5 min). Quiz: 1. 2/3 cup in 1/4 hour. Unit rate? 2. 3/5 km in 1/2 min. Rate? 3. Area 4/9 sq ft in 2/3 hr. Rate? 4. Paint 5/6 wall in 5/12 day. Rate? 5. 7/8 L in 3/4 s. Rate? Answer key: 1. 8/3 cph. 2. 6/5 kpm. 3. 2/3 sqfph. 4. 2 walls per day. 5. 7/6 Lps. (Total 198 words)",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "1",
+          "reason": "Both drafts have correct arithmetic and a 45-minute structure following the department sequence, but Draft 1 is the more complete deliverable, spelling out every warm-up, worked, guided and independent item with answers in short sentences, whereas Draft 2 leaves guided and independent practice as unspecified ",
+          "costUsd": 0.02923625
+        },
+        {
+          "judge": "grok",
+          "preferred": "1",
+          "reason": "Draft 1 better meets the brief by fully specifying correct, short-sentence unit-rate problems and answers for every timed segment and the quiz while covering the standard’s fraction ratios of lengths, areas and other quantities.",
+          "costUsd": 0.00314
+        }
+      ],
+      "baselineIs": "1"
+    },
+    "review": {
+      "seconds": 4.9,
+      "costUsd": 0,
+      "text": "D-A1 · P0 · Incorrect total time\n  The listed segment times sum to 45 but the plan states 5+10+10+12+8 which actually totals 45 only if misadded; recomputed 5+10=15, +10=25, +12=37, +8=45 is correct but draft claims 45 while structure violates department guide order and omits independent practice time correctly matching guide.\nD-A2 · P1 · Missing department guide elements\n  Department guide requires lessons follow warm-up, worked example, guided practice, independent practice, exit quiz. Draft uses exit quiz instead of independent practice as final activity and mislabels the 8 min block.\nD-A3 · P1 · Quiz not aligned to standard\n  Standard 7.RP.A.1 requires ratios of fractions including lengths areas and different units. Quiz question 4 uses kilograms and dollars which are different units but answer key computation 2 / (1/5) = 10 is correct; however question 2 uses 3/4 for 1/2 batch yielding 1.5 but is not a unit rate of fractions as specified.\nD-A4 · P2 · Warm-up lacks fractions\n  Standard and brief specify unit rates with fractions. Warm-up uses whole numbers 10 miles in 2 hours instead of fractions, violating the focus on 7.RP.A.1 with fractions.\nStrengths: The draft correctly incorporates short sentences for the 4 students needing reading support and provides an answer key with accurate computations for the chosen problems.",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "1",
+          "realBaseline": 2,
+          "falseBaseline": 0,
+          "realFast": 1,
+          "falseFast": 3,
+          "reason": "Review 1's two findings are both genuine and material (the 22 minutes of guided/independent practice problems are never written, and quiz Q1 merely repeats the worked example), and its strengths claim checks out since 5+10+10+12+8=45 and all five answers recompute correctly (1/2÷1/4=2, 3/4÷1/2=1.5, 2/3÷1/3=2, 2÷1/5=10, 1/2÷1/4=2), whereas Review 2 offers only one real point (the whole-number warm-up does not use fractions) alongside three invented ones: a self-contradicting 'incorrect total time' item that proves the sum is 45, a claim the department sequence is violated when the draft follows warm-up, worked example, guided practice, independent practice, exit quiz exactly, and a claim that 3/4 cup per 1/2 batch is not a ratio of fractions; Review 2 also misses the missing practice problems entirely.",
+          "costUsd": 0.03950625
+        },
+        {
+          "judge": "grok",
+          "preferred": "1",
+          "realBaseline": 2,
+          "falseBaseline": 0,
+          "realFast": 1,
+          "falseFast": 3,
+          "reason": "Review 1 correctly flags the unwritten practice problems and the quiz item copied from the worked example, while Review 2 wrongly claims a time error, a sequence violation, and quiz misalignment.",
+          "costUsd": 0.003794
+        }
+      ],
+      "baselineIs": "1"
+    }
+  }
+}

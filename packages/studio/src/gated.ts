@@ -19,14 +19,14 @@ import type { WorkflowSpec } from "./workflows.ts";
 const SURE = 0.7;
 const JEV_PRICE_PER_TOKEN = 0.042 / 1_000_000;
 
-const Merge = z.object({
+export const Merge = z.object({
   document: z.string(),
   keptFromA: z.string(),
   keptFromB: z.string(),
   resolutions: z.array(z.object({ finding: z.string(), outcome: z.enum(["fixed", "rejected"]), note: z.string() })),
 });
 
-const Verdict = z.object({
+export const Verdict = z.object({
   findings: z.array(z.object({ id: z.string(), version1: z.enum(["addressed", "not addressed"]), version2: z.enum(["addressed", "not addressed"]) })),
   errorsInVersion1: z.array(z.string()),
   errorsInVersion2: z.array(z.string()),
@@ -176,20 +176,7 @@ export async function runGated(
   };
 
   // Judge both final versions blind, against every finding either review raised, unless they are identical.
-  let judges: GatedResult["judges"] = null;
-  if (final.trim() !== full.final.trim()) {
-    const fullIsVersion: "1" | "2" = [...spec.id].reduce((total, char) => total + char.charCodeAt(0), 0) % 2 === 0 ? "1" : "2";
-    const [v1, v2] = fullIsVersion === "1" ? [full.final, final] : [final, full.final];
-    const allFindings = `${renderReview(recording.reviewOfA, "D-A")}\n${renderReview(recording.reviewOfB, "D-B")}`;
-    const prompt = `Known review findings:\n${allFindings}\n\nVersion 1:\n${v1}\n\nVersion 2:\n${v2}`;
-    const judge = async (provider: ModelProvider) => {
-      const answer = await provider.complete({ role: "synthesizer", prompt });
-      const usage = answer.usage ?? { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
-      return { ...Verdict.parse(JSON.parse(answer.text)), costUsd: answer.costUsd ?? callCost(answer.model ?? "", usage) ?? 0 };
-    };
-    const [claude, grok] = await Promise.all([judge(providers.judges.claude), judge(providers.judges.grok)]);
-    judges = { claude, grok, fullIsVersion };
-  }
+  const judges = final.trim() !== full.final.trim() ? await judgeVersions(spec.id, recording, full.final, final, providers.judges) : null;
   void domain;
   return {
     id: spec.id,
@@ -203,12 +190,36 @@ export async function runGated(
   };
 }
 
-const JUDGE_INSTRUCTIONS =
+/**
+ * Both judges compare a baseline final version with a candidate, blind: the order is fixed per workflow, and
+ * each judge checks every known finding in both. Returns which version number the baseline was.
+ */
+export async function judgeVersions(
+  id: string,
+  recording: Recording,
+  baseline: string,
+  candidate: string,
+  judges: { claude: ModelProvider; grok: ModelProvider },
+): Promise<{ claude: JudgeVerdict & { costUsd: number }; grok: JudgeVerdict & { costUsd: number }; fullIsVersion: "1" | "2" }> {
+  const fullIsVersion: "1" | "2" = [...id].reduce((total, char) => total + char.charCodeAt(0), 0) % 2 === 0 ? "1" : "2";
+  const [v1, v2] = fullIsVersion === "1" ? [baseline, candidate] : [candidate, baseline];
+  const allFindings = `${renderReview(recording.reviewOfA, "D-A")}\n${renderReview(recording.reviewOfB, "D-B")}`;
+  const prompt = `Known review findings:\n${allFindings}\n\nVersion 1:\n${v1}\n\nVersion 2:\n${v2}`;
+  const judge = async (provider: ModelProvider) => {
+    const answer = await provider.complete({ role: "synthesizer", prompt });
+    const usage = answer.usage ?? { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
+    return { ...Verdict.parse(JSON.parse(answer.text)), costUsd: answer.costUsd ?? callCost(answer.model ?? "", usage) ?? 0 };
+  };
+  const [claude, grok] = await Promise.all([judge(judges.claude), judge(judges.grok)]);
+  return { claude, grok, fullIsVersion };
+}
+
+export const JUDGE_INSTRUCTIONS =
   "You are a blind judge comparing two final versions of the same deliverable, written from the same brief and facts. " +
   "For every known review finding, say whether each version addresses it. List any errors either version contains: wrong figures, broken rules or policies, or missing required content. " +
   "Then say which version is better overall for the requester, or equal, in one sentence.";
 
-const MERGE_INSTRUCTIONS =
+export const MERGE_INSTRUCTIONS =
   "Merge the two drafts into the final deliverable. Resolve every finding from the reviews: fix it, or reject it with a reason. " +
   "Keep the same form and length as the drafts. Say in a sentence each what you kept from draft A and from draft B, and give one resolution per finding.";
 
