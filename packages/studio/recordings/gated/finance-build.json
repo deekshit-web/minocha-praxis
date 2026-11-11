@@ -1,0 +1,117 @@
+{
+  "id": "finance-build",
+  "risk": "high",
+  "skippedReviewOfA": false,
+  "mergePath": "cheap-merge",
+  "decisions": [
+    {
+      "gate": "skip-merge",
+      "question": "Reviewers rate findings P0 (blocking), P1 (should be fixed before approval) or P2 (optional). Does any finding here have to be fixed before this is approved?",
+      "answer": "yes",
+      "confidence": 0.93,
+      "ms": 307,
+      "costUsd": 0.000028938000000000003
+    },
+    {
+      "gate": "cheap-merge",
+      "question": "Can every finding here be resolved by adding or clarifying text, without changing a figure, a rule, a date or the decision itself?",
+      "answer": "yes",
+      "confidence": 0.7,
+      "ms": 307,
+      "costUsd": 0.000028560000000000004
+    }
+  ],
+  "full": {
+    "costUsd": 0.17048275000000002,
+    "seconds": 116.69999999999999,
+    "findings": 4,
+    "final": "REQ-1: Before a full application, the loan app runs a pre-qualification check that returns a likely/not-likely result within seconds, says why, and states it is not a final decision.\nREQ-2: Debt-to-income = (existing monthly debt payments + the new loan's monthly payment) divided by gross monthly income; at most 43% passes (43% itself passes).\nREQ-3: Credit score must be at least 640 to pass (640 itself passes). v1 uses only these two factors and no others.\nREQ-4: Likely to qualify only if both checks pass.\nREQ-5: A not-likely result names every failing factor in plain words, with the applicant's own figure and the limit, and repeats that this is not a final decision; if both fail, both reasons are shown.\nREQ-6: The new loan's monthly payment is an input to the check, derived from the requested amount and term before the ratio is computed; the check cannot run without it.\nREQ-7: If gross monthly income is missing, zero or non-numeric, or the new loan's payment is unavailable, no result is given; the app asks for the missing input. This is not a decline.\nAC-1: Gross monthly income 5,000; existing debt 1,500; new loan payment 600 -> 2,100/5,000 = 42%, credit score 700 -> likely to qualify, shown with the reason that debt is 42% of gross income (limit 43%) and the score meets 640.\nAC-2: Gross monthly income 5,000; total debt including the new payment 2,150 (43% exactly); score 640 -> likely to qualify; both thresholds are inclusive.\nAC-3: Gross monthly income 5,000; existing debt 1,600; new loan payment 600 -> 2,200/5,000 = 44%; score 700 -> not likely: \"Your total monthly debt, including this loan, would be 44% of your gross monthly income. Our limit is 43%. This is not a final decision.\"\nAC-4: Gross monthly income 5,000; total debt including the new payment 2,151 -> 43.02%, above 43% -> not likely for debt-to-income; states this is not a final decision.\nAC-5: Gross monthly income 4,000; total debt including the new payment 1,720 (43% exactly); score 639 -> not likely: \"Your credit score is 639. We require at least 640. This is not a final decision.\"\nAC-6: Debt-to-income 44% and credit score 639 -> not likely, both reasons shown with figures and limits, plus the not-a-final-decision line.\nAC-7: Gross monthly income 0, missing or non-numeric -> no ratio is computed and no result is returned; the app asks for a valid gross monthly income.\nAC-8: Response time: for each case above, the result and reason appear within seconds of submission.\nOpen question for the credit risk lead: how the new loan's monthly payment is calculated (amount, term, rate), since the brief does not state it."
+  },
+  "gated": {
+    "costUsd": 0.09038024800000001,
+    "seconds": 185.357,
+    "findings": 4,
+    "final": "REQ-1: Before a full application, the loan app must return within seconds whether a personal-loan applicant is likely to qualify, and why, and must state that this is not a final decision.\nREQ-2: Debt-to-income is (existing monthly debt payments + the new loan's monthly payment) divided by gross monthly income. The new loan's monthly payment is a supplied input; v1 does not calculate it. The ratio must be at most 43% to pass.\nREQ-3: Credit score must be at least 640 to pass. v1 uses only debt-to-income and credit score.\nREQ-4: If not likely, name every failing factor in plain words, with the applicant's figure and the limit, and state that this is not a final decision. If both checks fail, show both reasons. If likely, state why in plain words and that this is not a final decision.\nAC-1: Gross monthly income 5000; total monthly debt including the new payment 2150; credit score 640. 2150/5000 = 43% and 640 meets 640, so likely to qualify. Message: \"Your total monthly debt, including this loan, is 43% of your gross monthly income. Our limit is 43%. Your credit score is 640. We require at least 640. This is not a final decision.\" Result is returned within seconds.\nAC-2: Gross monthly income 5000; total monthly debt including the new payment 2151; credit score 700. 2151/5000 = 43.02%, above 43%, so not likely. Message: \"Your total monthly debt, including this loan, would be 43.02% of your gross monthly income. Our limit is 43%. This is not a final decision.\"\nAC-3: Gross monthly income 4000; total monthly debt including the new payment 1720; credit score 639. 1720/4000 = 43%, so debt-to-income passes, but the score fails. Message: \"Your credit score is 639. We require at least 640. This is not a final decision.\"\nAC-4: Gross monthly income 5000; existing monthly debt 1600; new loan payment 600; credit score 639. Total debt 2200/5000 = 44%, above 43%, and the score is below 640, so not likely. Message: \"Your total monthly debt, including this loan, would be 44% of your gross monthly income. Our limit is 43%. Your credit score is 639. We require at least 640. This is not a final decision.\"",
+    "newCalls": [
+      {
+        "role": "cheap-merge",
+        "model": "grok-4.7",
+        "seconds": 108.643,
+        "costUsd": 0.00912
+      }
+    ]
+  },
+  "judges": {
+    "claude": {
+      "findings": [
+        {
+          "id": "D-B1",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B2",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B3",
+          "version1": "not addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B4",
+          "version1": "addressed",
+          "version2": "addressed"
+        }
+      ],
+      "errorsInVersion1": [
+        "No requirement or acceptance criterion for zero, missing or non-numeric gross monthly income, so the division step stays unspecified (D-B3 unresolved).",
+        "The new loan payment is only declared a supplied input; the draft never says how it is produced from requested amount, term and rate, so the source remains partly undefined.",
+        "AC-1 shows a likely-qualify message that reads like a decline explanation (figures plus limits) but otherwise states the result correctly; no separate check that likely applicants see a clearly positive reason."
+      ],
+      "errorsInVersion2": [
+        "REQ-6 states the new loan payment is derived from requested amount and term, yet the closing open question says the calculation is unknown; the rate is also omitted, so the two statements conflict.",
+        "AC-4 omits the credit score, so the case does not fully isolate a debt-to-income-only decline.",
+        "Acceptance criteria describe messages for declines in full but give the likely-qualify wording only in summary form, leaving the exact positive message less precisely specified."
+      ],
+      "preferred": "2",
+      "reason": "Version 2 covers all four findings, including the invalid-income handling that Version 1 omits entirely, and its arithmetic (42%, 43%, 43.02%, 44%, 1,720/4,000) is correct throughout, with only a minor internal conflict about how the new loan payment is derived.",
+      "costUsd": 0.054775
+    },
+    "grok": {
+      "findings": [
+        {
+          "id": "D-B1",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B2",
+          "version1": "addressed",
+          "version2": "not addressed"
+        },
+        {
+          "id": "D-B3",
+          "version1": "not addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B4",
+          "version1": "addressed",
+          "version2": "addressed"
+        }
+      ],
+      "errorsInVersion1": [
+        "No requirement or acceptance criterion covers zero, missing, or non-numeric gross monthly income, so debt-to-income division behavior is unspecified."
+      ],
+      "errorsInVersion2": [
+        "REQ-6 says the new loan payment is derived from requested amount and term, which the brief does not state and which omits rate, while the open question admits the calculation method is unknown, leaving the payment source unresolved and internally inconsistent."
+      ],
+      "preferred": "1",
+      "reason": "Version 1 is better because its figures, inclusive cutoffs, both-fail explanation, and payment-as-input boundary are consistent and shippable, while Version 2 still leaves the payment calculation open and contradicts itself.",
+      "costUsd": 0.00655
+    },
+    "fullIsVersion": "2"
+  }
+}

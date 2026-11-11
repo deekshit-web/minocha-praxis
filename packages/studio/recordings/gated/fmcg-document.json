@@ -1,0 +1,46 @@
+{
+  "id": "fmcg-document",
+  "risk": "medium",
+  "skippedReviewOfA": false,
+  "mergePath": "full-merge",
+  "decisions": [
+    {
+      "gate": "skip-review",
+      "question": "Does draft A fully and correctly meet the brief, with no wrong figure, no broken rule and nothing important missing?",
+      "answer": "no",
+      "confidence": 0.73,
+      "ms": 486,
+      "costUsd": 0.00003406200000000001
+    },
+    {
+      "gate": "skip-merge",
+      "question": "Reviewers rate findings P0 (blocking), P1 (should be fixed before approval) or P2 (optional). Does any finding here have to be fixed before this is approved?",
+      "answer": "yes",
+      "confidence": 0.96,
+      "ms": 257,
+      "costUsd": 0.000030912000000000005
+    },
+    {
+      "gate": "cheap-merge",
+      "question": "Can every finding here be resolved by adding or clarifying text, without changing a figure, a rule, a date or the decision itself?",
+      "answer": "no",
+      "confidence": 0.79,
+      "ms": 336,
+      "costUsd": 0.000030534
+    }
+  ],
+  "full": {
+    "costUsd": 0.21803774999999997,
+    "seconds": 248,
+    "findings": 4,
+    "final": "PROMOTION PLAN - SKU-5502 LAUNCH (MODERN TRADE, 4 WEEKS)\n\nObjective: 12,000 units in four weeks, gross margin at or above the 35% floor (PP-3).\n\nEconomics: list 6.00, unit cost 3.30, margin 2.70 = 45.0%. Floor price for shampoo alone = 3.30 / 0.65 = 5.0769, so 5.08 (35.04%); 5.07 fails at 34.91%.\n\nWeeks 1-2, lead offer: SKU-5502 at 6.00 with a free 50 ml travel size. Cost 3.30 + 0.25 = 3.55, margin 2.45 = 40.83%. Compliant. Target 7,000 units; requires 7,000 travel units.\n\nWeeks 3-4, price promotion at 5.25, sample NOT attached. Margin 1.95 = 37.1%. Compliant, 0.17 above the 5.08 floor. Target 5,000 units. If the sample were to ride with a discounted price, cost is 3.55 and the floor price becomes 3.55 / 0.65 = 5.47 (35.1%); 5.25 with sample is only 32.4% and breaches PP-3, so it is not permitted.\n\nBlended at target volumes: revenue 68,250, gross profit 26,900, margin 39.4% - above floor.\n\nExcluded: literal 2-for-1. Two units cost 6.60 against 6.00 revenue, a negative margin; two units would need 10.16 to clear the floor (35.04%), as 10.15 gives 34.98%. The travel-size bundle carries the SKU-4410 bundle learning (2-for-1 beat straight discounts on trial by 18%) within the floor.\n\nClaims (CL-1): no study is filed, so no 'clinically proven' and no medical claims. Permitted copy: product descriptor, 'new', 'for daily use', fragrance and sensory language only. No scalp, hair-loss or treatment efficacy wording on pack, shelf or digital.\n\nFor trade sign-off: confirm the four-week start and end dates (not in the sources), account list and feature/display support, 7,000 travel-unit supply, promotion funding ownership, and the 5.25 price.\n\nAssumption: the 12,000 target and the 7,000/5,000 split are planning assumptions; the sources give no uplift data for a free-sample mechanic."
+  },
+  "gated": {
+    "costUsd": 0.21813325799999997,
+    "seconds": 249.079,
+    "findings": 4,
+    "final": "PROMOTION PLAN - SKU-5502 LAUNCH (MODERN TRADE, 4 WEEKS)\n\nObjective: 12,000 units in four weeks, gross margin at or above the 35% floor (PP-3).\n\nEconomics: list 6.00, unit cost 3.30, margin 2.70 = 45.0%. Floor price for shampoo alone = 3.30 / 0.65 = 5.0769, so 5.08 (35.04%); 5.07 fails at 34.91%.\n\nWeeks 1-2, lead offer: SKU-5502 at 6.00 with a free 50 ml travel size. Cost 3.30 + 0.25 = 3.55, margin 2.45 = 40.83%. Compliant. Target 7,000 units; requires 7,000 travel units.\n\nWeeks 3-4, price promotion at 5.25, sample NOT attached. Margin 1.95 = 37.1%. Compliant, 0.17 above the 5.08 floor. Target 5,000 units. If the sample were to ride with a discounted price, cost is 3.55 and the floor price becomes 3.55 / 0.65 = 5.47 (35.1%); 5.25 with sample is only 32.4% and breaches PP-3, so it is not permitted.\n\nBlended at target volumes: revenue 68,250, gross profit 26,900, margin 39.4% - above floor.\n\nExcluded: literal 2-for-1. Two units cost 6.60 against 6.00 revenue, a negative margin; two units would need 10.16 to clear the floor (35.04%), as 10.15 gives 34.98%. The travel-size bundle carries the SKU-4410 bundle learning (2-for-1 beat straight discounts on trial by 18%) within the floor.\n\nClaims (CL-1): no study is filed, so no 'clinically proven' and no medical claims. Permitted copy: product descriptor, 'new', 'for daily use', fragrance and sensory language only. No scalp, hair-loss or treatment efficacy wording on pack, shelf or digital.\n\nFor trade sign-off: confirm the four-week start and end dates (not in the sources), account list and feature/display support, 7,000 travel-unit supply, promotion funding ownership, and the 5.25 price.\n\nAssumption: the 12,000 target and the 7,000/5,000 split are planning assumptions; the sources give no uplift data for a free-sample mechanic.",
+    "newCalls": []
+  },
+  "judges": null
+}

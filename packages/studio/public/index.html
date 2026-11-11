@@ -358,6 +358,7 @@
         </div>
         <div class="card detail" id="detail" hidden></div>
         <section class="card recap" id="recap" hidden></section>
+        <section class="card recap gatedcard" id="gated" hidden></section>
         <section class="card tryit" id="tryit" hidden></section>
         <section class="card testlab" id="testlab" hidden></section>
         <div class="card logcard tech" id="logcard" hidden><p class="eyebrow">Run log</p><div class="log" id="log"></div></div>
@@ -668,6 +669,7 @@
         renderStages();
         renderRecap();
         renderModels();
+        renderGated();
         byId("play").textContent = play.playing ? "❚❚ Pause" : play.index >= flow.steps.length ? "▶ Replay" : play.index > 0 || play.progress > 0 ? "▶ Resume" : "▶ Play";
       }
 
@@ -1220,6 +1222,88 @@
         if (name === "Approval") return out("approve");
         if (name === "Delivery") return out("deliver");
         return "";
+      }
+
+      // The measured comparison: the same panel with Model C making the routine calls, judged blind by both models.
+      let gatedData = {};
+      let gatedSummary = "";
+      fetch("/api/gated")
+        .then((response) => (response.ok ? response.json() : []))
+        .then((all) => {
+          if (!all.length) return;
+          const full = all.reduce((total, item) => total + item.full.costUsd, 0);
+          const gated = all.reduce((total, item) => total + item.gated.costUsd, 0);
+          const fullSeconds = all.reduce((total, item) => total + item.full.seconds, 0);
+          const gatedSeconds = all.reduce((total, item) => total + item.gated.seconds, 0);
+          let forFull = 0;
+          let verdicts = 0;
+          for (const item of all) {
+            if (!item.judges) continue;
+            for (const name of ["claude", "grok"]) {
+              verdicts += 1;
+              if (item.judges[name].preferred === item.judges.fullIsVersion) forFull += 1;
+            }
+          }
+          gatedSummary =
+            "Across all " + all.length + " workflows the gated pipeline cost " + Math.round((1 - gated / full) * 100) + "% less and took " + (gatedSeconds <= fullSeconds ? Math.round((1 - gatedSeconds / fullSeconds) * 100) + "% less time" : Math.round((gatedSeconds / fullSeconds - 1) * 100) + "% more time") +
+            ", but the blind judges preferred the full panel in " + forFull + " of " + verdicts + " verdicts. So here Model C routes and decides, and the merge stays with Model A.";
+          gatedKey = "";
+        })
+        .catch(() => {});
+      let gatedKey = "";
+      function renderGated() {
+        const card = byId("gated");
+        const finished = play.index >= flow.steps.length;
+        if (!(flow.id in gatedData)) {
+          gatedData[flow.id] = null;
+          fetch("/api/gated/" + flow.id)
+            .then((response) => (response.ok ? response.json() : null))
+            .then((result) => {
+              gatedData[flow.id] = result;
+              gatedKey = "";
+              render();
+            })
+            .catch(() => {});
+        }
+        const result = gatedData[flow.id];
+        card.hidden = !result || !finished;
+        if (card.hidden) return;
+        const key = flow.id + "|" + technical();
+        if (key === gatedKey) return;
+        gatedKey = key;
+        clear(card);
+        const add = (tag, value, className) => {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (value !== undefined) node.textContent = value;
+          return node;
+        };
+        const path = { "full-merge": "kept the full path", "cheap-merge": "handed the merge to the cheaper model", "pick-A": "skipped the merge and shipped draft A", "pick-B": "skipped the merge and shipped draft B" }[result.mergePath];
+        card.append(add("p", "Measured · can Model C make it cheaper?", "eyebrow"), add("h2", "The same panel with Model C making the routine calls, judged blind"));
+        card.append(
+          add(
+            "p",
+            "Model C " + (result.skippedReviewOfA ? "skipped Model B's review and " : "") + path + ". Full panel: $" + result.full.costUsd.toFixed(3) + " and " + Math.round(result.full.seconds) + " s. Gated: $" + result.gated.costUsd.toFixed(3) + " and " + Math.round(result.gated.seconds) + " s.",
+          ),
+        );
+        if (!result.judges) card.appendChild(add("p", "The gated pipeline produced the identical final version, so there was nothing to judge.", "meta"));
+        else {
+          const fullIs = result.judges.fullIsVersion;
+          const gatedIs = fullIs === "1" ? "2" : "1";
+          for (const name of ["claude", "grok"]) {
+            const verdict = result.judges[name];
+            const preferred = verdict.preferred === fullIs ? "the full panel" : verdict.preferred === gatedIs ? "the gated version" : "neither";
+            const addressed = (version) => verdict.findings.filter((item) => item["version" + version] === "addressed").length;
+            card.appendChild(
+              add(
+                "p",
+                (name === "claude" ? "Model A" : "Model B") + " as a blind judge preferred " + preferred + ". Findings addressed: full " + addressed(fullIs) + " of " + verdict.findings.length + ", gated " + addressed(gatedIs) + " of " + verdict.findings.length + ". " + verdict.reason.replace(new RegExp("Version " + fullIs, "g"), "the full panel").replace(new RegExp("Version " + gatedIs, "g"), "the gated version"),
+                "meta",
+              ),
+            );
+          }
+        }
+        if (gatedSummary) card.appendChild(add("p", gatedSummary, "why"));
       }
 
       let modelsKey = "";

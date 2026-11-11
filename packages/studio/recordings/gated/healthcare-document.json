@@ -1,0 +1,113 @@
+{
+  "id": "healthcare-document",
+  "risk": "high",
+  "skippedReviewOfA": false,
+  "mergePath": "cheap-merge",
+  "decisions": [
+    {
+      "gate": "skip-merge",
+      "question": "Reviewers rate findings P0 (blocking), P1 (should be fixed before approval) or P2 (optional). Does any finding here have to be fixed before this is approved?",
+      "answer": "yes",
+      "confidence": 0.83,
+      "ms": 304,
+      "costUsd": 0.000029316000000000005
+    },
+    {
+      "gate": "cheap-merge",
+      "question": "Can every finding here be resolved by adding or clarifying text, without changing a figure, a rule, a date or the decision itself?",
+      "answer": "yes",
+      "confidence": 0.83,
+      "ms": 303,
+      "costUsd": 0.000028938000000000003
+    }
+  ],
+  "full": {
+    "costUsd": 0.14241749999999997,
+    "seconds": 117.80000000000001,
+    "findings": 4,
+    "final": "Northwind Health\nAttn: Claims Appeals\n\nDate of submission: __________\n\nRe: Appeal of CO-50 denial\nClaim: CLM-221\nPatient ID: PAT-221\nDate of service: 2026-08-20\nService: MRI, lumbar spine\n\nTo the Appeals Reviewer:\n\nWe appeal the CO-50 denial of claim CLM-221 and ask that it be reprocessed for payment. The service met Northwind Health coverage policy LS-14 on the date it was rendered.\n\nPolicy LS-14 covers lumbar MRI after six weeks of documented conservative therapy, or sooner with red-flag symptoms. Clinical note DOC-318 documents conservative therapy from 2026-07-01 through 2026-08-14: physical therapy plus NSAIDs, with no improvement. That span is 44 days, which exceeds the six-week (42-day) LS-14 threshold, and it concluded before the 2026-08-20 date of service. The coverage criterion was therefore satisfied at the time of imaging.\n\nEnclosed for your review:\n1. Clinical note DOC-318, documenting the conservative therapy dates, modalities, and lack of response.\n2. Northwind Health policy LS-14.\n\nNo change to the submitted diagnosis code is requested or warranted; the appeal rests on the documented conservative therapy trial required by LS-14.\n\nThis appeal is submitted within the filing deadline of 2026-11-18. We request that the CO-50 denial be overturned and CLM-221 be paid. Please contact our office if any further documentation would assist your review.\n\nSincerely,\n\n__________________________\nName, Denial Specialist\nProvider Appeals Desk (submitting party)"
+  },
+  "gated": {
+    "costUsd": 0.07969250399999998,
+    "seconds": 183.74,
+    "findings": 4,
+    "final": "Northwind Health\nAttn: Claims Appeals\n\nRe: Appeal of CO-50 denial\nClaim: CLM-221\nPatient ID: PAT-221\nDate of service: 2026-08-20\nService: MRI of the lumbar spine\n\nTo the Appeals Reviewer:\n\nWe appeal the CO-50 denial of claim CLM-221 and ask that it be reprocessed for payment. The service met Northwind Health coverage policy LS-14 on the date it was rendered.\n\nPolicy LS-14 covers lumbar MRI after six weeks of documented conservative therapy, or sooner with red-flag symptoms. Clinical note DOC-318 documents physical therapy from 2026-07-01 to 2026-08-14, NSAIDs, and no improvement. That span is 44 days, exceeds six weeks, and ended before the 2026-08-20 date of service, so the LS-14 threshold was met.\n\nEnclosed for your review:\n1. Clinical note DOC-318, documenting the conservative therapy dates, modalities, and lack of response.\n2. Northwind Health policy LS-14.\n\nNo change to the submitted diagnosis code is requested. The appeal rests on the documented conservative therapy required by LS-14.\n\nThis appeal is submitted within the filing deadline of 2026-11-18. Please reverse the CO-50 denial and pay claim CLM-221. Contact our office if further documentation would assist review.\n\nSincerely,\n\nDenial Specialist, Appeals Desk",
+    "newCalls": [
+      {
+        "role": "cheap-merge",
+        "model": "grok-4.7",
+        "seconds": 94.433,
+        "costUsd": 0.007738
+      }
+    ]
+  },
+  "judges": {
+    "claude": {
+      "findings": [
+        {
+          "id": "D-B1",
+          "version1": "not addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B2",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B3",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B4",
+          "version1": "not addressed",
+          "version2": "addressed"
+        }
+      ],
+      "errorsInVersion1": [
+        "No submission or signature date anywhere in the letter, so the claim of filing before 2026-11-18 cannot be verified from the document (D-B1 unresolved).",
+        "Signature block is still an unnamed 'Denial Specialist, Appeals Desk' with no named signer, leaving the sender ambiguous against the 'Attn: Claims Appeals' recipient (D-B4 unresolved)."
+      ],
+      "errorsInVersion2": [
+        "Leaves two fill-in blanks (submission date and signer name), so the letter is not strictly send-ready as delivered, though the required fields are present and labeled."
+      ],
+      "preferred": "2",
+      "reason": "Version 2 resolves all four findings - adding a dated submission line, an explicit 44-day versus 42-day computation, the DOC-318 enclosure, and a clearly labeled provider-side signer - whereas Version 1 still lacks any date and any identified sender, leaving timeliness and authorship unverifiable.",
+      "costUsd": 0.03849125
+    },
+    "grok": {
+      "findings": [
+        {
+          "id": "D-B1",
+          "version1": "not addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B2",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B3",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B4",
+          "version1": "not addressed",
+          "version2": "addressed"
+        }
+      ],
+      "errorsInVersion1": [
+        "No submission or signature date, so the payer cannot verify the letter is within the 2026-11-18 filing deadline.",
+        "Signature block is \"Denial Specialist, Appeals Desk\" with no named signer, so the sender is still ambiguous relative to the payer appeals addressee."
+      ],
+      "errorsInVersion2": [],
+      "preferred": "2",
+      "reason": "Version 2 fixes the missing submission-date line and the ambiguous Appeals Desk signature while keeping the same accurate 44-day therapy calculation, DOC-318 enclosure, deadline, and unchanged diagnosis code.",
+      "costUsd": 0.005218
+    },
+    "fullIsVersion": "2"
+  }
+}

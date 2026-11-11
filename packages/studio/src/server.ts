@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { createServer, type Server, type ServerResponse } from "node:http";
 import { join } from "node:path";
 import { createDecider } from "./jev.ts";
+import { gatedFor } from "./record.ts";
 import { catalog, expand, loadSpecs } from "./workflows.ts";
 
 /** A summary of a real, metered run of the requirements panel, so viewers can see the replays are not invented. */
@@ -73,6 +74,19 @@ export function createStudioServer(options: StudioOptions = {}): Server {
             costUsd: recorded.reduce((total, recording) => total + recording.calls.reduce((sum, call) => sum + call.costUsd, 0), 0),
           },
         });
+        return;
+      }
+      const gated = url.pathname.match(/^\/api\/gated\/([a-z0-9-]+)$/);
+      if (req.method === "GET" && gated) {
+        const result = gatedFor(gated[1] ?? "");
+        send(res, result ? 200 : 404, result ?? { error: "not-compared" });
+        return;
+      }
+      if (req.method === "GET" && url.pathname === "/api/gated") {
+        send(res, 200, loadSpecs().flatMap((spec) => {
+          const result = gatedFor(spec.id);
+          return result ? [result] : [];
+        }));
         return;
       }
       const decide = url.pathname.match(/^\/api\/decide\/([a-z0-9-]+)\/([a-zA-Z]+)$/);

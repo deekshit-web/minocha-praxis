@@ -1,0 +1,90 @@
+{
+  "id": "finance-document",
+  "risk": "high",
+  "skippedReviewOfA": false,
+  "mergePath": "cheap-merge",
+  "decisions": [
+    {
+      "gate": "skip-merge",
+      "question": "Reviewers rate findings P0 (blocking), P1 (should be fixed before approval) or P2 (optional). Does any finding here have to be fixed before this is approved?",
+      "answer": "no",
+      "confidence": 0.6599999999999999,
+      "ms": 282,
+      "costUsd": 0.000022974000000000004
+    },
+    {
+      "gate": "cheap-merge",
+      "question": "Can every finding here be resolved by adding or clarifying text, without changing a figure, a rule, a date or the decision itself?",
+      "answer": "yes",
+      "confidence": 0.74,
+      "ms": 242,
+      "costUsd": 0.000022596000000000002
+    }
+  ],
+  "full": {
+    "costUsd": 0.09376499999999999,
+    "seconds": 69.3,
+    "findings": 1,
+    "final": "KYC Decision - Customer CUST-3381\nReview date: 2026-11-10\nDecision: Request more documents (do not approve at this time)\n\nPolicy K-2 requires a valid, unexpired photo ID and proof of address dated within 3 months of review.\n\nReasons:\n\n1. Photo ID expired. Passport ID-778 expired on 2026-09-30, which is 41 days before the review date of 2026-11-10. The file fails the unexpired photo ID requirement.\n\n2. Proof of address out of date. For a review on 2026-11-10 the earliest acceptable date is 2026-08-10. The utility bill on file is dated 2026-06-02, roughly five months old and about two months outside the permitted window.\n\n3. Sanctions screening returned no match and the risk rating is standard. These results do not cure the document failures, but there is no adverse finding that would justify refusal.\n\nBecause both defects are curable outdated documents, with no sanctions match and no elevated risk, refusal is not warranted; the file also cannot be approved as it stands.\n\nRequired to proceed:\n- A current photo ID that is unexpired as at the date of re-review (for example, a renewed passport).\n- Proof of address dated within 3 months before the re-review date. On a re-review held on 2026-11-10 that means dated on or after 2026-08-10; at a later re-review the cutoff moves forward accordingly.\n\nOn receipt of both items the file can be re-assessed for approval under K-2. No further checks are outstanding on the facts available."
+  },
+  "gated": {
+    "costUsd": 0.057078819999999995,
+    "seconds": 87.821,
+    "findings": 1,
+    "final": "KYC Decision — Customer CUST-3381\nReview date: 2026-11-10\nDecision: Request more documents. Do not approve.\n\nReasons:\n1. Photo ID expired. Policy K-2 requires a valid, unexpired photo ID. Passport ID-778 expired on 2026-09-30, which is 41 days before the review date of 2026-11-10. The file fails the ID requirement.\n2. Proof of address is out of date. Policy K-2 requires proof of address dated within 3 months of review. Three months before 2026-11-10 is 2026-08-10. The utility bill dated 2026-06-02 is earlier than that date, so it is outside the window for this review.\n3. Sanctions screening returned no match, and the risk rating is standard. Those results do not cure the document failures and do not justify refusal.\n\nBoth gaps are replaceable documents. Refusal is not required. Request a current unexpired photo ID valid at re-review and proof of address dated within 3 months of the re-review date, then re-assess under K-2. The date 2026-08-10 applies only to this review, not to a later re-review.",
+    "newCalls": [
+      {
+        "role": "cheap-merge",
+        "model": "grok-4.7",
+        "seconds": 34.697,
+        "costUsd": 0.005992
+      }
+    ]
+  },
+  "judges": {
+    "claude": {
+      "findings": [
+        {
+          "id": "D-B1",
+          "version1": "addressed",
+          "version2": "addressed"
+        }
+      ],
+      "errorsInVersion1": [],
+      "errorsInVersion2": [],
+      "preferred": "1",
+      "reason": "Both are factually correct and fix the anchored-date issue, but Version 1 adds a clear, separately listed 'Required to proceed' section that spells out the moving three-month cutoff, making it more actionable for the onboarding analyst.",
+      "costUsd": 0.02944875
+    },
+    "grok": {
+      "findings": [
+        {
+          "id": "no-defects-found",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "strength-k2-application",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "D-B1",
+          "version1": "addressed",
+          "version2": "addressed"
+        },
+        {
+          "id": "strength-date-arithmetic",
+          "version1": "addressed",
+          "version2": "addressed"
+        }
+      ],
+      "errorsInVersion1": [],
+      "errorsInVersion2": [],
+      "preferred": "equal",
+      "reason": "Both versions correctly apply policy K-2, use the right dates, request more documents instead of approving or refusing, and tie any new proof of address to three months before the re-review date rather than a fixed 2026-08-10 cutoff.",
+      "costUsd": 0.004546
+    },
+    "fullIsVersion": "1"
+  }
+}

@@ -242,6 +242,11 @@ function confidence(key: string, low: number, high: number): string {
 }
 
 /** How risky each workflow is, and whether it touches personal, health or financial data. */
+/** How risky a workflow is, as the router's replay assumes. */
+export function riskOf(id: string): "low" | "medium" | "high" {
+  return RISK[id]?.level ?? "high";
+}
+
 const RISK: Record<string, { level: "low" | "high" | "medium"; data: boolean }> = {
   "healthcare-build": { level: "high", data: true },
   "healthcare-document": { level: "high", data: true },
