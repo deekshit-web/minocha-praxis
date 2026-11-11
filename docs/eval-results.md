@@ -39,7 +39,7 @@ against the single draft.
 In v4, the strict all-Claude panel had already reviewed and merged each PRD. Grok then reviewed the merged PRD
 once. It raised P0s on **all 8 briefs: 16 P0s and 22 P1s**, and Claude revised every one.
 
-A P0 is the reviewer's own judgement, so every one of the 16 was then checked by hand against the PRD text Grok
+A P0 is the reviewer's own judgement, so every one of the 16 was then checked one by one against the PRD text Grok
 reviewed and the knowledge pack. The checker was Claude Code reading the text, not a person, so a person should
 spot-check it:
 
