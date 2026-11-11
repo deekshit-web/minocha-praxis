@@ -1,0 +1,278 @@
+{
+  "id": "logistics-document",
+  "baseline": {
+    "mergeSeconds": 11.3,
+    "mergeCostUsd": 0.03813,
+    "draftBSeconds": 16.1,
+    "draftBCostUsd": 0.002808,
+    "reviewASeconds": 120.2,
+    "reviewACostUsd": 0.003432
+  },
+  "merges": [
+    {
+      "variant": "opus-5-5",
+      "model": "claude-opus-5-5",
+      "mode": "rewrite",
+      "seconds": 11.7,
+      "costUsd": 0.031908,
+      "outputTokens": 1135,
+      "document": "CLAIM DECISION - SHP-9031\n\nFacts relied on\n- Shipment SHP-9031: 18 kg glassware, invoice value 1,200, arrived damaged, delivered 2026-11-03, damage photos on file.\n- No declared value cover purchased.\n- Carrier contract C-7: liability limited to 25 per kg absent declared value cover; claims must be filed within 30 days of delivery.\n- Customer policy R-4: refund invoice value for damage on arrival; recover from carrier what the contract allows.\n\nDecision\n1. Refund to customer: 1,200 (full invoice value). Reason: the shipment arrived damaged, and policy R-4 requires a refund of the invoice value for damage on arrival.\n2. Claim against carrier: 450. Reason: contract C-7 caps liability at 25 per kg with no declared value cover; 18 kg x 25 = 450. The higher invoice value cannot be claimed because declared value cover was not bought.\n3. Unrecovered balance: 1,200 - 450 = 750. This is the arithmetic gap between the refund owed under R-4 and the recovery capped by C-7; neither source assigns it further.\n\nDeadline\nC-7 allows claims only within 30 days of delivery. 30 days after 2026-11-03 is 2026-12-03, so the carrier claim must be filed on or before 2026-12-03.\n\nAction\n- Issue customer refund of 1,200 now.\n- Lodge carrier claim of 450 on or before 2026-12-03 with the damage photos on file and the shipment weight.\n\nNote: no facts were available on cause of damage, packaging, or any other recovery route, so none is assumed.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [
+            "Point 3 says 'neither source assigns it further', which leaves the 750 shortfall unallocated and gives the supervisor no operational answer on who bears it; it is accurate but less actionable.",
+            "Facts section omits the explicit 'arrived damaged' phrasing is present, but the deadline section does not flag 2026-12-03 as the last timely day, so the inclusive boundary is implied rather than stated (minor, since the Action is correct)."
+          ],
+          "errorsInVersion2": [
+            "'absorbed by us' states an allocation that no supplied source makes; it is a reasonable arithmetic inference and is immediately qualified ('R-4 does not itself allocate the shortfall'), but it goes slightly beyond the given facts.",
+            "Facts list drops the explicit 'arrived damaged' status line, relying on the Decision text and photos instead (cosmetic)."
+          ],
+          "preferred": "2",
+          "reason": "Both get every figure and the inclusive 2026-12-03 deadline right and both correctly reframe the 750 as arithmetic rather than an R-4 rule, but Version 2 is better for the requester because it names 2026-12-03 as the last timely day in the Deadline section itself and tells the supervisor who absorbs the shortfall, making it directly actionable.",
+          "costUsd": 0.029673
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [
+            "States the 750 shortfall is absorbed by us, but no source assigns who bears that loss."
+          ],
+          "preferred": "1",
+          "reason": "Both versions fix the deadline and the R-4 attribution, but Version 1 correctly leaves the 750 gap unassigned while Version 2 still assigns it without a source.",
+          "costUsd": 0.0046
+        },
+        "fullIsVersion": "2"
+      }
+    },
+    {
+      "variant": "sonnet-5-5",
+      "model": "claude-sonnet-5-5",
+      "mode": "rewrite",
+      "seconds": 7,
+      "costUsd": 0.013184,
+      "outputTokens": 858,
+      "document": "CLAIM DECISION - SHP-9031\n\nFacts relied on\n- Shipment SHP-9031: 18 kg glassware, invoice value 1,200, delivered 2026-11-03, damage photos on file.\n- No declared value cover purchased.\n- Carrier contract C-7: liability limited to 25 per kg absent declared value cover; claims must be filed within 30 days of delivery.\n- Customer policy R-4: refund invoice value for damage on arrival; recover from carrier what the contract allows.\n\nDecision\n1. Refund to customer: 1,200 (full invoice value). Reason: damage on arrival, as required by policy R-4.\n2. Claim against carrier: 450. Reason: contract C-7 caps liability at 25 per kg with no declared value cover; 18 kg x 25 = 450. The invoice value is not recoverable because declared value cover was not bought.\n3. Unrecovered balance: 1,200 - 450 = 750. This is the arithmetic result of the refund exceeding the contract cap; the sources do not say who bears it beyond the refund we owe under R-4.\n\nDeadline\nFile the carrier claim within 30 days of delivery (2026-11-03), i.e. on or before 2026-12-03. Submit with the damage photos on file.\n\nAction\n- Issue customer refund of 1,200 now.\n- Lodge carrier claim of 450 on or before 2026-12-03 with photo evidence and shipment weight.\n\nNote: no facts were available on cause of damage, packaging, or any other recovery route, so none is assumed.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [
+            "Item 3 is slightly muddled: saying the sources do not say who bears the 750 'beyond the refund we owe under R-4' leaves the shortfall's resting place unstated, which is less useful operationally than a plain statement of the consequence."
+          ],
+          "errorsInVersion2": [
+            "Item 3 asserts the 750 is 'absorbed by us', which no source states; it is mitigated by the immediate caveat that R-4 does not allocate the shortfall, but it still goes marginally beyond the given facts."
+          ],
+          "preferred": "2",
+          "reason": "Version 2 is better for the claims supervisor because it closes the deadline ambiguity explicitly by naming 2026-12-03 as the last timely day in both the Deadline and Action, and frames the 750 shortfall clearly as an arithmetic consequence while disclaiming R-4 as its authority, with all figures (18 x 25 = 450; 1,200 - 450 = 750) correct.\n\nNote: both versions compute the refund of 1,200 and carrier claim of 450 correctly and both state the deadline as on or before 2026-12-03 in the Action, so neither repeats the original findings.\n\n(Field name typo guard: the preferred version is 2.)",
+          "costUsd": 0.030518
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [
+            "States the 750 unrecovered balance is absorbed by us, but the sources do not identify who bears that shortfall."
+          ],
+          "preferred": "1",
+          "reason": "Version 1 is better because both versions get the 1,200 refund, 450 carrier claim, and on-or-before 2026-12-03 deadline right, but only version 1 avoids assigning the 750 gap to a party the facts do not name.",
+          "costUsd": 0.004706
+        },
+        "fullIsVersion": "2"
+      }
+    },
+    {
+      "variant": "haiku-5-5",
+      "model": "claude-haiku-5-5",
+      "mode": "rewrite",
+      "seconds": 4.4,
+      "costUsd": 0.0006067000000000001,
+      "outputTokens": 753,
+      "document": "CLAIM DECISION - SHP-9031. Facts relied on: 18 kg glassware, invoice value 1,200, delivered 2026-11-03, damage photos on file, no declared value cover purchased. Carrier contract C-7 limits liability to 25 per kg without declared value cover and requires claims within 30 days of delivery. Customer policy R-4 refunds invoice value for damage on arrival and recovers from the carrier what the contract allows. Decision: 1. Refund customer 1,200 (full invoice value) under R-4 for damage on arrival. 2. Claim against carrier 450: 18 kg x 25 = 450, the maximum under C-7 with no declared value cover; the invoice value is not recoverable. 3. Unrecovered balance 750 (1,200 - 450) is absorbed by us as an arithmetic consequence of the contract cap. Deadline: 30 days after 2026-11-03 is 2026-12-03; the carrier claim must be filed on or before 2026-12-03, with damage photos and shipment weight. Actions: issue customer refund of 1,200 now; lodge carrier claim of 450 on or before 2026-12-03. Note: no facts on cause of damage, packaging, or other recovery routes were available, so none is assumed.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "2",
+          "reason": "Both are numerically and procedurally correct (refund 1,200; carrier claim 18 kg x 25 = 450; shortfall 750; file on or before 2026-12-03), but Version 2 is better for the requester because it explicitly labels 2026-12-03 as the last timely day and explicitly states that R-4 does not allocate the 750 shortfall, closing both findings more fully in a clearer, scannable layout.",
+          "costUsd": 0.02826
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions correctly set the refund at 1,200, the carrier claim at 450, the shortfall at 750 as an arithmetic consequence, and the filing deadline as on or before 2026-12-03.",
+          "costUsd": 0.004378
+        },
+        "fullIsVersion": "2"
+      }
+    },
+    {
+      "variant": "opus-5-edit",
+      "model": "claude-opus-5",
+      "mode": "edit",
+      "seconds": 13.3,
+      "costUsd": 0.039995,
+      "outputTokens": 1137,
+      "document": "CLAIM DECISION - SHP-9031\n\nFacts relied on\n- Shipment SHP-9031: 18 kg glassware, invoice value 1,200, delivered 2026-11-03, damage photos on file.\n- No declared value cover purchased.\n- Carrier contract C-7: liability limited to 25 per kg absent declared value cover; claims must be filed within 30 days of delivery.\n- Customer policy R-4: refund invoice value for damage on arrival; recover from carrier what the contract allows.\n\nDecision\n1. Refund to customer: 1,200 (full invoice value). Reason: damage on arrival, as required by policy R-4; photos on file support damage on arrival.\n2. Claim against carrier: 450. Reason: contract C-7 caps liability at 25 per kg with no declared value cover; 18 kg x 25 = 450. The invoice value is not recoverable because declared value cover was not bought.\n3. Unrecovered amount absorbed by us: 1,200 - 450 = 750. This is the arithmetic difference between the refund and the contract cap, not a rule stated in R-4.\n\nDeadline\nFile the carrier claim within 30 days of delivery (2026-11-03): 30 days after 2026-11-03 is 2026-12-03, so file on or before 2026-12-03. Submit with the damage photos on file.\n\nAction\n- Issue customer refund of 1,200 now.\n- Lodge carrier claim of 450 on or before 2026-12-03 with photo evidence and shipment weight.\n\nNote: no facts were available on cause of damage, packaging, or any other recovery route, so none is assumed.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "2",
+          "reason": "Both are factually correct and fix both findings, but Version 2 states the deadline more tightly and unambiguously by naming 2026-12-03 as the last timely day and frames the 750 shortfall as an arithmetic consequence while explicitly noting R-4 does not allocate it.",
+          "costUsd": 0.016458
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions correctly refund 1,200, claim 450 from the carrier, treat the 750 gap as arithmetic rather than an R-4 rule, and keep the claim deadline on or before 2026-12-03.",
+          "costUsd": 0.004542
+        },
+        "fullIsVersion": "2"
+      }
+    }
+  ],
+  "fastB": {
+    "model": "grok-4.20-0309-non-reasoning",
+    "draft": {
+      "seconds": 1.3,
+      "costUsd": 0,
+      "text": "Claim decision for SHP-9031: Claim $450 from carrier (18 kg at contract C-7 limit of $25 per kg, no declared value). Refund customer $1,200 per policy R-4 for damage on arrival. Carrier contract allows recovery of limited amount only; customer entitled to full invoice value. Damage reported within 30 days of 2026-11-03 delivery. All figures and dates verified from sources.",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "2",
+          "reason": "Draft 2 is better because it shows the per-kg math, correctly derives the 2026-12-03 filing deadline as an action item, and states the 750 unrecovered balance, whereas Draft 1 invents an unsupported claim that damage was already reported within 30 days and adds currency symbols not in the sources.",
+          "costUsd": 0.01139625
+        },
+        {
+          "judge": "grok",
+          "preferred": "2",
+          "reason": "Draft 2 correctly calculates the 450 carrier limit and 1,200 refund, derives the 2026-12-03 filing deadline from the facts, and avoids Draft 1’s unsupported claim that damage was already reported within 30 days.",
+          "costUsd": 0.00245
+        }
+      ],
+      "baselineIs": "2"
+    },
+    "review": {
+      "seconds": 2.6,
+      "costUsd": 0,
+      "text": "D-A1 · P0 · Incorrect claim amount from carrier\n  The draft claims 450 from the carrier but the contract limits liability to 25 per kg; recomputing gives 18 kg * 25 = 450 which is correct, yet the decision must recover exactly what the contract allows per R-4 and C-7 while the overall claim decision is sound.\nD-A2 · P1 · Deadline date misstated\n  The draft states file within 30 days of 2026-11-03 i.e. on or before 2026-12-03; adding 30 days to 2026-11-03 correctly yields 2026-12-03 but the contract requires claims within 30 days of delivery so the phrasing should avoid implying a strict cutoff error.\nStrengths: The draft concisely uses only the provided facts, correctly recomputes all numbers, quotes policies accurately, and clearly separates refund, claim, and unrecovered amounts with reasons.",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "2",
+          "realBaseline": 1,
+          "falseBaseline": 0,
+          "realFast": 0,
+          "falseFast": 2,
+          "reason": "Review 2 flags the one genuine defect (the Action line says \"before 2026-12-03\" while the Deadline section correctly says \"on or before\", dropping the last valid filing day), whereas Review 1 raises two self-cancelling non-issues that confirm the 450 figure and the 2026-12-03 date are right yet still label them problems.",
+          "costUsd": 0.01870125
+        },
+        {
+          "judge": "grok",
+          "preferred": "2",
+          "realBaseline": 1,
+          "falseBaseline": 0,
+          "realFast": 0,
+          "falseFast": 2,
+          "reason": "Review 2 is more useful because it correctly flags the Action line saying before 2026-12-03, which drops the last valid day under the 30-day window, while Review 1 invents an incorrect 450 carrier claim and a misstated deadline that the arithmetic does not support.",
+          "costUsd": 0.00354
+        }
+      ],
+      "baselineIs": "2"
+    }
+  }
+}

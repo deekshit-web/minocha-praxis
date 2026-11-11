@@ -21,6 +21,11 @@ interface Price {
 const PRICES: Record<string, Price> = {
   "claude-opus-5": { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
   "claude-opus-4-8": { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
+  "claude-opus-5-5": { input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5 },
+  "claude-sonnet-5-5": { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 2.5 },
+  "claude-sonnet-5": { input: 2, output: 10, cacheRead: 0.2, cacheWrite: 2.5 },
+  // Haiku 5.5 prices prompts over 100,000 tokens higher; this table carries the short-prompt tier only.
+  "claude-haiku-5-5": { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125, longContextFrom: 100_000 },
   "grok-4.7": { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0, longContextFrom: 200_000 },
   // TypeSafe's Jev decision model: input billed, typed answers free.
   "jev-1.14.0": { input: 0.042, output: 0, cacheRead: 0, cacheWrite: 0 },
