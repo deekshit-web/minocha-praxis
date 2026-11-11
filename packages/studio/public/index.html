@@ -196,6 +196,21 @@
       .stage.caught .num::after { content: " · caught a bug"; color: var(--clay); font-weight: 650; text-transform: none; letter-spacing: 0; }
       @media (max-width: 980px) { .stages { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
       @media (max-width: 520px) { .stages { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      .recap { margin-top: 14px; }
+      .recap h2 { margin: 2px 0 6px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
+      .recap ol { list-style: none; margin: 0; padding: 0; }
+      .recap li { display: grid; grid-template-columns: 30px 1fr; gap: 0 10px; padding: 9px 4px; border-top: 1px solid var(--line); cursor: pointer; }
+      .recap li:first-child { border-top: 0; }
+      .recap li:hover { background: var(--sky); }
+      .recap .mark { grid-row: span 2; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: #e3f1e7; color: var(--moss); }
+      .recap li.caught .mark { background: #f6ddd3; color: var(--clay); }
+      .recap li.now .mark { background: var(--sky); color: var(--teal-deep); border: 1px solid var(--teal); }
+      .recap li.later { opacity: 0.55; cursor: default; }
+      .recap li.later .mark { background: #ece4d8; color: var(--muted); }
+      .recap .head { font-weight: 650; }
+      .recap .head .out { font-weight: 500; color: var(--muted); }
+      .recap li.caught .head .out { color: var(--clay); }
+      .recap .story { color: var(--ink); font-size: 15px; }
       .testlab { margin-top: 14px; }
       .testlab h2 { margin: 2px 0 4px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
       .testlab .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
@@ -317,6 +332,7 @@
             <div class="pipe" id="pipe"><svg id="lines" aria-hidden="true"></svg></div>
           </div>
         </div>
+        <section class="card recap" id="recap" hidden></section>
         <section class="card tryit" id="tryit" hidden></section>
         <section class="card testlab" id="testlab" hidden></section>
         <div class="card detail" id="detail" hidden></div>
@@ -459,6 +475,7 @@
         tryKey = "";
         labKey = "";
         stagesKey = "";
+        recapKey = "";
         testRuns = {};
         play.blocked = false;
         history.replaceState(null, "", "#" + flow.id);
@@ -574,6 +591,7 @@
         renderTryIt();
         renderTestLab();
         renderStages();
+        renderRecap();
         byId("play").textContent = play.playing ? "❚❚ Pause" : play.index >= flow.steps.length ? "▶ Replay" : play.index > 0 || play.progress > 0 ? "▶ Resume" : "▶ Play";
       }
 
@@ -843,6 +861,16 @@
           return failing + " failed → fixed → " + passing + " passing";
         }
         if (name === "Deployment") return "Live in production";
+        if (name === "Research") return count(out("sources"), /^.+$/gm) + " sources looked up";
+        if (name === "Drafts") return "2 drafts, written apart";
+        if (name === "Cross-review") return count(out("reviewOfA") + "\n" + out("reviewOfB"), /^D-[AB]\d/gm) + " defects found";
+        if (name === "Merge") {
+          const fixed = out("merge").match(/Defects resolved: (\d+) of (\d+)/);
+          return fixed ? fixed[1] + " of " + fixed[2] + " defects resolved" : "Merged";
+        }
+        if (name === "Checks") return (liveResults().length || count(out("checks"), /^✓/gm)) + " code checks passed";
+        if (name === "Approval") return "Approved";
+        if (name === "Delivery") return "Delivered";
         return "Done";
       }
 
@@ -856,6 +884,7 @@
         if (key === stagesKey) return;
         stagesKey = key;
         clear(rail);
+        rail.style.gridTemplateColumns = window.innerWidth > 980 ? "repeat(" + flow.stages.length + ", minmax(0, 1fr))" : "";
         flow.stages.forEach((name, number) => {
           const indexes = flow.steps.map((step, index) => (step.stage === name ? index : -1)).filter((index) => index >= 0);
           const done = indexes.every((index) => index < play.index);
@@ -892,6 +921,100 @@
           });
           rail.appendChild(button);
         });
+      }
+
+      // Plain-words story of each finished stage, kept on screen so a viewer who missed a moment can catch up.
+      function serious(text) {
+        return (text.match(/^[A-Z]+-[A-Z]?\d+ · P0 · (.+)$/gm) || []).map((line) => line.split(" · ").slice(2).join(" · ").toLowerCase());
+      }
+      function titles(text) {
+        return (text.match(/^[A-Z]+-[A-Z]?\d+ · P\d · (.+)$/gm) || []).map((line) => line.split(" · ").slice(2).join(" · ").toLowerCase());
+      }
+      function listOf(items) {
+        return items.length <= 1 ? items.join("") : items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
+      }
+      function stageStory(name) {
+        const out = (id) => (flow.steps.find((step) => step.id === id) || { output: "" }).output;
+        const firstLine = (text) => text.split("\n")[0].replace(/\.$/, "");
+        const caught = serious(out("reviewOfA") + "\n" + out("reviewOfB"));
+        const fixed = (out("merge").match(/Defects resolved: (\d+)/) || [0, "all"])[1];
+        if (name === "PRD")
+          return "Claude and Grok each wrote the requirements without seeing the other's, then reviewed each other's. " + (caught.length ? "The review caught a serious problem: " + listOf(caught) + ". " : "") + "Claude merged both and fixed " + fixed + " defects, and code checks passed. " + out("approve");
+        if (name === "Architecture") {
+          const found = titles(out("archReview"));
+          return "Claude designed the components, data and the files it may change. Grok's review found " + found.length + " issue" + (found.length === 1 ? "" : "s") + " (" + listOf(found) + ")" + (serious(out("archReview")).length ? ", one of them serious," : "") + " and Claude revised the design to fix them. Design checks passed. " + out("archApprove");
+        }
+        if (name === "Code") return "Claude wrote the code, touching only the files the approved design allows: " + listOf([...new Set(out("code").match(/(?:src|packages|migrations)\/[\w./*-]+\.(?:ts|tsx|sql)/g) || [])]) + ".";
+        if (name === "Code review") {
+          const found = titles(out("codeReview"));
+          const declined = (out("codeRevise").match(/^CR-\d declined: (.+)$/m) || [0, ""])[1];
+          return "Grok reviewed the code like a second engineer and raised " + found.length + " points (" + listOf(found) + "). Claude applied " + (out("codeRevise").match(/ applied/g) || []).length + (declined ? " and declined one, saying: " + declined : ".");
+        }
+        if (name === "Unit tests") {
+          const total = (out("unitRun").match(/^✓/gm) || []).length;
+          return "Claude wrote " + total + " unit tests for its own code, and they really ran here: all " + total + " pass. But the code still has a bug: an author tests what they thought of.";
+        }
+        if (name === "Test cases") return "Grok wrote " + (out("testCases").match(/^TC-/gm) || []).length + " test cases from the PRD, without ever seeing the code, then turned them into a runnable test script.";
+        if (name === "Testing") {
+          const red = out("testsRed");
+          const failed = (red.match(/^✗ (.+)$/m) || [0, "a test"])[1];
+          const why = (red.match(/^✗ .+\n {2}(.+)$/m) || [0, ""])[1];
+          const passing = (out("testsGreen").match(/(\d+) passing/) || [0, "all"])[1];
+          return "Grok's tests really ran against Claude's code, and one failed: \"" + failed + "\"" + (why ? " (" + why + ")" : "") + ". That bug had passed code review and Claude's own unit tests. Claude fixed it (" + firstLine(out("fix")).toLowerCase() + "), and all " + passing + " tests pass.";
+        }
+        if (name === "Deployment") return "The release gate re-checked approvals, tests and data rules. The build went to staging and passed its smoke tests. " + out("deployApprove") + " " + out("production").split("\n").slice(0, 2).join(" ");
+        if (name === "Research") return "The relevant policies and records were looked up first, so both drafts work from the same facts: " + (out("sources").match(/^.+$/gm) || []).length + " sources.";
+        if (name === "Drafts") return "Claude and Grok each wrote a draft without seeing the other's, so they could not copy each other's mistakes.";
+        if (name === "Cross-review") return "Each AI reviewed the other's draft. " + (caught.length ? "Caught: " + listOf(caught) + "." : "Both found smaller issues.");
+        if (name === "Merge") return "Claude merged the two drafts and had to resolve every defect either review raised: " + fixed + " resolved.";
+        if (name === "Checks") return "Plain code checks, with no AI involved, recomputed the figures: " + (liveResults().map((check) => check.name.toLowerCase()).join("; ") || "all passed") + ".";
+        if (name === "Approval") return out("approve");
+        if (name === "Delivery") return out("deliver");
+        return "";
+      }
+
+      let recapKey = "";
+      function renderRecap() {
+        const card = byId("recap");
+        const started = play.index > 0 || play.progress > 0 || play.playing;
+        card.hidden = !started || !flow.stages || !flow.stages.length;
+        if (card.hidden) return;
+        const key = flow.id + "|" + play.index + "|" + !!play.blocked + "|" + document.body.className;
+        if (key === recapKey) return;
+        recapKey = key;
+        clear(card);
+        const add = (tag, value, className) => {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (value !== undefined) node.textContent = value;
+          return node;
+        };
+        const finished = play.index >= flow.steps.length;
+        card.append(add("p", "What happened", "eyebrow"), add("h2", finished ? "Every stage, and what it caught" : "So far, stage by stage"));
+        const list = add("ol");
+        flow.stages.forEach((name, number) => {
+          const indexes = flow.steps.map((step, index) => (step.stage === name ? index : -1)).filter((index) => index >= 0);
+          const done = indexes.every((index) => index < play.index);
+          const now = !done && indexes.some((index) => index <= play.index);
+          const caught = done && indexes.some((index) => flow.steps[index].verdict === "flagged");
+          const item = add("li", undefined, done ? (caught ? "caught" : "") : now ? "now" : "later");
+          item.appendChild(add("span", done ? (caught ? "!" : "✓") : String(number + 1), "mark"));
+          const head = add("div", undefined, "head");
+          head.append(document.createTextNode(number + 1 + ". " + name + " "), add("span", done ? "· " + stageOutcome(name) + (caught ? " · caught a problem" : "") : now ? "· in progress" : "· not yet", "out"));
+          item.append(head, add("div", done ? stageStory(name) : now ? (play.blocked ? "Stopped: a code check failed, so nothing goes further until it is fixed." : "Happening now: " + (flow.steps[play.index] || {}).caption) : "", "story"));
+          if (done || now)
+            item.addEventListener("click", () => {
+              const first = flow.steps[indexes[0]];
+              stop();
+              phase = first.phase;
+              selected = first.id;
+              buildPipe();
+              render();
+              byId("pipe").scrollIntoView({ behavior: "smooth", block: "center" });
+            });
+          list.appendChild(item);
+        });
+        card.appendChild(list);
       }
 
       let labKey = "";

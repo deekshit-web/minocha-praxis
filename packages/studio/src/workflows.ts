@@ -111,6 +111,8 @@ export interface Step {
 
 /** The stages of software development a build workflow walks through, in order. */
 export const BUILD_STAGES = ["PRD", "Architecture", "Code", "Code review", "Unit tests", "Test cases", "Testing", "Deployment"];
+/** The stages a document or decision walks through. */
+export const DOCUMENT_STAGES = ["Research", "Drafts", "Cross-review", "Merge", "Checks", "Approval", "Delivery"];
 
 export interface Workflow {
   id: string;
@@ -125,7 +127,7 @@ export interface Workflow {
   output: string;
   contrast: { draft: "A" | "B"; before: string; after: string; why: string };
   phases: string[];
-  /** Build workflows: the development stages, in order. Empty for documents. */
+  /** The stages this workflow walks through, in order: software development for a build. */
   stages: string[];
   /** Where two steps are walled off from each other: the two drafts, and in a build the tests and the code. */
   walls: Array<{ phase: number; col: number; span: number; label: string }>;
@@ -280,6 +282,11 @@ export function expand(spec: WorkflowSpec): Workflow {
       ...panel(spec, 2, ["sources"]),
       step({ id: "deliver", kind: "tool", phase: 0, col: 7, row: 1, title: "Deliver", actor: "Workflow", caption: "The approved result goes out, with a record of who approved what.", given: "The approved result.", output: spec.deliver ?? "", after: ["approve"], seconds: 2 }),
     ];
+    const stageOf: Record<string, string> = {
+      brief: "Research", sources: "Research", draftA: "Drafts", draftB: "Drafts", reviewOfA: "Cross-review", reviewOfB: "Cross-review",
+      merge: "Merge", checks: "Checks", approve: "Approval", deliver: "Delivery",
+    };
+    steps = steps.map((item) => ({ ...item, stage: stageOf[item.id] }));
   }
   // Real calls vary in size from one task to the next. Scale each call by a factor fixed per workflow and step
   // (0.75 to 1.3), so estimates differ between workflows but never change between page loads.
@@ -298,7 +305,7 @@ export function expand(spec: WorkflowSpec): Workflow {
     brief: spec.brief,
     output: spec.kind === "build" ? buildOutput(spec) : spec.output,
     phases,
-    stages: spec.kind === "build" ? BUILD_STAGES : [],
+    stages: spec.kind === "build" ? BUILD_STAGES : DOCUMENT_STAGES,
     walls,
     steps,
     estimatedCostUsd: models.reduce((total, item) => total + (item.estimatedCostUsd ?? 0), 0),

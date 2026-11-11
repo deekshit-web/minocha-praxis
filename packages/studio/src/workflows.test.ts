@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { LIVE_CHECKS, runChecks } from "../public/checks.js";
 import { LIVE_TESTS, report, runTests } from "../public/tests.js";
-import { BUILD_STAGES, DOMAINS, catalog, expand, loadSpecs, workflowIssues } from "./workflows.ts";
+import { BUILD_STAGES, DOCUMENT_STAGES, DOMAINS, catalog, expand, loadSpecs, workflowIssues } from "./workflows.ts";
 
 test("every domain offers a feature build and a document workflow", () => {
   const specs = loadSpecs();
@@ -165,5 +165,14 @@ test("a build walks every stage of software development, in order, each with a p
     assert.equal(spec.unitRun, report(runTests(spec.id, "first", "unit")), spec.id);
     // Each design and deployment ends with a person.
     for (const id of ["archApprove", "deployApprove"]) assert.equal(flow.steps.find((item) => item.id === id)?.kind, "human", `${spec.id}:${id}`);
+  }
+});
+
+test("a document walks its own stages in order", () => {
+  for (const spec of loadSpecs().filter((item) => item.kind === "document")) {
+    const flow = expand(spec);
+    assert.deepEqual(flow.stages, DOCUMENT_STAGES, spec.id);
+    const order = flow.steps.map((item) => DOCUMENT_STAGES.indexOf(item.stage ?? ""));
+    assert.deepEqual([...new Set(order)], DOCUMENT_STAGES.map((_, index) => index), spec.id);
   }
 });
