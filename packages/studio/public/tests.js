@@ -47,107 +47,136 @@ function zonedToUtcMs({ local, zone }) {
 const ZONE_NAMES = { "Asia/Kolkata": "India time", "America/New_York": "New York time" };
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-// ---------- The features under test. Each takes `fixed`: false is the first version, true is after the fix.
+// ---------- The features under test, as source text: the code after Claude's fix. Each first version is the
+// same source with one patch applied, so the page can show the real code and the real diff, and mutation
+// testing can break the same code the tests run against.
 
-const FEATURES = {
-  "healthcare-build": (fixed) => ({
-    appealReady(line) {
-      if (line.carc === "PR-1") return { ready: false, missing: ["patient responsibility: no appeal"] };
-      if (line.carc !== "CO-50") return { ready: true, missing: [] };
-      // The first version let a CO-50 line through as soon as it had a deadline.
-      if (!fixed && line.filingDeadline) return { ready: true, missing: [] };
-      const missing = [];
-      if (!/^DOC-\d{3}$/.test(line.noteRef || "")) missing.push("clinical-note reference");
-      if (!line.filingDeadline) missing.push("filing deadline");
-      return { ready: missing.length === 0, missing };
-    },
-  }),
-  "education-build": (fixed) => ({
-    riskFlag(student) {
-      if (student.clearDays >= 10) return { flagged: false, reasons: [] };
-      const rate = student.present / student.schoolDays;
-      const reasons = [];
-      // The first version compared with <= 0.9, so exactly 90% was flagged.
-      if (fixed ? rate < 0.9 : rate <= 0.9) reasons.push("attendance");
-      if (student.failingGrades >= 2) reasons.push("grades");
-      return { flagged: reasons.length > 0, reasons };
-    },
-    canSeeFlag(role) {
-      return role === "counsellor" || role === "head-of-year";
-    },
-    rosterFor(classId) {
-      return [{ id: "STU-104", classId }, { id: "STU-207", classId }];
-    },
-  }),
-  "fmcg-build": (fixed) => {
-    const daysOfCover = (stock, sellOut, weeks) => (sellOut === 0 ? Infinity : stock / (sellOut / (weeks * 7)));
-    return {
-      daysOfCover,
-      createAlerter() {
-        const sent = new Set();
-        return {
-          check({ distributor, sku, stock, sellOut, weeks, date }) {
-            const cover = daysOfCover(stock, sellOut, weeks);
-            if (!(cover < 7)) return null;
-            // The first version keyed alerts by distributor and date, leaving out the product.
-            const key = fixed ? `${distributor}|${sku}|${date}` : `${distributor}|${date}`;
-            if (sent.has(key)) return null;
-            sent.add(key);
-            return { distributor, sku, cover };
-          },
-        };
-      },
-    };
+const SOURCES = {
+  "healthcare-build": `({
+  appealReady(line) {
+    if (line.carc === "PR-1") return { ready: false, missing: ["patient responsibility: no appeal"] };
+    if (line.carc !== "CO-50") return { ready: true, missing: [] };
+    const missing = [];
+    if (!/^DOC-\\d{3}$/.test(line.noteRef || "")) missing.push("clinical-note reference");
+    if (!line.filingDeadline) missing.push("filing deadline");
+    return { ready: missing.length === 0, missing };
   },
-  "finance-build": (fixed) => ({
-    prequalify(input) {
-      const allowed = ["grossMonthlyIncome", "monthlyDebt", "newPayment", "creditScore"];
-      for (const key of Object.keys(input)) if (!allowed.includes(key)) throw new Error(`unknown field: ${key}`);
-      const { grossMonthlyIncome: income, monthlyDebt: debt, newPayment: payment, creditScore: score } = input;
-      // The first version added the two shares as fractions: 0.28 + 0.15 is 0.43000000000000005.
-      const share = debt / income + payment / income;
-      const basisPoints = fixed ? Math.round(((debt + payment) * 10000) / income) : Math.round(share * 10000);
-      const withinLimit = fixed ? basisPoints <= 4300 : share <= 0.43;
-      const reasons = [];
-      if (!withinLimit) reasons.push(`Your monthly debts, including this loan, would be ${basisPoints / 100}% of your income; the limit is 43%.`);
-      if (score < 640) reasons.push(`Your credit score of ${score} is below 640.`);
-      if (reasons.length) reasons.push("This is not a final decision; a full application may give a different result.");
-      return { prequalified: reasons.length === 0, dti: basisPoints / 10000, reasons };
+})`,
+  "education-build": `({
+  riskFlag(student) {
+    if (student.clearDays >= 10) return { flagged: false, reasons: [] };
+    const rate = student.present / student.schoolDays;
+    const reasons = [];
+    if (rate < 0.9) reasons.push("attendance");
+    if (student.failingGrades >= 2) reasons.push("grades");
+    return { flagged: reasons.length > 0, reasons };
+  },
+  canSeeFlag(role) {
+    return role === "counsellor" || role === "head-of-year";
+  },
+  rosterFor(classId) {
+    return [{ id: "STU-104", classId }, { id: "STU-207", classId }];
+  },
+})`,
+  "fmcg-build": `(() => {
+  const daysOfCover = (stock, sellOut, weeks) => (sellOut === 0 ? Infinity : stock / (sellOut / (weeks * 7)));
+  return {
+    daysOfCover,
+    createAlerter() {
+      const sent = new Set();
+      return {
+        check({ distributor, sku, stock, sellOut, weeks, date }) {
+          const cover = daysOfCover(stock, sellOut, weeks);
+          if (!(cover < 7)) return null;
+          const key = distributor + "|" + sku + "|" + date;
+          if (sent.has(key)) return null;
+          sent.add(key);
+          return { distributor, sku, cover };
+        },
+      };
     },
-  }),
-  "logistics-build": (fixed) => {
-    const minutesLate = (promised, etaUtc) => Math.round((Date.parse(etaUtc) - zonedToUtcMs(promised)) / 60000);
-    return {
-      minutesLate,
-      toUtc: (zoned) => new Date(zonedToUtcMs(zoned)).toISOString().slice(0, 16) + "Z",
-      createNotifier() {
-        const last = new Map();
-        return {
-          update(id, promised, etaUtc) {
-            const late = minutesLate(promised, etaUtc);
-            if (!last.has(id)) {
-              if (late <= 120) return null;
-              last.set(id, etaUtc);
-              return { id, late };
-            }
-            // The first version stopped after one notice: its flag never reset the baseline ETA.
-            if (!fixed) return null;
-            const slip = Math.round((Date.parse(etaUtc) - Date.parse(last.get(id))) / 60000);
-            if (slip < 120) return null;
+  };
+})()`,
+  "finance-build": `({
+  prequalify(input) {
+    const allowed = ["grossMonthlyIncome", "monthlyDebt", "newPayment", "creditScore"];
+    for (const key of Object.keys(input)) if (!allowed.includes(key)) throw new Error("unknown field: " + key);
+    const { grossMonthlyIncome: income, monthlyDebt: debt, newPayment: payment, creditScore: score } = input;
+    const basisPoints = Math.round(((debt + payment) * 10000) / income);
+    const withinLimit = basisPoints <= 4300;
+    const reasons = [];
+    if (!withinLimit) reasons.push("Your monthly debts, including this loan, would be " + basisPoints / 100 + "% of your income; the limit is 43%.");
+    if (score < 640) reasons.push("Your credit score of " + score + " is below 640.");
+    if (reasons.length) reasons.push("This is not a final decision; a full application may give a different result.");
+    return { prequalified: reasons.length === 0, dti: basisPoints / 10000, reasons };
+  },
+})`,
+  "logistics-build": `(() => {
+  const minutesLate = (promised, etaUtc) => Math.round((Date.parse(etaUtc) - zonedToUtcMs(promised)) / 60000);
+  return {
+    minutesLate,
+    toUtc: (zoned) => new Date(zonedToUtcMs(zoned)).toISOString().slice(0, 16) + "Z",
+    createNotifier() {
+      const last = new Map();
+      return {
+        update(id, promised, etaUtc) {
+          const late = minutesLate(promised, etaUtc);
+          if (!last.has(id)) {
+            if (late <= 120) return null;
             last.set(id, etaUtc);
             return { id, late };
-          },
-        };
-      },
-      formatForCustomer(etaUtc, zone) {
-        const ms = Date.parse(etaUtc);
-        const local = new Date(ms + offsetMinutes(zone, ms) * 60000);
-        const time = String(local.getUTCHours()).padStart(2, "0") + ":" + String(local.getUTCMinutes()).padStart(2, "0");
-        return `${local.getUTCDate()} ${MONTHS[local.getUTCMonth()]}, ${time} (${ZONE_NAMES[zone] || zone})`;
-      },
-    };
-  },
+          }
+          const slip = Math.round((Date.parse(etaUtc) - Date.parse(last.get(id))) / 60000);
+          if (slip < 120) return null;
+          last.set(id, etaUtc);
+          return { id, late };
+        },
+      };
+    },
+    formatForCustomer(etaUtc, zone) {
+      const ms = Date.parse(etaUtc);
+      const local = new Date(ms + offsetMinutes(zone, ms) * 60000);
+      const time = String(local.getUTCHours()).padStart(2, "0") + ":" + String(local.getUTCMinutes()).padStart(2, "0");
+      return local.getUTCDate() + " " + MONTHS[local.getUTCMonth()] + ", " + time + " (" + (ZONE_NAMES[zone] || zone) + ")";
+    },
+  };
+})()`,
 };
+
+/**
+ * The bug each first version carried, as the patch Claude's fix reversed: in the first version, each `fixed`
+ * text read as `first`. The bugs were planted to show the mechanism; the code and the tests are real.
+ */
+const FIRST_VERSION = {
+  "healthcare-build": [{ fixed: `    const missing = [];\n`, first: `    if (line.filingDeadline) return { ready: true, missing: [] };\n    const missing = [];\n` }],
+  "education-build": [{ fixed: `if (rate < 0.9)`, first: `if (rate <= 0.9)` }],
+  "fmcg-build": [{ fixed: `distributor + "|" + sku + "|" + date`, first: `distributor + "|" + date` }],
+  "finance-build": [
+    { fixed: `    const basisPoints = Math.round(((debt + payment) * 10000) / income);\n    const withinLimit = basisPoints <= 4300;\n`, first: `    const share = debt / income + payment / income;\n    const basisPoints = Math.round(share * 10000);\n    const withinLimit = share <= 0.43;\n` },
+  ],
+  "logistics-build": [{ fixed: `          const slip =`, first: `          return null;\n          const slip =` }],
+};
+
+const HELPERS = { zonedToUtcMs, offsetMinutes, ZONE_NAMES, MONTHS };
+
+/** The source of a feature: the fixed code, or the first version with its bug. */
+export function sourceOf(id, version = "fixed") {
+  let source = SOURCES[id];
+  if (version === "first") for (const patch of FIRST_VERSION[id]) source = source.replace(patch.fixed, patch.first);
+  return source;
+}
+
+/** The fix as a unified-style diff: what the first version said, and what replaced it. */
+export function fixDiff(id) {
+  return FIRST_VERSION[id]
+    .map((patch) => [...patch.first.replace(/\n$/, "").split("\n").map((line) => "- " + line.trim()), ...patch.fixed.replace(/\n$/, "").split("\n").map((line) => "+ " + line.trim())].join("\n"))
+    .join("\n");
+}
+
+function instantiate(source) {
+  // Same-origin code we ship, never visitor input: the source above, or a mutant of it.
+  return new Function("helpers", "const { zonedToUtcMs, offsetMinutes, ZONE_NAMES, MONTHS } = helpers;\nreturn " + source + ";")(HELPERS);
+}
 
 // ---------- The generated test scripts.
 
@@ -239,6 +268,9 @@ const SCRIPTS = {
       assert.equal(daysOfCover(300, 0, 4), Infinity);
       assert.equal(check(createAlerter(), { sellOut: 0 }), null);
     });
+    test("exactly 7 days of cover does not alert", () => {
+      assert.equal(check(createAlerter(), { stock: 420 }), null);
+    });
     // </test-script>
   },
   "finance-build": (test, assert, code) => {
@@ -267,6 +299,12 @@ const SCRIPTS = {
     });
     test("input type rejects an age field", () => {
       assert.throws(() => prequalify({ ...input(), age: 61 }), /unknown field: age/);
+    });
+    test("credit score 640 is accepted", () => {
+      assert.equal(prequalify(input({ creditScore: 640 })).prequalified, true);
+    });
+    test("43.01% is not pre-qualified", () => {
+      assert.equal(prequalify(input({ grossMonthlyIncome: 6000, monthlyDebt: 1680.6 })).prequalified, false);
     });
     // </test-script>
   },
@@ -298,6 +336,10 @@ const SCRIPTS = {
     });
     test("times shown in the delivery's local zone", () => {
       assert.equal(formatForCustomer("2026-11-12T15:30Z", "Asia/Kolkata"), "12 Nov, 21:00 (India time)");
+    });
+    test("the 2-hour line: 120 minutes late sends nothing, 121 sends a notice", () => {
+      assert.equal(createNotifier().update("SHP-5122", promised, "2026-11-12T14:30Z"), null);
+      assert.ok(createNotifier().update("SHP-5123", promised, "2026-11-12T14:31Z"));
     });
     // </test-script>
   },
@@ -430,7 +472,10 @@ export const LIVE_TESTS = Object.keys(SCRIPTS);
  * acceptance tests by default, or with suite "unit" Claude's own unit tests.
  */
 export function runTests(id, version = "fixed", suite = "acceptance") {
-  const code = FEATURES[id](version === "fixed");
+  return runSuite(id, instantiate(sourceOf(id, version)), suite);
+}
+
+function runSuite(id, code, suite) {
   const results = [];
   const test = (name, body) => {
     const started = typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -445,6 +490,58 @@ export function runTests(id, version = "fixed", suite = "acceptance") {
   };
   (suite === "unit" ? UNIT_SCRIPTS : SCRIPTS)[id](test, assert, code);
   return results;
+}
+
+// ---------- Mutation testing: break the fixed code in small, systematic ways and count how many broken
+// versions the tests notice. A surviving mutant is a change the tests cannot tell apart from the real code.
+
+const OPERATORS = [
+  { name: "<= to <", pattern: /<=/g, to: "<" },
+  { name: ">= to >", pattern: />=/g, to: ">" },
+  { name: "< to <=", pattern: /(?<![<=])<(?![=<])/g, to: "<=" },
+  { name: "> to >=", pattern: /(?<![=>-])>(?![=>])/g, to: ">=" },
+  { name: "=== to !==", pattern: /===/g, to: "!==" },
+  { name: "!== to ===", pattern: /!==/g, to: "===" },
+  { name: "&& to ||", pattern: /&&/g, to: "||" },
+  { name: "|| to &&", pattern: /\|\|/g, to: "&&" },
+  { name: "true to false", pattern: /\btrue\b/g, to: "false" },
+  { name: "false to true", pattern: /\bfalse\b/g, to: "true" },
+  { name: "number + 1", pattern: /(?<![\w.{])\d+(?:\.\d+)?(?![\w}])/g, to: (match) => String(Number(match) + 1) },
+];
+
+/** Runs every mutant of a feature against its acceptance and unit tests. */
+export function mutationTest(id) {
+  const source = SOURCES[id];
+  // Text inside string and regex literals is data, not logic; changing "STU-104" proves nothing.
+  const literals = [...source.matchAll(/"(?:[^"\\]|\\.)*"|\/\^[^\n]*?\$\//g)].map((match) => [match.index, match.index + match[0].length]);
+  const inLiteral = (at) => literals.some(([start, end]) => at >= start && at < end);
+  const mutants = [];
+  for (const operator of OPERATORS) {
+    for (const match of source.matchAll(operator.pattern)) {
+      if (inLiteral(match.index)) continue;
+      const replacement = typeof operator.to === "function" ? operator.to(match[0]) : operator.to;
+      const at = match.index;
+      const lineStart = source.lastIndexOf("\n", at) + 1;
+      const lineEnd = source.indexOf("\n", at);
+      mutants.push({
+        operator: operator.name,
+        line: source.slice(lineStart, lineEnd === -1 ? undefined : lineEnd).trim(),
+        source: source.slice(0, at) + replacement + source.slice(at + match[0].length),
+      });
+    }
+  }
+  const results = [];
+  for (const mutant of mutants) {
+    let code;
+    try {
+      code = instantiate(mutant.source);
+    } catch {
+      continue; // Not valid code: not a meaningful mutant.
+    }
+    const failing = [...runSuite(id, code, "acceptance"), ...runSuite(id, code, "unit")].filter((result) => !result.pass);
+    results.push({ operator: mutant.operator, line: mutant.line, killed: failing.length > 0, by: failing[0] ? failing[0].name : null });
+  }
+  return { total: results.length, killed: results.filter((result) => result.killed).length, results };
 }
 
 /** The text a test runner prints for these results. */

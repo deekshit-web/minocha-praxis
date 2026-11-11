@@ -8,6 +8,8 @@ import { catalog, expand, loadSpecs } from "./workflows.ts";
 
 /** A summary of a real, metered run of the requirements panel, so viewers can see the replays are not invented. */
 const EVIDENCE = "packages/studio/evidence/live-prd-2026-11-09.json";
+/** That run's full transcript: drafts, reviews, merge and gate verdicts. */
+const TRANSCRIPT = "packages/studio/evidence/live-prd-2026-11-09-transcript.json";
 
 function send(res: ServerResponse, status: number, body: unknown, type = "application/json; charset=utf-8"): void {
   res.writeHead(status, { "content-type": type, "cache-control": "no-store", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer" });
@@ -40,6 +42,11 @@ export function createStudioServer(options: StudioOptions = {}): Server {
       }
       if (req.method === "GET" && (url.pathname === "/checks.js" || url.pathname === "/tests.js")) {
         send(res, 200, readFileSync(join(repoRoot(), "packages/studio/public", url.pathname.slice(1)), "utf8"), "text/javascript; charset=utf-8");
+        return;
+      }
+      if (req.method === "GET" && url.pathname === "/api/evidence/transcript") {
+        res.writeHead(200, { "content-type": "application/json; charset=utf-8", "content-disposition": 'attachment; filename="kodiflex-live-run-2026-11-09-transcript.json"', "x-content-type-options": "nosniff" });
+        res.end(readFileSync(join(repoRoot(), TRANSCRIPT), "utf8"));
         return;
       }
       if (req.method === "GET" && url.pathname === "/api/evidence") {

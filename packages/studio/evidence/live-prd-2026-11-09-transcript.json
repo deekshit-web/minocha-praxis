@@ -1,0 +1,2370 @@
+{
+  "note": "Full transcript of the real Claude + Grok requirements panel run of 2026-11-09: both drafts, both reviews, the merge and its rationale, and the gate verdicts. Synthetic practice data; no patient data.",
+  "brief": "On CO-50 medical-necessity denials, the specialist must not mark the appeal packet ready unless a clinical-note reference and a filing-deadline date are both present.",
+  "models": {
+    "modelA": "claude-opus-5",
+    "modelB": "grok-4.7"
+  },
+  "panel": {
+    "stage": "prd",
+    "proposalA": {
+      "problem": "Denial specialists at Northwind Imaging can currently mark a CO-50 medical-necessity appeal packet ready even when the packet has no clinical-note reference and no filing-deadline date. CO-50's only allowed next action is to appeal with the coverage policy and a clinical-note reference, and timely filing in this demo is 90 days from the date of service, so a packet missing either element is not actually appealable. The workbench needs a readiness gate that blocks the ready action on CO-50 lines until a clinical-note reference (a DOC-### id) and a filing-deadline date are both present, and that tells the specialist exactly what is missing.",
+      "users": [
+        "Denial specialist — works appealable denials and is the only role that marks a CO-50 packet ready; cannot override the gate in v1",
+        "PFS lead — sees counts by CARC class and appeal-ready volume; does not mark packets ready",
+        "Biller — resubmits corrected claims (CO-16, CO-4) and must keep that path unchanged",
+        "Coder — owns modifiers and diagnosis pointers; this product suggests no CPT or ICD changes",
+        "Front desk — reads eligibility only and does not work denials"
+      ],
+      "inScope": [
+        "A readiness gate on CO-50 denial lines requiring both a clinical-note reference and a filing-deadline date",
+        "Disabling the 'mark appeal packet ready' action and naming each missing item on the button label",
+        "Validating the clinical-note reference as a non-empty DOC-### identifier",
+        "Computing and displaying the filing deadline as date of service plus 90 days, and treating a blank deadline as missing",
+        "Enforcing the denied -> appeal-ready state transition only after the gate passes",
+        "Showing the CO-50 meaning and the only allowed next action verbatim on the denial detail screen",
+        "Keeping CO-16, CO-4, CO-197, PR-1 and OA-23 handling on their current paths",
+        "Workqueue display of deadline risk bands and sort by days remaining for CO-50 work"
+      ],
+      "outOfScope": [
+        "Any override, supervisor approval, or force-ready path (deferred past v1)",
+        "Deciding medical necessity, recommending or changing a diagnosis code",
+        "Storing or rendering clinical note bodies, attachments, or document content",
+        "Real payer portals, clearinghouse routes, plan ids, or actual claim submission",
+        "Writing off balances, adjusting patient responsibility, or editing PR-1 and OA-23 lines",
+        "Appeal letter authoring, coverage-policy text management, and appeal outcome tracking (upheld/overturned)",
+        "Changing the CO-16 / CO-197 / CO-4 workflows or their next actions",
+        "Any HIPAA determination or business associate agreement; the PHI scanner is a demo scanner"
+      ],
+      "assumptions": [
+        {
+          "answerId": "Q-1",
+          "text": "The readiness gate applies to CO-50 denial lines only. CO-16 and CO-197 keep their current path, and no other CARC code gains a gate."
+        },
+        {
+          "answerId": "Q-2",
+          "text": "Nobody may override the gate in v1 — not the denial specialist, not the PFS lead. The ready action stays disabled until both fields are present; there is no override control and no justification-to-proceed path."
+        },
+        {
+          "answerId": "Q-3",
+          "text": "A clinical-note reference is a non-empty DOC-### identifier. The field holds an identifier, not a document body; whitespace-only or non-conforming values count as missing."
+        },
+        {
+          "answerId": "Q-4",
+          "text": "The filing deadline is the date of service plus 90 days. A blank deadline (the remit did not carry one and none is derivable) fails the gate."
+        },
+        {
+          "answerId": "Q-5",
+          "text": "When blocked, the specialist sees the missing items named on the ready button itself, so the then-clause of each acceptance criterion is directly observable."
+        }
+      ],
+      "requirements": [
+        {
+          "id": "REQ-1",
+          "statement": "On a CO-50 denial line, the appeal packet readiness gate must pass only when a clinical-note reference and a filing-deadline date are both present; otherwise the 'mark appeal packet ready' action is disabled.",
+          "rationale": "CO-50's only allowed next action is to appeal with the coverage policy and a clinical-note reference, and an appeal without a filing deadline cannot be worked against timely filing (pack/carc-demo.md, pack/payer-northwind.md)."
+        },
+        {
+          "id": "REQ-2",
+          "statement": "While the gate fails, the ready action's label must name each missing item ('clinical-note reference', 'filing deadline', or both), and the appeal checklist must show each gate item as present or missing.",
+          "rationale": "Q-5: the specialist must see what is blocking them without guessing, and the detail pattern requires the ready action to name each missing item (pack/patterns/detail-checklist.md)."
+        },
+        {
+          "id": "REQ-3",
+          "statement": "No role may override the readiness gate in v1. The product exposes no override, force-ready, or approval-to-proceed control, and the denied -> appeal-ready transition is refused for any caller while the gate fails.",
+          "rationale": "Q-2 and pack/roles.md: the denial specialist cannot override the gate in v1, and the PFS lead does not mark packets ready."
+        },
+        {
+          "id": "REQ-4",
+          "statement": "The clinical-note reference field accepts a non-empty identifier shaped DOC-###. Empty, whitespace-only, or non-conforming values are treated as missing by the gate, and no note body is stored or displayed.",
+          "rationale": "Q-3 and pack/phi-policy.md: allowed identifiers are PAT-###, CLM-###, DOC-###, and the field is an identifier rather than clinical content."
+        },
+        {
+          "id": "REQ-5",
+          "statement": "The filing-deadline date for a CO-50 line is the date of service plus 90 days. The denial detail and workqueue show that date and its risk band against the demo clock of 17 November 2026; a blank deadline is reported as missing and fails the gate.",
+          "rationale": "Q-4 and pack/payer-northwind.md: timely filing is 90 days from date of service and a blank deadline is treated as missing."
+        },
+        {
+          "id": "REQ-6",
+          "statement": "CO-16, CO-4, CO-197, PR-1 and OA-23 lines keep their current path. The readiness gate is not applied to them, and their next actions are unchanged.",
+          "rationale": "Q-1 scopes the gate to CO-50 only; pack/claim-states.md keeps PR-1 and OA-23 out of the denied/appeal path entirely."
+        },
+        {
+          "id": "REQ-7",
+          "statement": "The CO-50 denial detail screen shows the claim lines, the CARC meaning from the demo table, and the only allowed next action copied verbatim, with no diagnosis-change suggestion anywhere on the screen.",
+          "rationale": "pack/patterns/detail-checklist.md and pack/carc-demo.md: this product does not decide medical necessity and must not invent or alter a next action."
+        },
+        {
+          "id": "REQ-8",
+          "statement": "The claim state machine permits appeal-ready for a CO-50 line only after the readiness gate passes; the gate is evaluated by one shared domain rule that the UI calls rather than reimplements.",
+          "rationale": "pack/claim-states.md states appeal-ready is allowed for a CO-50 line only after the gate passes; pack/patterns/detail-checklist.md requires the component to call the domain rule."
+        },
+        {
+          "id": "REQ-9",
+          "statement": "The denial workqueue lists appealable denials in a dense table sorted by days remaining to the filing deadline, shows the deadline risk band and gate status without opening the row, filters by CARC class, and groups patient-responsibility lines separately.",
+          "rationale": "pack/patterns/workqueue.md defines the pattern, and the specialist needs to see which CO-50 packets are blocked before their deadlines run out."
+        },
+        {
+          "id": "REQ-10",
+          "statement": "Every identifier rendered or stored by the feature is synthetic and shaped PAT-###, CLM-###, or DOC-###; intake briefs, diffs, and seed data are scanned for SSN, email, phone, raw MRN, and date-of-birth patterns, and a hit blocks the run before a requirement document is written.",
+          "rationale": "pack/phi-policy.md defines the allowed identifiers and the blocking demo scanner."
+        }
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "AC-1",
+          "requirementId": "REQ-1",
+          "given": "CLM-104 is a denied CO-50 line for PAT-021 with clinical-note reference DOC-317 and a filing deadline of 2026-12-04",
+          "when": "the denial specialist opens the denial detail screen",
+          "then": "the 'Mark appeal packet ready' action is enabled, and activating it moves the line to appeal-ready",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-2",
+          "requirementId": "REQ-1",
+          "given": "CLM-108 is a denied CO-50 line with a filing deadline of 2026-11-30 and an empty clinical-note reference",
+          "when": "the denial specialist opens the denial detail screen",
+          "then": "the ready action is disabled and the line stays in denied",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-3",
+          "requirementId": "REQ-1",
+          "given": "CLM-112 is a denied CO-50 line with clinical-note reference DOC-408 and a blank filing deadline",
+          "when": "the denial specialist opens the denial detail screen",
+          "then": "the ready action is disabled and the line stays in denied",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-4",
+          "requirementId": "REQ-1",
+          "given": "CLM-116 is a denied CO-50 line with no clinical-note reference and a blank filing deadline",
+          "when": "the denial specialist opens the denial detail screen",
+          "then": "the ready action is disabled and the appeal checklist marks both gate items as missing",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-5",
+          "requirementId": "REQ-2",
+          "given": "a CO-50 line whose gate fails",
+          "when": "the denial specialist reads the disabled ready action",
+          "then": "the label names exactly the missing items — 'Add clinical-note reference to continue', 'Add filing deadline to continue', or 'Add clinical-note reference and filing deadline to continue' — and never a generic 'not ready' message",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-6",
+          "requirementId": "REQ-2",
+          "given": "a CO-50 denial detail screen",
+          "when": "the specialist views the appeal checklist",
+          "then": "each gate item (clinical-note reference, filing deadline) is listed with a present or missing state and, when present, the DOC-### id or the deadline date is shown beside it",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-7",
+          "requirementId": "REQ-3",
+          "given": "CLM-116 with a failing gate, viewed by a denial specialist and then by a PFS lead",
+          "when": "either role inspects the detail screen, its menus, and its row actions",
+          "then": "no override, force-ready, or approve-anyway control exists for either role, and the PFS lead sees no ready action at all",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-8",
+          "requirementId": "REQ-3",
+          "given": "CLM-112 with a blank filing deadline",
+          "when": "a ready request is issued directly against the line, bypassing the disabled button",
+          "then": "the transition is refused, the line remains in denied, and the refusal names the missing filing deadline",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-9",
+          "requirementId": "REQ-4",
+          "given": "CLM-120 is a denied CO-50 line with a filing deadline present and a clinical-note reference field containing only spaces or a value that is not shaped DOC-###",
+          "when": "the gate is evaluated",
+          "then": "the clinical-note reference is reported missing and the ready action is disabled with the label 'Add clinical-note reference to continue'",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-10",
+          "requirementId": "REQ-4",
+          "given": "CLM-120 with a filing deadline present",
+          "when": "the specialist enters DOC-512 in the clinical-note reference field",
+          "then": "the checklist shows the clinical-note reference as present with the id DOC-512, and no note body or attachment is requested or stored",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-11",
+          "requirementId": "REQ-5",
+          "given": "CLM-104 is a CO-50 line with a date of service of 2026-09-05",
+          "when": "the denial detail and the workqueue row are rendered against the demo clock of 17 November 2026",
+          "then": "the filing deadline reads 2026-12-04 (date of service plus 90 days) and the risk band reads 'urgent' because it falls within 14 days",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-12",
+          "requirementId": "REQ-5",
+          "given": "CLM-112 is a CO-50 line whose remit carried no filing deadline and whose date of service is absent",
+          "when": "the gate is evaluated",
+          "then": "the filing deadline is reported missing rather than defaulted, and the ready action is disabled with the label 'Add filing deadline to continue'",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-13",
+          "requirementId": "REQ-6",
+          "given": "CLM-130 is a denied CO-16 line with no clinical-note reference",
+          "when": "the biller opens the denial detail screen",
+          "then": "no readiness gate is applied, and the screen shows the next action 'Correct the missing element named by the remark and resubmit the claim.' verbatim",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-14",
+          "requirementId": "REQ-6",
+          "given": "CLM-134 is a denied CO-197 line and CLM-140 is a PR-1 deductible line",
+          "when": "the specialist views each",
+          "then": "CO-197 shows 'Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request.' with no gate, and the PR-1 line sits in the patient-responsibility group with 'Post the amount to patient responsibility. Do not open an appeal.' and no appeal action",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-15",
+          "requirementId": "REQ-7",
+          "given": "CLM-104 is a CO-50 line",
+          "when": "the denial specialist opens the denial detail screen",
+          "then": "the screen shows the claim lines, the meaning 'These are non-covered services because this is not deemed a medical necessity by the payer.', the next action 'Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product.' verbatim, and no diagnosis or CPT change suggestion",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-16",
+          "requirementId": "REQ-8",
+          "given": "a CO-50 line whose gate fails",
+          "when": "any caller attempts the denied -> appeal-ready transition",
+          "then": "the state machine rejects the transition and records no state change, so appeal-ready is reachable for CO-50 only through a passing gate",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-17",
+          "requirementId": "REQ-8",
+          "given": "the readiness rule lives in one domain module",
+          "when": "the denial detail component and the workqueue row render gate status",
+          "then": "both call that module and neither restates the field checks locally, so changing the rule changes both surfaces",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-18",
+          "requirementId": "REQ-9",
+          "given": "a workqueue containing CO-50, CO-16, CO-197, PR-1 and OA-23 lines",
+          "when": "the denial specialist opens it",
+          "then": "appealable denials appear in one dense table sorted ascending by days remaining to the filing deadline with the risk band and a blocked/ready marker visible in the row, patient-responsibility lines appear in a separate group, and a CARC class filter is available",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-19",
+          "requirementId": "REQ-9",
+          "given": "CLM-112 has a blank filing deadline",
+          "when": "the workqueue sorts by days remaining",
+          "then": "the row shows 'deadline missing' rather than a computed risk band and is grouped with the blocked rows instead of being sorted as comfortable",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-20",
+          "requirementId": "REQ-10",
+          "given": "an intake brief or seed record for this feature",
+          "when": "the demo scanner runs before the requirement document is written",
+          "then": "only PAT-###, CLM-### and DOC-### identifiers are allowed, and a social security number, email address, phone number, raw MRN, or date-of-birth-labelled date blocks the run",
+          "priority": "P0"
+        }
+      ],
+      "scenarios": [
+        {
+          "id": "SCN-1",
+          "criterionIds": [
+            "AC-4",
+            "AC-5",
+            "AC-7",
+            "AC-16"
+          ],
+          "role": "Denial specialist",
+          "startingState": "CLM-116 for PAT-044 is a denied CO-50 line with no clinical-note reference and a blank filing deadline; it appears in the appealable denials group of the workqueue",
+          "steps": [
+            "Open the workqueue and filter CARC class to denial",
+            "Select the CLM-116 row to open the denial detail screen",
+            "Read the appeal checklist and the ready action",
+            "Open the row action menu looking for any way to proceed"
+          ],
+          "expected": "The checklist marks both clinical-note reference and filing deadline as missing; the ready action is disabled and reads 'Add clinical-note reference and filing deadline to continue'; no override or force-ready control appears; CLM-116 stays in denied."
+        },
+        {
+          "id": "SCN-2",
+          "criterionIds": [
+            "AC-3",
+            "AC-5",
+            "AC-12"
+          ],
+          "role": "Denial specialist",
+          "startingState": "CLM-112 for PAT-051 is a denied CO-50 line whose remit carried no filing deadline",
+          "steps": [
+            "Open the CLM-112 denial detail screen",
+            "Enter DOC-408 in the clinical-note reference field",
+            "Save the field and re-read the appeal checklist and ready action"
+          ],
+          "expected": "The clinical-note reference shows present with DOC-408, the filing deadline still shows missing rather than a default date, and the ready action stays disabled reading 'Add filing deadline to continue'. CLM-112 remains in denied."
+        },
+        {
+          "id": "SCN-3",
+          "criterionIds": [
+            "AC-1",
+            "AC-11"
+          ],
+          "role": "Denial specialist",
+          "startingState": "CLM-104 for PAT-021 is a denied CO-50 line with date of service 2026-09-05 and clinical-note reference DOC-317; the demo clock is 17 November 2026",
+          "steps": [
+            "Open the CLM-104 denial detail screen",
+            "Confirm the filing deadline shown on the checklist",
+            "Activate the ready action"
+          ],
+          "expected": "The filing deadline reads 2026-12-04 with risk band 'urgent'; both checklist items read present; the ready action is enabled and moves CLM-104 from denied to appeal-ready."
+        },
+        {
+          "id": "SCN-4",
+          "criterionIds": [
+            "AC-2",
+            "AC-9"
+          ],
+          "role": "Denial specialist",
+          "startingState": "CLM-120 for PAT-063 is a denied CO-50 line with a filing deadline of 2026-11-30 and an empty clinical-note reference field",
+          "steps": [
+            "Open the CLM-120 denial detail screen",
+            "Type three spaces into the clinical-note reference field and save",
+            "Replace the spaces with the free text 'see chart' and save",
+            "Read the ready action after each save"
+          ],
+          "expected": "Both the whitespace-only value and the free-text value are reported as a missing clinical-note reference; the ready action stays disabled reading 'Add clinical-note reference to continue'; CLM-120 stays in denied until a DOC-### id is supplied."
+        },
+        {
+          "id": "SCN-5",
+          "criterionIds": [
+            "AC-8",
+            "AC-16"
+          ],
+          "role": "Denial specialist",
+          "startingState": "CLM-112 is still a denied CO-50 line with a blank filing deadline and clinical-note reference DOC-408",
+          "steps": [
+            "From the workqueue row, trigger the ready request directly using the keyboard shortcut that bypasses the disabled button"
+          ],
+          "expected": "The transition is refused, the refusal names the missing filing deadline, no state change is recorded, and CLM-112 remains in denied."
+        },
+        {
+          "id": "SCN-6",
+          "criterionIds": [
+            "AC-13"
+          ],
+          "role": "Biller",
+          "startingState": "CLM-130 for PAT-077 is a denied CO-16 line with no clinical-note reference and no filing deadline recorded",
+          "steps": [
+            "Open the workqueue and select the CLM-130 row",
+            "Read the next action and available actions on the detail screen"
+          ],
+          "expected": "No readiness gate is applied to the CO-16 line; the screen shows 'Correct the missing element named by the remark and resubmit the claim.' verbatim and the existing resubmit path is unchanged."
+        },
+        {
+          "id": "SCN-7",
+          "criterionIds": [
+            "AC-15"
+          ],
+          "role": "Denial specialist",
+          "startingState": "CLM-104 is a CO-50 line, open on the denial detail screen",
+          "steps": [
+            "Read the CARC meaning block",
+            "Read the next action block",
+            "Scan the screen and its menus for any coding suggestion"
+          ],
+          "expected": "The meaning reads 'These are non-covered services because this is not deemed a medical necessity by the payer.' and the next action reads 'Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product.' verbatim; no diagnosis, CPT, or modifier change is offered."
+        },
+        {
+          "id": "SCN-8",
+          "criterionIds": [
+            "AC-7"
+          ],
+          "role": "PFS lead",
+          "startingState": "CLM-116 is a blocked CO-50 line; the PFS lead is viewing counts by CARC class",
+          "steps": [
+            "Open the CARC class summary",
+            "Drill into the CO-50 blocked count and open CLM-116"
+          ],
+          "expected": "The lead sees the blocked count and the named missing items but no ready action and no override control; the lead cannot move CLM-116 to appeal-ready."
+        },
+        {
+          "id": "SCN-9",
+          "criterionIds": [
+            "AC-20"
+          ],
+          "role": "Denial specialist",
+          "startingState": "A new intake brief for a CO-50 packet is being submitted with seed data",
+          "steps": [
+            "Submit a brief containing a date labelled 'DOB' alongside PAT-021",
+            "Correct the brief to use only PAT-###, CLM-### and DOC-### identifiers",
+            "Resubmit"
+          ],
+          "expected": "The first submission is blocked by the demo scanner before any requirement document is written; the corrected submission with synthetic identifiers only proceeds."
+        }
+      ],
+      "screens": [
+        {
+          "id": "SCR-1",
+          "title": "Denial workqueue",
+          "purpose": "Dense table of appealable denials sorted by days remaining to the filing deadline, with CARC class filter, deadline risk band, and a blocked/ready marker visible without opening the row; patient-responsibility lines (PR-1) sit in a separate group and OA-23 lines are not worked as denials. This is the specialist's daily entry point to blocked CO-50 packets.",
+          "scenarioIds": [
+            "SCN-1",
+            "SCN-5",
+            "SCN-6"
+          ]
+        },
+        {
+          "id": "SCR-2",
+          "title": "CO-50 denial detail and appeal checklist",
+          "purpose": "Shows claim lines, the CARC meaning and the only allowed next action verbatim, and the appeal checklist with the clinical-note reference and filing-deadline gate items. Hosts the ready action, which calls the shared domain rule and names each missing item on its label when disabled.",
+          "scenarioIds": [
+            "SCN-1",
+            "SCN-2",
+            "SCN-3",
+            "SCN-4",
+            "SCN-5",
+            "SCN-7"
+          ]
+        },
+        {
+          "id": "SCR-3",
+          "title": "Appeal-ready packets and CARC class summary",
+          "purpose": "Read-only view of packets that passed the gate plus counts by CARC class and a blocked-CO-50 count for the PFS lead; confirms a successful transition to appeal-ready and demonstrates that no override or ready action is available outside the denial specialist's gated path.",
+          "scenarioIds": [
+            "SCN-3",
+            "SCN-8",
+            "SCN-9"
+          ]
+        }
+      ],
+      "openQuestions": [
+        {
+          "id": "OQ-1",
+          "text": "When the date of service is present but the remit carried no deadline, should the product compute date of service plus 90 days automatically and treat the gate item as present, or still require the specialist to confirm the computed date?"
+        },
+        {
+          "id": "OQ-2",
+          "text": "If the computed filing deadline is already overdue against the demo clock, should the gate still pass on a present-but-overdue date, or should overdue be surfaced as a separate warning on the ready action?"
+        },
+        {
+          "id": "OQ-3",
+          "text": "Where does the DOC-### clinical-note reference come from — free entry by the specialist, or selection from a seeded list of document ids? Is any existence check performed on the id?"
+        },
+        {
+          "id": "OQ-4",
+          "text": "How does the gate behave when one claim carries multiple CO-50 lines: is the packet per line or per claim, and must every CO-50 line satisfy the gate before the packet is ready?"
+        },
+        {
+          "id": "OQ-5",
+          "text": "Does the coverage policy named in the CO-50 next action need its own checklist item in a later version, and would it join the gate or stay advisory?"
+        },
+        {
+          "id": "OQ-6",
+          "text": "Should blocked gate attempts be recorded in an audit trail for the PFS lead, and if so what is captured beyond the claim id and the missing item names?"
+        },
+        {
+          "id": "OQ-7",
+          "text": "If an override is introduced after v1, which role holds it and what justification record would it require?"
+        },
+        {
+          "id": "OQ-8",
+          "text": "Can a packet already in appeal-ready be reopened if the clinical-note reference is later cleared, and does it return to denied?"
+        }
+      ],
+      "citations": [
+        "pack/phi-policy.md",
+        "pack/payer-northwind.md",
+        "pack/carc-demo.md",
+        "pack/claim-states.md",
+        "pack/patterns/detail-checklist.md",
+        "pack/patterns/workqueue.md",
+        "pack/roles.md"
+      ],
+      "carcReferences": [
+        {
+          "code": "CO-50",
+          "nextAction": "Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product."
+        },
+        {
+          "code": "CO-16",
+          "nextAction": "Correct the missing element named by the remark and resubmit the claim."
+        },
+        {
+          "code": "CO-197",
+          "nextAction": "Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request."
+        },
+        {
+          "code": "CO-4",
+          "nextAction": "Correct the modifier and resubmit. Do not invent a modifier in this product."
+        },
+        {
+          "code": "PR-1",
+          "nextAction": "Post the amount to patient responsibility. Do not open an appeal."
+        },
+        {
+          "code": "OA-23",
+          "nextAction": "Confirm the prior payer adjudication. Do not work this as a denial."
+        }
+      ]
+    },
+    "proposalB": {
+      "problem": "On a CO-50 denial, a specialist can mark an appeal packet ready with no clinical-note reference or no filing-deadline date. That packet can miss Northwind Health's 90-day timely-filing rule or go out without the clinical-note reference the payer path requires. The workbench must not decide medical necessity, must not change a diagnosis to clear coverage, and must fail closed in v1 with no override. A button-only disable is not enough: a forced ready transition must also be rejected. A blank or non-matching deadline must not look safe on the queue.",
+      "users": [
+        "Denial specialist — works appealable denials and may mark a CO-50 packet ready only when the gate passes",
+        "Biller — resubmits corrected CO-16 and CO-4 claims and must not be blocked or redirected by the CO-50 gate",
+        "PFS lead — sees counts by CARC class and must not mark packets ready or override the gate",
+        "Coder — owns modifiers and diagnosis pointers; must not receive CPT or ICD suggestions and must not mark packets ready",
+        "Front desk — does not work denials and must not mark packets ready"
+      ],
+      "inScope": [
+        "CO-50-only readiness gate requiring both a non-empty DOC-### clinical-note reference and a filing-deadline date before appeal-ready",
+        "Disabled ready control that names each missing gate item, with the same result observable from the domain rule",
+        "Filing deadline defined as date of service plus 90 days; blank deadline fails; a date that is not date of service plus 90 days fails closed",
+        "No override for any role in v1",
+        "Preserve current paths for CO-16, CO-197, CO-4, PR-1, and OA-23 using only the allowed next action for each code",
+        "Workqueue deadline risk visible without opening the row, sorted by days remaining, using the 17 November 2026 demo clock",
+        "Role separation so only the denial specialist can mark ready, and only after the gate passes",
+        "Synthetic identifiers only, shaped PAT-###, CLM-###, and DOC-###"
+      ],
+      "outOfScope": [
+        "Any v1 override of the gate, including PFS lead override",
+        "Applying this gate to CO-16, CO-197, CO-4, PR-1, or OA-23",
+        "Submitting an appeal to a payer, clearinghouse, or portal; moving a line to appeal-submitted, upheld, or overturned",
+        "Deciding medical necessity, recommending a diagnosis, changing a diagnosis code, suggesting CPT or ICD changes, inventing a modifier, or writing off a balance",
+        "Treating a coverage-policy citation as a third gate field in v1",
+        "Real plan ids, payer portals, or production X12 certification",
+        "A HIPAA determination or a business associate agreement",
+        "Storing a document body in the clinical-note field"
+      ],
+      "assumptions": [
+        {
+          "answerId": "Q-1",
+          "text": "CO-50 only. CO-16 and CO-197 keep their current path."
+        },
+        {
+          "answerId": "Q-2",
+          "text": "Nobody in v1. The ready action stays disabled until both fields are present."
+        },
+        {
+          "answerId": "Q-3",
+          "text": "A non-empty DOC-### id. The field is an identifier, not a document body."
+        },
+        {
+          "answerId": "Q-4",
+          "text": "Date of service plus 90 days. A blank deadline fails the gate."
+        },
+        {
+          "answerId": "Q-5",
+          "text": "Name the missing items on the button. The then-clause can be observed."
+        }
+      ],
+      "requirements": [
+        {
+          "id": "REQ-1",
+          "statement": "The new readiness gate applies only to CO-50 denial lines. CO-16 keeps its current path: Correct the missing element named by the remark and resubmit the claim. CO-197 keeps its current path: Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request. On a mixed claim, the gate must not pull a non-CO-50 line into the appeal.",
+          "rationale": "A class-wide gate would block billers on submission errors and could turn patient responsibility into a false appeal. pack/carc-demo.md and pack/claim-states.md limit appeal-ready to a CO-50 line after the gate passes."
+        },
+        {
+          "id": "REQ-2",
+          "statement": "The denial specialist must not mark a CO-50 appeal packet ready unless both a clinical-note reference and a filing-deadline date are present. If either is absent, the line stays out of appeal-ready.",
+          "rationale": "CO-50's only allowed next action is: Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product. Sending the packet without the note reference, or without a deadline, is the failure this gate exists to stop."
+        },
+        {
+          "id": "REQ-3",
+          "statement": "Nobody may override the gate in v1. The ready action stays disabled until both fields are present. No role gets an override control.",
+          "rationale": "pack/roles.md bars the denial specialist from overriding the gate in v1. An override would let a packet leave with a missing note or a missing timely-filing date."
+        },
+        {
+          "id": "REQ-4",
+          "statement": "A clinical-note reference counts only when it is a non-empty identifier shaped DOC-###. Empty text, whitespace, free text, and a document body do not count. The field stores the identifier, not the note.",
+          "rationale": "pack/phi-policy.md allows DOC-### only. Pasting a note body into the identifier invites disallowed personal data into the demo and does not prove a note was referenced."
+        },
+        {
+          "id": "REQ-5",
+          "statement": "The filing deadline that satisfies the gate is the date of service plus 90 days, per Northwind Health timely filing. A blank deadline fails the gate. A date that is not equal to the date of service plus 90 days does not satisfy the gate. The specialist cannot type a substitute date to clear the gate.",
+          "rationale": "pack/payer-northwind.md sets timely filing at 90 days from the date of service and treats a blank remit deadline as missing. Accepting a mistyped or mismatched date would show a false filing window and could miss the payer clock."
+        },
+        {
+          "id": "REQ-6",
+          "statement": "When the gate blocks, the ready control names each missing item using the phrases clinical-note reference and filing deadline. It names only items that are actually missing. It does not name a coverage-policy reference as a missing gate item in v1. When both items are present and valid, the control is enabled and named Mark appeal packet ready.",
+          "rationale": "pack/patterns/detail-checklist.md requires the ready action to name each missing item. Q-5 requires that the then-clause be observable. Naming an item the gate does not check would train specialists to satisfy the wrong checklist."
+        },
+        {
+          "id": "REQ-7",
+          "statement": "The ready action calls the domain readiness rule and does not reimplement that rule in the component. A ready transition attempted while either gate item is missing is rejected, the line does not become appeal-ready, and the rejection names the missing items.",
+          "rationale": "pack/patterns/detail-checklist.md says the ready action calls the domain rule. A disabled button alone can be bypassed, which is the compliance failure mode of a UI-only gate."
+        },
+        {
+          "id": "REQ-8",
+          "statement": "The detail view shows the demo-table meaning and the only allowed next action for the line's code, and it must not invent a meaning. For CO-50 the meaning is: These are non-covered services because this is not deemed a medical necessity by the payer. The only allowed next action is: Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product. The product does not decide medical necessity, does not change a diagnosis code, does not invent a modifier, and does not write off a balance. PR-1 next action is: Post the amount to patient responsibility. Do not open an appeal. OA-23 next action is: Confirm the prior payer adjudication. Do not work this as a denial. CO-4 next action is: Correct the modifier and resubmit. Do not invent a modifier in this product. An unknown code stays unmapped.",
+          "rationale": "pack/carc-demo.md forbids invented meanings and forbids this product from deciding medical necessity or recommending a different diagnosis. pack/roles.md forbids write-off and diagnosis changes. Those escapes would otherwise sit next to a blocked appeal."
+        },
+        {
+          "id": "REQ-9",
+          "statement": "appeal-ready is allowed for a CO-50 line only after the readiness gate passes. A blocked line remains denied. The gate does not skip the line to appeal-submitted.",
+          "rationale": "pack/claim-states.md allows appeal-ready for a CO-50 line only after the gate passes. Marking ready is not payer submission; this demo has no portal or clearinghouse route (pack/payer-northwind.md)."
+        },
+        {
+          "id": "REQ-10",
+          "statement": "The workqueue is a dense table of appealable denials with a separate patient-responsibility group. It sorts by days remaining to the filing deadline and can be filtered by CARC class. Deadline risk is visible without opening the row. Using the demo clock of 17 November 2026, risk is overdue when days remaining are negative, urgent within 14 days, soon within 45 days, and otherwise comfortable. A blank deadline is labelled missing and is not labelled comfortable, and blank-deadline rows sort ahead of dated rows so they are not buried.",
+          "rationale": "pack/patterns/workqueue.md and pack/payer-northwind.md make timely-filing risk the queue's safety signal. A blank deadline labelled comfortable is how an untimely CO-50 appeal gets ignored."
+        },
+        {
+          "id": "REQ-11",
+          "statement": "Only the denial specialist may mark a CO-50 packet ready, and only when the gate passes. Front desk, coder, biller, and PFS lead have no ready action and no override. PFS lead can see counts by CARC class. Front desk does not work denials.",
+          "rationale": "pack/roles.md separates denial work from billing, coding, front desk, and PFS lead oversight. A lead override or a biller ready action would bypass the specialist gate."
+        },
+        {
+          "id": "REQ-12",
+          "statement": "Patients, claims, and documents in the workbench use only synthetic identifiers shaped PAT-###, CLM-###, and DOC-###. The workbench must not display or store a disallowed personal-identifier shape listed in pack/phi-policy.md. This demo scanner is not a HIPAA determination and the project does not offer a business associate agreement.",
+          "rationale": "pack/phi-policy.md blocks runs that contain disallowed personal-identifier shapes before a requirement document is written. The booth product must not become a place those shapes are shown."
+        }
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "AC-1",
+          "requirementId": "REQ-1",
+          "given": "Biller is signed in. CLM-412 for PAT-412 is denied with CO-16 only. Fixture remark MA130 is present. The CO-50 gate fields are empty.",
+          "when": "The biller opens the line and follows its current path.",
+          "then": "The CO-50 ready gate is not applied. The line shows meaning Claim/service lacks information or has a submission or billing error. The only allowed next action shown is Correct the missing element named by the remark and resubmit the claim. The line is not moved to appeal-ready.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-2",
+          "requirementId": "REQ-1",
+          "given": "Denial specialist is signed in. CLM-413 for PAT-413 is denied with CO-197 only. No authorization reference is on the line.",
+          "when": "The specialist opens the line.",
+          "then": "The CO-50 ready gate is not applied. The only allowed next action shown is Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request. The line is not moved to appeal-ready.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-3",
+          "requirementId": "REQ-1",
+          "given": "Denial specialist is signed in. CLM-414 for PAT-414 has one CO-50 line and one PR-1 line. The CO-50 line is missing both gate items.",
+          "when": "The specialist opens the claim.",
+          "then": "The ready gate is offered only on the CO-50 line and is disabled. The PR-1 line does not enter denied, shows Post the amount to patient responsibility. Do not open an appeal., and is not included in an appeal packet.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-4",
+          "requirementId": "REQ-2",
+          "given": "Denial specialist is signed in. CLM-220 for PAT-220 is denied with CO-50 only. The clinical-note reference is empty and the filing deadline is blank.",
+          "when": "The specialist views the ready control and tries to mark the packet ready.",
+          "then": "The line stays denied and does not become appeal-ready. The ready control stays disabled.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-5",
+          "requirementId": "REQ-2",
+          "given": "Denial specialist is signed in. CLM-221 for PAT-221 is denied with CO-50. Date of service is 2026-08-20 and the filing deadline is 2026-11-18. The clinical-note reference is empty.",
+          "when": "The specialist views the ready control.",
+          "then": "The ready control stays disabled and the line stays denied. The clinical-note half of the gate is not satisfied.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-6",
+          "requirementId": "REQ-2",
+          "given": "Denial specialist is signed in. CLM-222 for PAT-222 is denied with CO-50. The clinical-note reference is DOC-318. The filing deadline is blank.",
+          "when": "The specialist views the ready control.",
+          "then": "The ready control stays disabled and the line stays denied. The deadline half of the gate is not satisfied.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-7",
+          "requirementId": "REQ-2",
+          "given": "Denial specialist is signed in. CLM-223 for PAT-223 is denied with CO-50. The clinical-note reference is DOC-318. Date of service is 2026-08-20 and the filing deadline is 2026-11-18.",
+          "when": "The specialist activates Mark appeal packet ready.",
+          "then": "The CO-50 line moves from denied to appeal-ready. It does not move to appeal-submitted.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-8",
+          "requirementId": "REQ-3",
+          "given": "A CO-50 line is missing at least one gate item. Denial specialist and PFS lead are available to sign in. No other role is granted extra authority.",
+          "when": "Each signed-in role looks for a way to mark the packet ready or to override the gate.",
+          "then": "No override control is present. The ready action stays disabled until both fields are present. The line does not become appeal-ready.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-9",
+          "requirementId": "REQ-4",
+          "given": "Denial specialist is signed in. CLM-224 for PAT-224 is denied with CO-50. Date of service is 2026-08-20 and the filing deadline is 2026-11-18. The clinical-note field contains a note body rather than a DOC-### identifier, or contains only whitespace.",
+          "when": "The gate is evaluated.",
+          "then": "The clinical-note reference counts as missing. The ready control stays disabled and the line stays denied. The note body is not shown as the reference.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-10",
+          "requirementId": "REQ-4",
+          "given": "Denial specialist is signed in. A denied CO-50 line has filing deadline equal to date of service plus 90 days, and the clinical-note field is DOC-318 with no extra text.",
+          "when": "The gate evaluates the clinical-note half.",
+          "then": "DOC-318 satisfies the clinical-note reference. The field displays DOC-318 and does not display a document body.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-11",
+          "requirementId": "REQ-4",
+          "given": "A denied CO-50 line has clinical-note reference DOC-318.",
+          "when": "The specialist opens the denial detail.",
+          "then": "The observer sees the identifier DOC-318 only, not a note narrative, in the clinical-note reference field.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-12",
+          "requirementId": "REQ-5",
+          "given": "Denial specialist is signed in. CLM-222 for PAT-222 is denied with CO-50, clinical-note reference DOC-318, and a blank filing deadline. Date of service may be absent or the remit carried no deadline.",
+          "when": "The specialist views the ready control.",
+          "then": "The blank deadline fails the gate. The ready control stays disabled and the line stays denied.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-13",
+          "requirementId": "REQ-5",
+          "given": "Denial specialist is signed in. CLM-225 for PAT-225 is denied with CO-50. Date of service is 2026-08-20. The deadline field shows 2026-12-01, which is not date of service plus 90 days. Clinical-note reference is DOC-318. There is no control that writes a substitute deadline.",
+          "when": "The specialist views the ready control and looks for a way to replace 2026-12-01 with 2026-11-18.",
+          "then": "The deadline does not satisfy the gate. The ready control stays disabled, the line stays denied, and no substitute-date control is present. The date that would satisfy the gate, 2026-11-18, is visible as the calculated timely-filing date.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-14",
+          "requirementId": "REQ-6",
+          "given": "Denial specialist is signed in. A denied CO-50 line has an empty clinical-note reference and a blank filing deadline.",
+          "when": "The specialist views the ready control.",
+          "then": "The control is disabled and its accessible name is Mark appeal packet ready - missing: clinical-note reference, filing deadline.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-15",
+          "requirementId": "REQ-6",
+          "given": "Denial specialist is signed in. A denied CO-50 line is missing exactly one of the two gate items, and the other item is valid.",
+          "when": "The specialist views the ready control.",
+          "then": "The control is disabled and its accessible name includes only the missing item phrase, either clinical-note reference or filing deadline. It does not claim the valid item is missing, and it does not name a coverage-policy reference as missing.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-16",
+          "requirementId": "REQ-7",
+          "given": "Denial specialist is signed in. CLM-220 for PAT-220 is denied with CO-50 and at least one gate item is missing.",
+          "when": "A ready transition is invoked on that line even though the button is disabled.",
+          "then": "The domain rule rejects the transition. The line remains denied, not appeal-ready, and the rejection names the same missing item phrases an observer sees on the button.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-17",
+          "requirementId": "REQ-7",
+          "given": "The denial detail ready control is implemented for a CO-50 line.",
+          "when": "A reviewer inspects how missing items are determined.",
+          "then": "The control calls the domain readiness rule and does not contain a second copy of the presence checks.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-18",
+          "requirementId": "REQ-8",
+          "given": "Denial specialist is signed in. CLM-223 for PAT-223 is a CO-50 denial with both gate items valid.",
+          "when": "The specialist opens the denial detail, including after the line becomes appeal-ready.",
+          "then": "The screen shows meaning These are non-covered services because this is not deemed a medical necessity by the payer. The only allowed next action shown is Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product. No control decides medical necessity, changes a diagnosis code, or recommends a different diagnosis.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-19",
+          "requirementId": "REQ-8",
+          "given": "Biller or denial specialist is signed in. CLM-430 for PAT-430 has a PR-1 line and is not a CO-50 denial.",
+          "when": "The user opens the line from the patient-responsibility group.",
+          "then": "The line does not enter denied, no appeal is opened, and the only allowed next action shown is Post the amount to patient responsibility. Do not open an appeal.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-20",
+          "requirementId": "REQ-8",
+          "given": "Denial specialist is signed in. CLM-431 for PAT-431 is paid and carries OA-23 only.",
+          "when": "The specialist opens the line.",
+          "then": "The line is not worked as a denial, the CO-50 gate is absent, and the only allowed next action shown is Confirm the prior payer adjudication. Do not work this as a denial.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-21",
+          "requirementId": "REQ-8",
+          "given": "Biller is signed in. CLM-432 for PAT-432 is denied with CO-4 only. Fixture remark N519 is present. The modifier field is blank.",
+          "when": "The biller opens the line and looks for a modifier to submit.",
+          "then": "The CO-50 gate is not applied. The only allowed next action shown is Correct the modifier and resubmit. Do not invent a modifier in this product. No invented modifier is filled in.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-22",
+          "requirementId": "REQ-8",
+          "given": "A line carries a CARC code that is not in the demo table.",
+          "when": "A user opens the line.",
+          "then": "The code stays unmapped. The product does not invent a meaning or a next action, and it does not apply the CO-50 gate.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-23",
+          "requirementId": "REQ-9",
+          "given": "A CO-50 line is denied. Either the gate has not passed, or both gate items are valid and the specialist has just marked it ready.",
+          "when": "The observer checks the claim state before and after the ready attempt.",
+          "then": "If the gate has not passed, the state remains denied and is not appeal-ready. If the gate has passed and the specialist marks ready, the state becomes appeal-ready and does not become appeal-submitted.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-24",
+          "requirementId": "REQ-10",
+          "given": "Denial specialist is signed in on 17 November 2026. The appealable queue contains CLM-301 deadline 2026-09-29, CLM-302 deadline 2026-11-18, CLM-303 deadline 2026-12-17, CLM-304 deadline 2027-01-18, and CLM-305 with a blank deadline. Rows are closed.",
+          "when": "The specialist views the workqueue and does not open a row.",
+          "then": "Risk is visible on each dated row: CLM-301 overdue, CLM-302 urgent, CLM-303 soon, CLM-304 comfortable. CLM-305 is labelled missing and is not labelled comfortable. Sort order by days remaining shows CLM-305 first, then CLM-301, CLM-302, CLM-303, CLM-304.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-25",
+          "requirementId": "REQ-10",
+          "given": "The workqueue contains CO-50 denials and a PR-1 line for CLM-430.",
+          "when": "The specialist filters by denial class and also views the patient-responsibility group.",
+          "then": "The denial filter shows appealable denials and does not show the PR-1 line in that table. The PR-1 line appears only in the separate patient-responsibility group.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-26",
+          "requirementId": "REQ-11",
+          "given": "CLM-223 for PAT-223 is a CO-50 line with both gate items valid. Separately, a CO-50 line with a missing gate item is also on the queue.",
+          "when": "Front desk, coder, biller, and PFS lead each sign in and look for the ready action. The denial specialist signs in on the valid line.",
+          "then": "Front desk, coder, biller, and PFS lead have no ready action and no override. The denial specialist sees Mark appeal packet ready enabled only on the line whose gate has passed, and disabled on the line whose gate has not passed.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-27",
+          "requirementId": "REQ-11",
+          "given": "PFS lead is signed in. The workbench has at least one CO-50, one CO-16, and one PR-1 line.",
+          "when": "The PFS lead opens the CARC class summary.",
+          "then": "Counts by CARC class are visible. No ready action and no override are present.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-28",
+          "requirementId": "REQ-12",
+          "given": "Denial specialist is signed in. The booth data for the open line uses PAT-223, CLM-223, and DOC-318 only.",
+          "when": "The specialist views the workqueue and the denial detail.",
+          "then": "Every patient, claim, and document identifier on screen matches PAT-###, CLM-###, or DOC-###. No disallowed personal-identifier shape from pack/phi-policy.md is displayed.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-29",
+          "requirementId": "REQ-8",
+          "given": "Denial specialist is signed in on a denied CO-50 line. In one case the gate fails. In the other the gate passes and the line becomes appeal-ready.",
+          "when": "The specialist looks for a write-off action before and after the ready attempt.",
+          "then": "No write-off control is present. The balance is not written off when the gate blocks and is not written off when the line becomes appeal-ready.",
+          "priority": "P0"
+        }
+      ],
+      "scenarios": [
+        {
+          "id": "SCN-1",
+          "criterionIds": [
+            "AC-4",
+            "AC-8",
+            "AC-14",
+            "AC-16",
+            "AC-23",
+            "AC-29"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-220 for PAT-220 is denied with CO-50 only. Clinical-note reference is empty. Filing deadline is blank. Demo clock is 17 November 2026.",
+          "steps": [
+            "Open the denial detail for CLM-220.",
+            "Read the ready control name.",
+            "Confirm there is no override and no write-off control.",
+            "Invoke the ready transition anyway."
+          ],
+          "expected": "The control stays disabled and is named Mark appeal packet ready - missing: clinical-note reference, filing deadline. The domain rule rejects the transition. CLM-220 remains denied, not appeal-ready, and the balance is not written off."
+        },
+        {
+          "id": "SCN-2",
+          "criterionIds": [
+            "AC-6",
+            "AC-12",
+            "AC-15"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-222 for PAT-222 is denied with CO-50. Clinical-note reference is DOC-318. Filing deadline is blank.",
+          "steps": [
+            "Open the denial detail for CLM-222.",
+            "Read the ready control name.",
+            "Attempt to mark the packet ready."
+          ],
+          "expected": "The blank deadline fails the gate. The disabled control is named Mark appeal packet ready - missing: filing deadline. It does not say the clinical-note reference is missing. CLM-222 stays denied."
+        },
+        {
+          "id": "SCN-3",
+          "criterionIds": [
+            "AC-9",
+            "AC-15"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-224 for PAT-224 is denied with CO-50. Date of service is 2026-08-20. Filing deadline is 2026-11-18. The clinical-note field contains a document body, not a DOC-### identifier.",
+          "steps": [
+            "Open the denial detail for CLM-224.",
+            "Read the clinical-note field and the ready control name.",
+            "Attempt to mark the packet ready."
+          ],
+          "expected": "The body does not count as a clinical-note reference and is not displayed as the reference. The disabled control is named Mark appeal packet ready - missing: clinical-note reference. CLM-224 stays denied."
+        },
+        {
+          "id": "SCN-4",
+          "criterionIds": [
+            "AC-7",
+            "AC-10",
+            "AC-18",
+            "AC-23",
+            "AC-29"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-223 for PAT-223 is denied with CO-50. Clinical-note reference is DOC-318. Date of service is 2026-08-20. Filing deadline is 2026-11-18.",
+          "steps": [
+            "Open the denial detail for CLM-223.",
+            "Confirm the reference shows DOC-318 and not a note body.",
+            "Read the CARC meaning and the only allowed next action.",
+            "Activate Mark appeal packet ready.",
+            "Look for a diagnosis-change control and a write-off control."
+          ],
+          "expected": "The enabled control is named Mark appeal packet ready. The screen shows These are non-covered services because this is not deemed a medical necessity by the payer. The only allowed next action is Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product. The line becomes appeal-ready, not appeal-submitted. No control decides medical necessity, changes a diagnosis, or writes off the balance."
+        },
+        {
+          "id": "SCN-5",
+          "criterionIds": [
+            "AC-13"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-225 for PAT-225 is denied with CO-50. Clinical-note reference is DOC-318. Date of service is 2026-08-20. The stored deadline shows 2026-12-01.",
+          "steps": [
+            "Open the denial detail for CLM-225.",
+            "Compare the stored deadline with the calculated date of service plus 90 days.",
+            "Look for a control to type a substitute deadline.",
+            "Attempt to mark the packet ready."
+          ],
+          "expected": "The calculated timely-filing date 2026-11-18 is visible. The stored date 2026-12-01 does not satisfy the gate. No substitute-date control is present. The ready control stays disabled and names filing deadline as missing. CLM-225 stays denied."
+        },
+        {
+          "id": "SCN-6",
+          "criterionIds": [
+            "AC-1"
+          ],
+          "role": "Biller",
+          "startingState": "Signed in. CLM-412 for PAT-412 is denied with CO-16 and fixture remark MA130. Clinical-note reference and filing deadline are empty.",
+          "steps": [
+            "Open CLM-412 from the workqueue.",
+            "Read the meaning and the only allowed next action.",
+            "Look for the CO-50 ready gate."
+          ],
+          "expected": "The CO-50 gate is not applied. Meaning is Claim/service lacks information or has a submission or billing error. The only allowed next action is Correct the missing element named by the remark and resubmit the claim. The line is not moved to appeal-ready."
+        },
+        {
+          "id": "SCN-7",
+          "criterionIds": [
+            "AC-2"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-413 for PAT-413 is denied with CO-197. No authorization reference is present.",
+          "steps": [
+            "Open the denial detail for CLM-413.",
+            "Read the only allowed next action.",
+            "Look for the CO-50 ready gate."
+          ],
+          "expected": "The CO-50 gate is not applied. The only allowed next action is Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request. The line is not moved to appeal-ready."
+        },
+        {
+          "id": "SCN-8",
+          "criterionIds": [
+            "AC-3",
+            "AC-19"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-414 for PAT-414 has a CO-50 line missing both gate items and a PR-1 line. CLM-430 for PAT-430 has a PR-1 line only and is not denied.",
+          "steps": [
+            "Open CLM-414 and inspect both lines.",
+            "Open the patient-responsibility group and open CLM-430.",
+            "Look for an appeal action on each PR-1 line."
+          ],
+          "expected": "On CLM-414 the ready gate is only on the CO-50 line and is disabled. Each PR-1 line stays out of denied, does not open an appeal, and shows Post the amount to patient responsibility. Do not open an appeal."
+        },
+        {
+          "id": "SCN-9",
+          "criterionIds": [
+            "AC-20"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-431 for PAT-431 is paid and carries OA-23 only.",
+          "steps": [
+            "Open CLM-431 from the informational area of the queue.",
+            "Read the only allowed next action.",
+            "Look for a denial ready control."
+          ],
+          "expected": "The line is not worked as a denial. The CO-50 gate is absent. The only allowed next action is Confirm the prior payer adjudication. Do not work this as a denial."
+        },
+        {
+          "id": "SCN-10",
+          "criterionIds": [
+            "AC-21"
+          ],
+          "role": "Biller",
+          "startingState": "Signed in. CLM-432 for PAT-432 is denied with CO-4 and fixture remark N519. Modifier is blank.",
+          "steps": [
+            "Open CLM-432 from the workqueue.",
+            "Read the only allowed next action.",
+            "Look for an invented modifier and for the CO-50 ready gate."
+          ],
+          "expected": "The CO-50 gate is not applied. The only allowed next action is Correct the modifier and resubmit. Do not invent a modifier in this product. The modifier field stays blank."
+        },
+        {
+          "id": "SCN-11",
+          "criterionIds": [
+            "AC-24"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in on 17 November 2026. Closed workqueue rows: CLM-301 deadline 2026-09-29, CLM-302 deadline 2026-11-18, CLM-303 deadline 2026-12-17, CLM-304 deadline 2027-01-18, CLM-305 deadline blank.",
+          "steps": [
+            "Open the appeal workqueue and do not open a row.",
+            "Read the risk label on each row.",
+            "Read the sort order."
+          ],
+          "expected": "Without opening a row, CLM-301 shows overdue, CLM-302 shows urgent, CLM-303 shows soon, and CLM-304 shows comfortable. CLM-305 shows missing and does not show comfortable. Order is CLM-305, CLM-301, CLM-302, CLM-303, CLM-304."
+        },
+        {
+          "id": "SCN-12",
+          "criterionIds": [
+            "AC-8",
+            "AC-26",
+            "AC-27"
+          ],
+          "role": "PFS lead",
+          "startingState": "Signed in. Counts exist for CO-50, CO-16, and PR-1. CLM-220 is a CO-50 line with both gate items missing. CLM-223 is a CO-50 line with both gate items valid.",
+          "steps": [
+            "Open the CARC class summary.",
+            "Look for a ready action and an override on CLM-220 and on CLM-223.",
+            "Read counts by CARC class."
+          ],
+          "expected": "Counts by CARC class are visible. No ready action and no override are present. Neither line becomes appeal-ready."
+        },
+        {
+          "id": "SCN-13",
+          "criterionIds": [
+            "AC-26"
+          ],
+          "role": "Front desk",
+          "startingState": "Signed in. CLM-223 is a CO-50 line with both gate items valid.",
+          "steps": [
+            "Open the denial workbench available to this role.",
+            "Look for a denial ready action on CLM-223."
+          ],
+          "expected": "Front desk has no ready action and no override. CLM-223 does not become appeal-ready."
+        },
+        {
+          "id": "SCN-14",
+          "criterionIds": [
+            "AC-26"
+          ],
+          "role": "Coder",
+          "startingState": "Signed in. CLM-223 is a CO-50 line with both gate items valid. No CPT or ICD suggestion is stored on the line.",
+          "steps": [
+            "Open the denial workbench available to this role.",
+            "Look for a ready action and for a suggested diagnosis or procedure change."
+          ],
+          "expected": "Coder has no ready action and no override. No CPT or ICD change is suggested. CLM-223 does not become appeal-ready."
+        },
+        {
+          "id": "SCN-15",
+          "criterionIds": [
+            "AC-26"
+          ],
+          "role": "Biller",
+          "startingState": "Signed in. CLM-223 for PAT-223 is denied with CO-50. Both gate items are valid.",
+          "steps": [
+            "Open the denial detail for CLM-223.",
+            "Look for Mark appeal packet ready and for an override."
+          ],
+          "expected": "Biller has no ready action and no override. CLM-223 stays denied."
+        },
+        {
+          "id": "SCN-16",
+          "criterionIds": [
+            "AC-28"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. Booth data on screen is limited to PAT-223, CLM-223, and DOC-318.",
+          "steps": [
+            "Read identifiers on the workqueue.",
+            "Open denial detail for CLM-223 and read patient, claim, and document identifiers."
+          ],
+          "expected": "Every patient, claim, and document identifier matches PAT-###, CLM-###, or DOC-###. No disallowed personal-identifier shape is displayed."
+        },
+        {
+          "id": "SCN-17",
+          "criterionIds": [
+            "AC-5",
+            "AC-15"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-221 for PAT-221 is denied with CO-50. Date of service is 2026-08-20. Filing deadline is 2026-11-18. Clinical-note reference is empty.",
+          "steps": [
+            "Open the denial detail for CLM-221.",
+            "Read the ready control name.",
+            "Attempt to mark the packet ready."
+          ],
+          "expected": "The disabled control is named Mark appeal packet ready - missing: clinical-note reference. It does not say the filing deadline is missing. CLM-221 stays denied."
+        }
+      ],
+      "screens": [
+        {
+          "id": "SCR-1",
+          "title": "Denial workqueue",
+          "purpose": "Show appealable denials in deadline order with risk visible on the closed row, keep patient responsibility in a separate group, and keep CO-16, CO-4, and OA-23 on their current paths so they are not swept into the CO-50 gate.",
+          "scenarioIds": [
+            "SCN-6",
+            "SCN-8",
+            "SCN-9",
+            "SCN-10",
+            "SCN-11",
+            "SCN-13",
+            "SCN-14",
+            "SCN-16"
+          ]
+        },
+        {
+          "id": "SCR-2",
+          "title": "Denial detail",
+          "purpose": "Show the demo CARC meaning, the only allowed next action, and the appeal checklist. Host the ready control that names missing gate items and calls the domain rule for CO-50, without a diagnosis change, a write-off, or an override.",
+          "scenarioIds": [
+            "SCN-1",
+            "SCN-2",
+            "SCN-3",
+            "SCN-4",
+            "SCN-5",
+            "SCN-7",
+            "SCN-8",
+            "SCN-15",
+            "SCN-17"
+          ]
+        },
+        {
+          "id": "SCR-3",
+          "title": "CARC class summary",
+          "purpose": "Let the PFS lead see counts by CARC class without a ready action or an override, so oversight cannot clear a blocked CO-50 packet.",
+          "scenarioIds": [
+            "SCN-12"
+          ]
+        }
+      ],
+      "openQuestions": [
+        {
+          "id": "OQ-1",
+          "text": "v1 fails the gate when the remit date differs from date of service plus 90 days. Should the detail screen also show the raw remit date beside the calculated date, and should any later version treat the remit date as authoritative?"
+        },
+        {
+          "id": "OQ-2",
+          "text": "Should an overdue deadline that otherwise equals date of service plus 90 days block ready, or only show overdue risk? v1 does not block on overdue alone."
+        },
+        {
+          "id": "OQ-3",
+          "text": "Must DOC-### resolve to a stored synthetic document before the gate passes, or is a well-formed non-empty identifier enough? v1 checks shape and non-emptiness only."
+        },
+        {
+          "id": "OQ-4",
+          "text": "What digit length, letter case, and internal spacing are allowed for DOC-### beyond the three-digit examples used here?"
+        },
+        {
+          "id": "OQ-5",
+          "text": "If one claim has multiple CO-50 lines, must every line pass the gate before any line can become appeal-ready?"
+        },
+        {
+          "id": "OQ-6",
+          "text": "CO-50's next action also says to appeal with the coverage policy. Should a coverage-policy reference become a third gate field? v1 does not gate on it and must not label it as a missing gate item."
+        },
+        {
+          "id": "OQ-7",
+          "text": "Who may record the DOC-### value, and is an audit trail required when ready is attempted, blocked, or completed?"
+        },
+        {
+          "id": "OQ-8",
+          "text": "Are the urgent and soon bands inclusive of day 14 and day 45, is a deadline on the demo clock day urgent or overdue, and which timezone applies to 17 November 2026?"
+        },
+        {
+          "id": "OQ-9",
+          "text": "If the clinical-note reference or the filing deadline is cleared after the line is appeal-ready, must the line leave appeal-ready?"
+        },
+        {
+          "id": "OQ-10",
+          "text": "Before any production use, who confirms the demo CARC meanings and fixture remark pairings against the current X12 external code list? This demo must leave an unknown code unmapped and must not invent a meaning."
+        }
+      ],
+      "citations": [
+        "pack/phi-policy.md",
+        "pack/payer-northwind.md",
+        "pack/carc-demo.md",
+        "pack/claim-states.md",
+        "pack/patterns/detail-checklist.md",
+        "pack/patterns/workqueue.md",
+        "pack/roles.md"
+      ],
+      "carcReferences": [
+        {
+          "code": "CO-16",
+          "nextAction": "Correct the missing element named by the remark and resubmit the claim."
+        },
+        {
+          "code": "CO-50",
+          "nextAction": "Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product."
+        },
+        {
+          "code": "CO-197",
+          "nextAction": "Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request."
+        },
+        {
+          "code": "CO-4",
+          "nextAction": "Correct the modifier and resubmit. Do not invent a modifier in this product."
+        },
+        {
+          "code": "PR-1",
+          "nextAction": "Post the amount to patient responsibility. Do not open an appeal."
+        },
+        {
+          "code": "OA-23",
+          "nextAction": "Confirm the prior payer adjudication. Do not work this as a denial."
+        }
+      ]
+    },
+    "critiqueOfA": {
+      "of": "A",
+      "author": "B",
+      "strengths": [
+        "Q-1 through Q-5 are recorded as assumptions, and the gate stays on CO-50 only with no v1 override and a disabled ready action until both fields are present.",
+        "CARC next actions are copied verbatim in carcReferences and in AC-13, AC-14, and AC-15, with no invented meanings and no diagnosis-change path.",
+        "The clinical-note reference is a non-empty DOC-### identifier, no note body is stored, and fixtures stay on PAT-###, CLM-###, and DOC-###.",
+        "Most P0 gate failures have scenarios, the ready label names each missing item, and a direct ready request is refused while the gate fails.",
+        "Rationales cite the pack paths for the 90-day filing rule, claim states, roles, and the shared domain-rule pattern."
+      ],
+      "defects": [
+        {
+          "id": "D-A1",
+          "severity": "P0",
+          "code": "OTHER",
+          "point": "AC-11 and SCN-3 require risk band 'urgent' for filing deadline 2026-12-04 against the demo clock of 17 November 2026, and justify it as within 14 days. That interval is 17 days. pack/payer-northwind.md sets urgent to within 14 days and soon to within 45 days, so the observable band is 'soon'. A P0 then-clause that is false would fail a correct implementation.",
+          "attribute": "accuracy"
+        },
+        {
+          "id": "D-A2",
+          "severity": "P0",
+          "code": "UNTESTABLE",
+          "point": "OQ-1 reopens whether a present date of service and a remit with no deadline should auto-compute date of service plus 90 days and satisfy the gate. Q-4, the assumptions entry, inScope, REQ-5, and AC-11 already fix the deadline as date of service plus 90 days and fail only a blank deadline. The same gate input cannot be both required and undecided, so the filing-deadline half of the gate is not stably testable.",
+          "attribute": "accuracy"
+        },
+        {
+          "id": "D-A3",
+          "severity": "P1",
+          "code": "MISSING_COVERAGE",
+          "point": "REQ-6 says CO-4 and OA-23 keep their current paths, but no acceptance criterion asserts CO-4's next action 'Correct the modifier and resubmit. Do not invent a modifier in this product.' or OA-23's next action 'Confirm the prior payer adjudication. Do not work this as a denial.' AC-13 and AC-14 cover only CO-16, CO-197, and PR-1.",
+          "attribute": "accuracy"
+        },
+        {
+          "id": "D-A4",
+          "severity": "P1",
+          "code": "UNTESTABLE",
+          "point": "AC-17's then-clause (detail and workqueue must not restate the field checks locally) cannot be checked by an observer; it needs source inspection. SCN-4 lists P0 AC-2 but uses CLM-120 rather than CLM-108 and never observes the empty clinical-note reference before overwriting it, so AC-2 is not exercised. SCR-3 lists SCN-9, which is a pre-document scanner step and does not use that screen.",
+          "attribute": "maintainability"
+        }
+      ],
+      "adopt": [
+        "Q-1 through Q-5 assumption records and the CO-50-only gate with no v1 override",
+        "Verbatim CARC next actions in carcReferences, AC-13, AC-14, and AC-15",
+        "DOC-### identifier rule with no note body, and synthetic PAT/CLM/DOC fixtures",
+        "AC-8 refusal of a direct ready request while the gate fails, and button labels that name each missing item"
+      ],
+      "reject": [
+        "AC-11 and SCN-3 expected risk band 'urgent' for 2026-12-04",
+        "OQ-1, which re-decides the Q-4 filing-deadline rule already required by REQ-5",
+        "AC-2 coverage claim on SCN-4 and the SCR-3 to SCN-9 screen link",
+        "AC-17 as an observer-checkable acceptance criterion"
+      ],
+      "attributes": [
+        {
+          "attribute": "security",
+          "met": true,
+          "note": "Fixtures stay inside PAT-###, CLM-###, and DOC-###, with no SSN, email, phone, raw MRN, date of birth, or real name. No role can override the gate, a bypass ready request is refused, and the product does not decide medical necessity or change a diagnosis code."
+        },
+        {
+          "attribute": "accuracy",
+          "met": false,
+          "note": "D-A1 sets the wrong deadline risk band for a 17-day interval, and D-A2 leaves the date-of-service-plus-90 rule both required and open, so a core gate outcome is not stable. D-A3 also leaves CO-4 and OA-23 path preservation untested."
+        },
+        {
+          "attribute": "maintainability",
+          "met": false,
+          "note": "D-A4: AC-17 is not observer-checkable, P0 AC-2 is cited by a scenario that does not execute it, and SCR-3 is tied to a scanner scenario that does not use the screen. Those breaks make the trace from requirement to check unreliable even though ids and the shared-rule intent are otherwise clear."
+        }
+      ]
+    },
+    "critiqueOfB": {
+      "of": "B",
+      "author": "A",
+      "strengths": [
+        "Every CARC reference quotes the next action verbatim from the table, and all six codes (CO-16, CO-50, CO-197, CO-4, PR-1, OA-23) plus the unmapped rule are covered by requirements and criteria, so no code is left dangling.",
+        "REQ-7/AC-16 close the UI-only-gate hole: a forced ready transition is rejected by the domain rule, not just by a disabled button, and the rejection names the same missing-item phrases an observer reads on the control. This matches pack/patterns/detail-checklist.md.",
+        "Traceability is complete: every requirement carries at least one acceptance criterion, and every P0 criterion is exercised by at least one named scenario (AC-1/SCN-6, AC-13/SCN-5, AC-24/SCN-11, AC-28/SCN-16, and so on), with three screens each tied to the scenarios they serve.",
+        "Deadline arithmetic and risk bands are correct against pack/payer-northwind.md and the 17 November 2026 demo clock (2026-08-20 + 90 = 2026-11-18; 2026-11-18 urgent, 2026-12-17 soon, 2027-01-18 comfortable, 2026-09-29 overdue), and REQ-10 refuses to label a blank deadline comfortable.",
+        "Identifier hygiene is clean throughout: only PAT-###, CLM-###, DOC-### appear, REQ-4 keeps a note body out of the identifier field, and REQ-12 repeats that the scanner is not a HIPAA determination and no BAA is offered.",
+        "Negative-authority coverage is strong: SCN-12 through SCN-15 prove PFS lead, front desk, coder, and biller have no ready action and no override, which is the v1 answer to Q-2."
+      ],
+      "defects": [
+        {
+          "id": "D-B1",
+          "severity": "P0",
+          "code": "OTHER",
+          "point": "SCN-5 says the disabled control \"names filing deadline as missing\" for CLM-225, whose deadline field is populated with 2026-12-01. REQ-6 states the control \"names only items that are actually missing.\" The two statements contradict each other, so an implementer cannot tell whether a present-but-mismatched date should be reported as missing or as mismatched, and AC-13 does not fix the wording. Define a distinct phrase (for example, filing deadline does not match date of service plus 90 days) or drop the mismatch branch.",
+          "attribute": "accuracy"
+        },
+        {
+          "id": "D-B2",
+          "severity": "P1",
+          "code": "OTHER",
+          "point": "REQ-5 and AC-13 add a gate condition the question round did not grant. Q-4 says the deadline is date of service plus 90 days and that a blank deadline fails; it does not say a populated date that differs must fail. pack/payer-northwind.md states the shown deadline is that date or blank, so the mismatch case is outside the fixture. Making equality a release-blocking P0 condition can hold a packet that has a usable deadline. OQ-1 flags the question but the requirement already decided it.",
+          "attribute": "accuracy"
+        },
+        {
+          "id": "D-B3",
+          "severity": "P1",
+          "code": "OTHER",
+          "point": "REQ-8 bundles four distinct rules (CARC meaning and next-action display for five codes, no medical-necessity or diagnosis decision, no invented modifier, no write-off, unmapped handling) and carries six criteria including AC-29 on write-off. Splitting the display rule from the prohibited-action rule would keep each criterion traceable to one statement.",
+          "attribute": "maintainability"
+        },
+        {
+          "id": "D-B4",
+          "severity": "P1",
+          "code": "OTHER",
+          "point": "SCN-13 (front desk) and SCN-14 (coder) start with \"Open the denial workbench available to this role\" and are both attached to SCR-1, the denial workqueue. pack/roles.md says front desk does not work denials, so the starting state is unclear about what screen these roles can reach at all. Name the concrete entry point or state that the route is absent, otherwise the expected result is not checkable.",
+          "attribute": "accuracy"
+        },
+        {
+          "id": "D-B5",
+          "severity": "P1",
+          "code": "OTHER",
+          "point": "AC-17 asks a reviewer to inspect \"how missing items are determined\" and confirm there is no \"second copy of the presence checks.\" That is a code-review step, not something a product observer can check from the running demo. Phrase it as an artifact review with a named owner, or pair it with a behavioural check (same phrases from rule and button, already in AC-16).",
+          "attribute": "maintainability"
+        }
+      ],
+      "adopt": [
+        "REQ-7 with AC-16: enforce the gate in the domain rule and reject a forced ready transition, not only disable the button.",
+        "REQ-10's handling of a blank deadline: label it missing, never comfortable, and sort those rows ahead of dated rows so they are not buried.",
+        "OQ-6 plus the REQ-6 clause that a coverage-policy reference must not be named as a missing gate item in v1, which keeps the two-field gate honest while leaving the third field open.",
+        "The negative-authority scenario set (PFS lead, front desk, coder, biller all have no ready action and no override) as the test of the Q-2 answer.",
+        "AC-29's before-and-after write-off check attached to both the blocked and the appeal-ready state."
+      ],
+      "reject": [
+        "REQ-5's date-equality condition as a P0 gate rule. Keep v1 at presence-or-blank per Q-4 and show the calculated 2026-11-18 as an advisory comparison, moving the equality question entirely into OQ-1.",
+        "SCN-5's wording that a populated, mismatched deadline is named \"missing\" on the control; it conflicts with REQ-6 and would mislead the specialist about what to fix."
+      ],
+      "attributes": [
+        {
+          "attribute": "security",
+          "met": true,
+          "note": "Fails closed with no override for any role in v1, confines ready authority to the denial specialist with explicit negative checks for the other four roles, keeps CO-50 out of diagnosis and write-off territory, restricts identifiers to PAT-###/CLM-###/DOC-### with a criterion that no disallowed shape is displayed, and repeats that the demo scanner is not a HIPAA determination and no BAA is offered."
+        },
+        {
+          "attribute": "accuracy",
+          "met": false,
+          "note": "CARC text, role boundaries, state transitions, and the 90-day arithmetic are all faithful to the pack, but D-B1 leaves an internal contradiction between REQ-6 and SCN-5 over whether a present-but-mismatched deadline is reported as missing, and D-B2 turns an undecided mismatch rule into a release-blocking condition the question round never granted. D-B4 adds an unclear starting state for the front-desk and coder scenarios."
+        },
+        {
+          "attribute": "maintainability",
+          "met": true,
+          "note": "Ids follow the conventions, every requirement has a criterion, every P0 criterion lands in a scenario, three screens map to their scenarios, and ten open questions capture what is still undecided. D-B3 (an overloaded REQ-8) and D-B5 (a code-inspection criterion) are tidy-ups, not structural failures."
+        }
+      ]
+    },
+    "synthesis": {
+      "problem": "On a CO-50 medical-necessity denial, a Northwind Imaging denial specialist can today mark an appeal packet ready with no clinical-note reference and no filing-deadline date. CO-50's only allowed next action is to appeal with the coverage policy and a clinical-note reference, and Northwind Health timely filing in this demo is 90 days from the date of service, so a packet missing either element is not actually appealable and can silently miss the payer clock. The workbench needs a CO-50-only readiness gate that fails closed in v1: the ready action is disabled until both items are present, the disabled control names exactly what is missing, the rule lives in the domain layer so a forced transition is also rejected, and a blank deadline never looks safe on the queue. The product must not decide medical necessity, change a diagnosis code, invent a modifier, or write off a balance.",
+      "users": [
+        "Denial specialist - works appealable denials and is the only role that may mark a CO-50 packet ready, and only when the gate passes; cannot override the gate in v1",
+        "Biller - resubmits corrected CO-16 and CO-4 claims and must not be blocked, redirected, or given a ready action by the CO-50 gate",
+        "PFS lead - sees counts by CARC class and the read-only ready-attempt audit log; has no ready action and no override",
+        "Coder - owns modifiers and diagnosis pointers; opens denial detail read-only, receives no CPT or ICD suggestion, and has no ready action",
+        "Front desk - reads eligibility only; the denial workqueue route is absent for this role"
+      ],
+      "inScope": [
+        "A readiness gate on CO-50 denial lines requiring both a non-empty DOC-### clinical-note reference and a filing-deadline date before the line may become appeal-ready",
+        "A ready control that is disabled while the gate fails and whose accessible name lists exactly the missing gate items",
+        "Enforcement of the gate in one shared domain rule that both the denial detail and the workqueue call, so a forced ready transition is rejected as well as the disabled button",
+        "Filing deadline computed as date of service plus 90 days, used for the gate and for the risk band; the remit deadline is used only when the date of service is absent; a mismatch between the two is an advisory, not a block",
+        "Per-line gating: the appeal packet is per CO-50 line, and each CO-50 line is gated independently",
+        "Verbatim display of the demo-table meaning and the only allowed next action for every code in the table, with unknown codes left unmapped",
+        "Workqueue sorted by days remaining with risk bands visible on a closed row, blank deadlines labelled missing and sorted ahead of dated rows, CARC class filter, and a separate patient-responsibility group",
+        "Role separation with explicit negative checks for front desk, coder, biller, and PFS lead",
+        "A read-only audit entry for every ready attempt, blocked or completed",
+        "Synthetic identifiers only, shaped PAT-###, CLM-###, and DOC-###, with the pre-run demo scanner blocking disallowed personal-identifier shapes"
+      ],
+      "outOfScope": [
+        "Any override, supervisor approval, or force-ready path in v1, including a PFS lead override; no override control is designed, built, or stubbed",
+        "Applying the readiness gate to CO-16, CO-197, CO-4, PR-1, or OA-23",
+        "Deciding medical necessity, recommending or changing a diagnosis code, suggesting CPT or ICD changes, inventing a modifier, or writing off a balance",
+        "Treating the coverage-policy citation as a third gate field in v1; it is an advisory checklist item only",
+        "Storing or rendering a clinical note body, attachment, or document content in the clinical-note reference field",
+        "Existence checks against a document store for DOC-### values in v1; the check is shape and non-emptiness only",
+        "Payer submission of any kind: real plan ids, portals, clearinghouse routes, and the appeal-submitted, upheld, and overturned transitions",
+        "Production X12 certification; the demo meanings and fixture remark pairings are confirmed against the current X12 external code list by the product owner before any production use",
+        "Any HIPAA determination or business associate agreement; the scanner is a demo scanner"
+      ],
+      "assumptions": [
+        {
+          "answerId": "Q-1",
+          "text": "CO-50 only. CO-16 and CO-197 keep their current path, and no other CARC code gains a gate. On a mixed claim the gate is offered only on the CO-50 line."
+        },
+        {
+          "answerId": "Q-2",
+          "text": "Nobody in v1. The ready action stays disabled until both fields are present, and no role - specialist, biller, coder, front desk, or PFS lead - has an override control."
+        },
+        {
+          "answerId": "Q-3",
+          "text": "A non-empty DOC-### id. The field is an identifier, not a document body; whitespace-only, free text, and note bodies count as missing."
+        },
+        {
+          "answerId": "Q-4",
+          "text": "Date of service plus 90 days. A blank deadline fails the gate."
+        },
+        {
+          "answerId": "Q-5",
+          "text": "Name the missing items on the button. The then-clause can be observed from the control's accessible name."
+        }
+      ],
+      "requirements": [
+        {
+          "id": "REQ-1",
+          "statement": "The readiness gate applies only to CO-50 denial lines. CO-16, CO-197, CO-4, PR-1, and OA-23 keep their current paths and are never gated. On a mixed claim, the gate is offered only on the CO-50 line and must not pull a non-CO-50 line into the appeal packet.",
+          "rationale": "Q-1 scopes the gate to CO-50. pack/carc-demo.md gives each code one allowed next action and pack/claim-states.md limits appeal-ready to a CO-50 line, so a class-wide gate would block billers and could turn patient responsibility into a false appeal."
+        },
+        {
+          "id": "REQ-2",
+          "statement": "A CO-50 appeal packet may be marked ready only when both a clinical-note reference and a filing-deadline date are present for that line. If either is absent the ready control is disabled and the line stays in denied. The packet is per CO-50 line; each CO-50 line on a claim is gated independently.",
+          "rationale": "CO-50's only allowed next action is: Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product. An appeal without the note reference, or without a timely-filing date, is the failure this gate exists to stop (pack/carc-demo.md, pack/payer-northwind.md)."
+        },
+        {
+          "id": "REQ-3",
+          "statement": "Nobody may override the gate in v1. The product exposes no override, force-ready, or approve-anyway control to any role, and no justification-to-proceed path exists.",
+          "rationale": "Q-2 and pack/roles.md: the denial specialist cannot override the gate in v1 and the PFS lead does not mark packets ready."
+        },
+        {
+          "id": "REQ-4",
+          "statement": "A clinical-note reference counts only when it is a non-empty identifier shaped DOC- followed by exactly three digits in upper case, with no surrounding text. Empty, whitespace-only, free text, lower-case or wrong-length variants, and document bodies count as missing. The field stores and displays the identifier only. In v1 the specialist types the identifier and no existence check is made against a document store.",
+          "rationale": "Q-3 and pack/phi-policy.md: allowed identifiers are PAT-###, CLM-###, and DOC-###, and pasting a note body into an identifier field invites disallowed personal data into the demo."
+        },
+        {
+          "id": "REQ-5",
+          "statement": "The filing deadline for a CO-50 line is the date of service plus 90 days, computed by the product and used for both the gate and the risk band. When the date of service is absent, the deadline carried on the remit is used instead. When neither is available the deadline is blank, is labelled missing, and fails the gate. A deadline that is present but already overdue still satisfies the gate and is shown with the overdue risk band. When the remit carried a deadline that differs from the computed date, both dates are shown and the difference is an advisory note; it does not block the gate and no control lets a specialist type a substitute date.",
+          "rationale": "Q-4 and pack/payer-northwind.md: timely filing is 90 days from the date of service and a blank deadline is treated as missing. The question round granted only presence-or-blank, so a mismatched-but-present date must not become a release-blocking gate condition."
+        },
+        {
+          "id": "REQ-6",
+          "statement": "While the gate fails, the ready control is disabled and its accessible name is 'Mark appeal packet ready - missing: <items>', naming only the items that are actually missing, using the phrases 'clinical-note reference' and 'filing deadline'. It never shows a generic not-ready message and never names a coverage-policy reference as a missing gate item. When both items are present the control is enabled and named 'Mark appeal packet ready'.",
+          "rationale": "Q-5 and pack/patterns/detail-checklist.md: the ready action names each missing item, and naming an item the gate does not check would train specialists to satisfy the wrong checklist."
+        },
+        {
+          "id": "REQ-7",
+          "statement": "The readiness rule lives in one domain module. The denial detail control and the workqueue row call that module and do not reimplement the presence checks. A ready transition invoked on a CO-50 line while either gate item is missing is rejected by the domain rule, the line does not become appeal-ready, and the rejection names the same missing-item phrases an observer reads on the control.",
+          "rationale": "pack/patterns/detail-checklist.md says the ready action calls the domain rule and does not reimplement it. A disabled button alone can be bypassed, which is the compliance failure mode of a UI-only gate."
+        },
+        {
+          "id": "REQ-8",
+          "statement": "The denial detail shows the claim lines, the demo-table meaning, and the only allowed next action for the line's code, copied verbatim, plus the appeal checklist. For CO-50 the checklist shows the clinical-note reference and the filing deadline as gate items (present or missing) and the coverage-policy citation as an advisory, non-gating item. An unknown code stays unmapped with no invented meaning and no gate.",
+          "rationale": "pack/patterns/detail-checklist.md defines the detail layout and pack/carc-demo.md forbids invented meanings and allows only one next action per code."
+        },
+        {
+          "id": "REQ-9",
+          "statement": "The product offers no control that decides medical necessity, changes or suggests a diagnosis or procedure code, invents a modifier, or writes off a balance, in any state before or after the gate.",
+          "rationale": "pack/carc-demo.md states this product does not decide medical necessity and does not recommend a different diagnosis; pack/roles.md bars write-offs and diagnosis changes for everyone in the demo."
+        },
+        {
+          "id": "REQ-10",
+          "statement": "appeal-ready is reachable for a CO-50 line only after the readiness gate passes. A blocked line remains denied, and marking ready never skips the line to appeal-submitted. If a gate item is cleared after a line reaches appeal-ready, the line returns to denied and the ready control is disabled again with the missing item named.",
+          "rationale": "pack/claim-states.md allows appeal-ready for a CO-50 line only after the gate passes, and this demo has no payer portal or clearinghouse route (pack/payer-northwind.md)."
+        },
+        {
+          "id": "REQ-11",
+          "statement": "The denial workqueue is a dense table of appealable denials with a separate patient-responsibility group, sorted ascending by days remaining to the filing deadline and filterable by CARC class. Against the demo clock of 17 November 2026 the risk band is overdue when days remaining are negative, urgent from 0 through 14 days inclusive, soon from 15 through 45 days inclusive, and comfortable above 45 days. A blank deadline is labelled missing, is never labelled comfortable, and sorts ahead of dated rows. Deadline risk and a blocked/ready marker are visible without opening the row.",
+          "rationale": "pack/patterns/workqueue.md and pack/payer-northwind.md make timely-filing risk the queue's safety signal; a blank deadline labelled comfortable is how an untimely CO-50 appeal gets ignored."
+        },
+        {
+          "id": "REQ-12",
+          "statement": "Only the denial specialist may mark a CO-50 packet ready, and only when the gate passes. The front desk has no denial workqueue route at all; the coder may open denial detail read-only from the coding queue; the biller works CO-16 and CO-4 resubmission only; the PFS lead sees counts by CARC class and the audit log. None of these roles has a ready action or an override.",
+          "rationale": "pack/roles.md separates denial work from billing, coding, front desk, and PFS oversight, and states the specialist cannot override the gate in v1."
+        },
+        {
+          "id": "REQ-13",
+          "statement": "Every ready attempt on a CO-50 line, blocked or completed, writes an audit entry holding the claim and line identifier, the acting role, the demo timestamp, the outcome, and the missing-item phrases when blocked. The audit log is read-only and visible to the PFS lead; it contains no override field.",
+          "rationale": "Resolves the open audit question so the fail-closed gate is reviewable by oversight without giving oversight a way to clear a blocked packet (pack/roles.md)."
+        },
+        {
+          "id": "REQ-14",
+          "statement": "Every patient, claim, and document identifier shown or stored by this feature is synthetic and shaped PAT-###, CLM-###, or DOC-###. Intake briefs, diffs, and seed data are scanned before a requirement document is written for a social security number shaped ###-##-####, an email address, a phone number, a raw MRN followed by an identifier, and a date labelled as a date of birth; a hit blocks the run. The scanner is a demo scanner, not a HIPAA determination, and the project does not offer a business associate agreement.",
+          "rationale": "pack/phi-policy.md defines the allowed identifiers, the blocking pre-run scanner, and the explicit limits of that scanner."
+        },
+        {
+          "id": "REQ-15",
+          "statement": "The CARC meanings and fixture remark pairings shown in the product carry a visible provenance note stating that they are shortened demo text that the product owner must confirm against the current X12 external code list before any production use, and that an unknown code stays unmapped.",
+          "rationale": "pack/carc-demo.md requires both lists to be confirmed against the current X12 external code list before production use and forbids inventing a meaning."
+        }
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "AC-1",
+          "requirementId": "REQ-1",
+          "given": "The biller is signed in. CLM-412 for PAT-412 is denied with CO-16 only, fixture remark MA130, and both CO-50 gate fields empty.",
+          "when": "The biller opens the line and follows its current path.",
+          "then": "No readiness gate is applied, the meaning reads 'Claim/service lacks information or has a submission or billing error.', the only allowed next action reads 'Correct the missing element named by the remark and resubmit the claim.', and the line is not moved to appeal-ready.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-2",
+          "requirementId": "REQ-1",
+          "given": "The denial specialist is signed in. CLM-413 for PAT-413 is denied with CO-197 only and no authorization reference on the line.",
+          "when": "The specialist opens the denial detail.",
+          "then": "No readiness gate is applied, the only allowed next action reads 'Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request.', and the line is not moved to appeal-ready.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-3",
+          "requirementId": "REQ-1",
+          "given": "The denial specialist is signed in. CLM-414 for PAT-414 has one CO-50 line missing both gate items and one PR-1 line.",
+          "when": "The specialist opens the claim and inspects both lines.",
+          "then": "The ready control appears only on the CO-50 line and is disabled; the PR-1 line does not enter denied, is not included in the appeal packet, and shows 'Post the amount to patient responsibility. Do not open an appeal.'",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-4",
+          "requirementId": "REQ-2",
+          "given": "The denial specialist is signed in. CLM-220 for PAT-220 is denied with CO-50 only, the clinical-note reference is empty, and the filing deadline is blank.",
+          "when": "The specialist views the ready control and attempts to mark the packet ready.",
+          "then": "The control is disabled, no transition occurs, and CLM-220 remains in denied.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-5",
+          "requirementId": "REQ-2",
+          "given": "The denial specialist is signed in. CLM-221 for PAT-221 is denied with CO-50, date of service 2026-08-20 so the filing deadline is 2026-11-18, and the clinical-note reference is empty.",
+          "when": "The specialist views the ready control.",
+          "then": "The control is disabled and CLM-221 stays in denied because the clinical-note half of the gate is not satisfied.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-6",
+          "requirementId": "REQ-2",
+          "given": "The denial specialist is signed in. CLM-222 for PAT-222 is denied with CO-50 with clinical-note reference DOC-318, no date of service, and a remit that carried no deadline.",
+          "when": "The specialist views the ready control.",
+          "then": "The control is disabled and CLM-222 stays in denied because the filing-deadline half of the gate is not satisfied.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-7",
+          "requirementId": "REQ-2",
+          "given": "The denial specialist is signed in. CLM-223 for PAT-223 is denied with CO-50, clinical-note reference DOC-318, and date of service 2026-08-20.",
+          "when": "The specialist activates the enabled ready control.",
+          "then": "The CO-50 line moves from denied to appeal-ready and does not move to appeal-submitted.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-8",
+          "requirementId": "REQ-2",
+          "given": "The denial specialist is signed in. CLM-226 for PAT-226 carries two CO-50 lines: line A has DOC-318 and date of service 2026-08-20, line B has an empty clinical-note reference.",
+          "when": "The specialist works both lines.",
+          "then": "Line A's control is enabled and line A becomes appeal-ready, while line B's control stays disabled naming the clinical-note reference and line B stays in denied.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-9",
+          "requirementId": "REQ-3",
+          "given": "A CO-50 line is missing at least one gate item, and the denial specialist, biller, coder, front desk, and PFS lead can each sign in.",
+          "when": "Each signed-in role searches the detail screen, its menus, the row actions, and the oversight views for a way to override the gate or force ready.",
+          "then": "No override, force-ready, or approve-anyway control exists for any role, the ready control stays disabled, and the line does not become appeal-ready.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-10",
+          "requirementId": "REQ-4",
+          "given": "The denial specialist is signed in. CLM-224 for PAT-224 is denied with CO-50, date of service 2026-08-20 so the deadline is 2026-11-18, and the clinical-note field contains either three spaces or a pasted note body.",
+          "when": "The gate is evaluated.",
+          "then": "The clinical-note reference counts as missing, the ready control stays disabled, CLM-224 stays in denied, and the note body is not displayed as the reference.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-11",
+          "requirementId": "REQ-4",
+          "given": "The denial specialist is signed in on a denied CO-50 line whose filing deadline is present and whose clinical-note field holds DOC-318 with no extra text.",
+          "when": "The gate evaluates the clinical-note half and the specialist reads the field.",
+          "then": "DOC-318 satisfies the clinical-note reference and the field shows the identifier DOC-318 only, never a note narrative.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-12",
+          "requirementId": "REQ-4",
+          "given": "The denial specialist is signed in on a denied CO-50 line whose filing deadline is present.",
+          "when": "The specialist enters in turn 'doc-318', 'DOC-31', 'DOC-318 radiology report', and DOC-999, which matches no seeded document.",
+          "then": "The first three values are reported as a missing clinical-note reference, DOC-999 satisfies the gate because v1 checks shape and non-emptiness only, and no existence lookup is performed.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-13",
+          "requirementId": "REQ-5",
+          "given": "The denial specialist is signed in. CLM-223 for PAT-223 is a denied CO-50 line with date of service 2026-08-20 whose remit carried no deadline; the demo clock is 17 November 2026.",
+          "when": "The specialist opens the denial detail.",
+          "then": "The filing deadline is shown as 2026-11-18, which is the date of service plus 90 days, it is counted present by the gate with no confirmation step, and the risk band reads urgent because 1 day remains.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-14",
+          "requirementId": "REQ-5",
+          "given": "The denial specialist is signed in. CLM-222 for PAT-222 is a denied CO-50 line with clinical-note reference DOC-318, no date of service, and a remit that carried no deadline.",
+          "when": "The gate is evaluated.",
+          "then": "The filing deadline is reported missing rather than defaulted, the ready control stays disabled, and CLM-222 stays in denied.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-15",
+          "requirementId": "REQ-5",
+          "given": "The denial specialist is signed in. CLM-225 for PAT-225 is a denied CO-50 line with clinical-note reference DOC-318, date of service 2026-08-20, and a remit deadline of 2026-12-01.",
+          "when": "The specialist opens the denial detail.",
+          "then": "Both dates are shown, the calculated deadline 2026-11-18 is used for the gate and the risk band, an advisory notes that the remit date differs, the ready control is enabled, and no control lets the specialist type a substitute date.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-16",
+          "requirementId": "REQ-5",
+          "given": "The denial specialist is signed in. CLM-301 for PAT-301 is a denied CO-50 line with clinical-note reference DOC-318, no date of service, and a remit deadline of 2026-09-29; the demo clock is 17 November 2026.",
+          "when": "The specialist opens the denial detail.",
+          "then": "The remit deadline is used as the filing deadline, the risk band reads overdue, the gate passes on presence so the ready control is enabled, and the overdue band is shown as risk rather than as a gate failure.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-17",
+          "requirementId": "REQ-6",
+          "given": "The denial specialist is signed in on a denied CO-50 line with an empty clinical-note reference and a blank filing deadline.",
+          "when": "The specialist reads the ready control.",
+          "then": "The control is disabled and its accessible name is 'Mark appeal packet ready - missing: clinical-note reference, filing deadline'.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-18",
+          "requirementId": "REQ-6",
+          "given": "The denial specialist is signed in on a denied CO-50 line missing exactly one gate item, with the other item valid.",
+          "when": "The specialist reads the ready control.",
+          "then": "The control is disabled and its accessible name names only the missing phrase, either 'clinical-note reference' or 'filing deadline'; it does not claim the valid item is missing, never shows a generic not-ready message, and never names a coverage-policy reference.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-19",
+          "requirementId": "REQ-6",
+          "given": "The denial specialist is signed in on a denied CO-50 line with both gate items present.",
+          "when": "The specialist reads the ready control.",
+          "then": "The control is enabled and named 'Mark appeal packet ready' with no missing-item suffix.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-20",
+          "requirementId": "REQ-7",
+          "given": "The denial specialist is signed in. CLM-220 for PAT-220 is denied with CO-50 and at least one gate item is missing.",
+          "when": "A ready transition is invoked on that line through the keyboard shortcut or the API, bypassing the disabled control.",
+          "then": "The domain rule rejects the transition, no state change is recorded, CLM-220 remains in denied, and the rejection names the same missing-item phrases shown on the control.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-21",
+          "requirementId": "REQ-7",
+          "given": "The release checklist owner is reviewing the merged branch, and one blocked CO-50 line is open in both the workqueue and the denial detail.",
+          "when": "The owner records the artifact review of the readiness module and compares the missing-item phrases rendered on both surfaces.",
+          "then": "The review record states that the presence checks exist in one domain module with no second copy, and both surfaces display identical missing-item phrases for that line.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-22",
+          "requirementId": "REQ-8",
+          "given": "The denial specialist is signed in. CLM-223 for PAT-223 is a CO-50 denial with both gate items valid.",
+          "when": "The specialist opens the denial detail, including after the line becomes appeal-ready.",
+          "then": "The screen shows the claim lines, the meaning 'These are non-covered services because this is not deemed a medical necessity by the payer.', the only allowed next action 'Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product.' verbatim, and a checklist listing the clinical-note reference and the filing deadline as gate items with the coverage-policy citation marked advisory.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-23",
+          "requirementId": "REQ-8",
+          "given": "The biller is signed in. CLM-432 for PAT-432 is denied with CO-4 only, fixture remark N519, and a blank modifier field.",
+          "when": "The biller opens the line.",
+          "then": "No readiness gate is applied and the only allowed next action reads 'Correct the modifier and resubmit. Do not invent a modifier in this product.'",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-24",
+          "requirementId": "REQ-8",
+          "given": "The denial specialist is signed in. CLM-431 for PAT-431 is paid and carries OA-23 only.",
+          "when": "The specialist opens the line.",
+          "then": "The line is not worked as a denial, no readiness gate appears, and the only allowed next action reads 'Confirm the prior payer adjudication. Do not work this as a denial.'",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-25",
+          "requirementId": "REQ-8",
+          "given": "CLM-433 for PAT-433 carries a CARC code that is not in the demo table.",
+          "when": "A user opens the line.",
+          "then": "The code is shown as unmapped with no invented meaning and no invented next action, and no readiness gate is applied.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-26",
+          "requirementId": "REQ-8",
+          "given": "The denial specialist is signed in. CLM-430 for PAT-430 carries a PR-1 line and is not a CO-50 denial.",
+          "when": "The user opens the line from the patient-responsibility group.",
+          "then": "The line does not enter denied, no appeal is opened, no gate appears, and the only allowed next action reads 'Post the amount to patient responsibility. Do not open an appeal.'",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-27",
+          "requirementId": "REQ-9",
+          "given": "The denial specialist is signed in on a CO-50 line, once while the gate blocks and once after the line becomes appeal-ready.",
+          "when": "The specialist searches the screen, its menus, and the row actions for a diagnosis-change, coding-suggestion, or write-off control.",
+          "then": "No control decides medical necessity, changes or suggests a diagnosis or procedure code, or writes off the balance in either state.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-28",
+          "requirementId": "REQ-9",
+          "given": "The biller is signed in on CLM-432, a CO-4 denial with a blank modifier field.",
+          "when": "The biller looks for a suggested modifier.",
+          "then": "No modifier is pre-filled or suggested and the field stays blank.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-29",
+          "requirementId": "REQ-10",
+          "given": "Two CO-50 lines are denied: one with a failing gate and one with both gate items valid.",
+          "when": "An observer checks the claim state before and after each ready attempt.",
+          "then": "The blocked line stays in denied and never reaches appeal-ready; the passing line moves to appeal-ready and never to appeal-submitted.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-30",
+          "requirementId": "REQ-10",
+          "given": "The denial specialist is signed in. CLM-223 for PAT-223 is a CO-50 line in appeal-ready with clinical-note reference DOC-318.",
+          "when": "The specialist clears the clinical-note reference and saves.",
+          "then": "The line returns to denied, the ready control is disabled again, and its accessible name is 'Mark appeal packet ready - missing: clinical-note reference'.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-31",
+          "requirementId": "REQ-11",
+          "given": "The denial specialist is signed in on 17 November 2026. The appealable queue holds CLM-301 deadline 2026-09-29, CLM-302 deadline 2026-11-18, CLM-303 deadline 2026-12-17, CLM-304 deadline 2027-01-18, and CLM-305 with a blank deadline. Rows are closed.",
+          "when": "The specialist views the workqueue without opening a row.",
+          "then": "CLM-301 shows overdue, CLM-302 urgent, CLM-303 soon, CLM-304 comfortable, and CLM-305 shows missing and never comfortable; the sort order by days remaining is CLM-305, CLM-301, CLM-302, CLM-303, CLM-304.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-32",
+          "requirementId": "REQ-11",
+          "given": "The demo clock is 17 November 2026 and the queue holds CO-50 rows with deadlines 2026-11-17, 2026-12-01, 2026-12-02, 2027-01-01, 2027-01-02, and 2026-11-16.",
+          "when": "The specialist reads the risk band on each closed row.",
+          "then": "2026-11-17 reads urgent (0 days), 2026-12-01 urgent (14 days), 2026-12-02 soon (15 days), 2027-01-01 soon (45 days), 2027-01-02 comfortable (46 days), and 2026-11-16 overdue.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-33",
+          "requirementId": "REQ-11",
+          "given": "The workqueue holds CO-50, CO-16, CO-197, CO-4, PR-1, and OA-23 lines, with at least one blocked and one ready CO-50 line.",
+          "when": "The specialist filters by CARC class and reads the closed rows.",
+          "then": "Appealable denials appear in one dense table with a blocked or ready marker visible on the closed row, PR-1 appears only in the separate patient-responsibility group, OA-23 is not listed as a denial, and the CARC class filter is available.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-34",
+          "requirementId": "REQ-12",
+          "given": "CLM-223 for PAT-223 is a CO-50 line with both gate items valid and CLM-220 is a CO-50 line with a missing gate item. Front desk, coder, biller, PFS lead, and denial specialist can each sign in.",
+          "when": "Each role navigates to whatever denial surface its menu offers and looks for a ready action.",
+          "then": "The front desk menu contains no denial workqueue route; the coder sees denial detail read-only with no ready action and no coding suggestion; the biller and PFS lead see no ready action; none of the four has an override; and only the denial specialist sees the ready control, enabled on CLM-223 and disabled on CLM-220.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-35",
+          "requirementId": "REQ-12",
+          "given": "The PFS lead is signed in and the workbench holds at least one CO-50, one CO-16, and one PR-1 line.",
+          "when": "The PFS lead opens the CARC class summary.",
+          "then": "Counts by CARC class and the blocked CO-50 count are visible, and no ready action and no override are present.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-36",
+          "requirementId": "REQ-13",
+          "given": "The denial specialist has had one ready attempt blocked on CLM-220 and has completed one ready on CLM-223; the PFS lead is signed in.",
+          "when": "The PFS lead opens the ready-attempt audit log.",
+          "then": "Both entries are listed read-only with claim and line identifier, acting role, demo timestamp, outcome, and, for the blocked entry, the phrases 'clinical-note reference' and 'filing deadline'; no override field or edit control exists.",
+          "priority": "P1"
+        },
+        {
+          "id": "AC-37",
+          "requirementId": "REQ-14",
+          "given": "The denial specialist is signed in and the booth data for the open work uses PAT-223, CLM-223, and DOC-318.",
+          "when": "The specialist reads the workqueue and the denial detail.",
+          "then": "Every patient, claim, and document identifier on screen matches PAT-###, CLM-###, or DOC-###, and no social security number, email address, phone number, raw MRN, date of birth, or real name is displayed.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-38",
+          "requirementId": "REQ-14",
+          "given": "An intake brief and seed data for a CO-50 packet are submitted, the first version containing a date labelled DOB beside PAT-021.",
+          "when": "The demo scanner runs before any requirement document is written.",
+          "then": "The first submission is blocked before a requirement document is written, and the corrected submission using only PAT-###, CLM-###, and DOC-### proceeds.",
+          "priority": "P0"
+        },
+        {
+          "id": "AC-39",
+          "requirementId": "REQ-15",
+          "given": "The PFS lead is signed in and opens the CARC reference panel.",
+          "when": "The lead reads the provenance note beside the demo CARC table.",
+          "then": "The note states that the meanings and fixture remark pairings are shortened demo text that the product owner must confirm against the current X12 external code list before any production use, that an unknown code stays unmapped, and that the demo scanner is not a HIPAA determination and no business associate agreement is offered.",
+          "priority": "P1"
+        }
+      ],
+      "scenarios": [
+        {
+          "id": "SCN-1",
+          "criterionIds": [
+            "AC-4",
+            "AC-9",
+            "AC-17",
+            "AC-20",
+            "AC-27",
+            "AC-29"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-220 for PAT-220 is denied with CO-50 only; the clinical-note reference is empty and the filing deadline is blank. Demo clock is 17 November 2026.",
+          "steps": [
+            "Open the workqueue, filter CARC class to denial, and select the CLM-220 row.",
+            "Read the appeal checklist and the ready control's accessible name.",
+            "Search the detail screen, its menus, and the row actions for an override, force-ready, diagnosis-change, or write-off control.",
+            "Invoke the ready transition through the keyboard shortcut even though the control is disabled."
+          ],
+          "expected": "The checklist marks both gate items missing; the disabled control is named 'Mark appeal packet ready - missing: clinical-note reference, filing deadline'; no override, diagnosis-change, or write-off control exists; the domain rule rejects the forced transition and CLM-220 remains in denied."
+        },
+        {
+          "id": "SCN-2",
+          "criterionIds": [
+            "AC-6",
+            "AC-14",
+            "AC-18"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-222 for PAT-222 is denied with CO-50, clinical-note reference DOC-318, no date of service, and a remit that carried no deadline.",
+          "steps": [
+            "Open the denial detail for CLM-222.",
+            "Read the filing-deadline row on the checklist.",
+            "Read the ready control's accessible name and attempt to mark the packet ready."
+          ],
+          "expected": "The filing deadline is reported missing rather than defaulted, the disabled control is named 'Mark appeal packet ready - missing: filing deadline' and does not claim the clinical-note reference is missing, and CLM-222 stays in denied."
+        },
+        {
+          "id": "SCN-3",
+          "criterionIds": [
+            "AC-5",
+            "AC-18"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-221 for PAT-221 is denied with CO-50 with date of service 2026-08-20, so the filing deadline is 2026-11-18, and the clinical-note reference is empty.",
+          "steps": [
+            "Open the denial detail for CLM-221.",
+            "Read the checklist and the ready control's accessible name.",
+            "Attempt to mark the packet ready."
+          ],
+          "expected": "The deadline shows present at 2026-11-18, the disabled control is named 'Mark appeal packet ready - missing: clinical-note reference', and CLM-221 stays in denied."
+        },
+        {
+          "id": "SCN-4",
+          "criterionIds": [
+            "AC-10",
+            "AC-12",
+            "AC-18"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-224 for PAT-224 is denied with CO-50, date of service 2026-08-20, and an empty clinical-note field.",
+          "steps": [
+            "Open the denial detail for CLM-224.",
+            "Save three spaces in the clinical-note field, then a pasted note body, then 'doc-318', then 'DOC-31', then 'DOC-318 radiology report'.",
+            "Read the control and the field after each save.",
+            "Finally save DOC-999, an identifier not present in the seeded document fixtures."
+          ],
+          "expected": "Every malformed value is reported as a missing clinical-note reference with the control named 'Mark appeal packet ready - missing: clinical-note reference' and the note body is never displayed as the reference; DOC-999 satisfies the shape rule with no existence lookup, and the control becomes enabled."
+        },
+        {
+          "id": "SCN-5",
+          "criterionIds": [
+            "AC-7",
+            "AC-11",
+            "AC-13",
+            "AC-19",
+            "AC-22",
+            "AC-27",
+            "AC-29"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-223 for PAT-223 is denied with CO-50, clinical-note reference DOC-318, date of service 2026-08-20, and a remit that carried no deadline. Demo clock is 17 November 2026.",
+          "steps": [
+            "Open the denial detail for CLM-223.",
+            "Confirm the clinical-note field shows DOC-318 only and the deadline shows 2026-11-18 with its risk band.",
+            "Read the CARC meaning, the only allowed next action, and the checklist.",
+            "Activate the ready control.",
+            "Search again for a diagnosis-change or write-off control after the state changes."
+          ],
+          "expected": "The deadline reads 2026-11-18 with risk band urgent and counts present; the enabled control is named 'Mark appeal packet ready'; the screen shows 'These are non-covered services because this is not deemed a medical necessity by the payer.' and 'Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product.' verbatim, with the coverage-policy item marked advisory; CLM-223 moves from denied to appeal-ready and not to appeal-submitted; no diagnosis-change or write-off control exists in either state."
+        },
+        {
+          "id": "SCN-6",
+          "criterionIds": [
+            "AC-30"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-223 for PAT-223 is a CO-50 line in appeal-ready with clinical-note reference DOC-318 and filing deadline 2026-11-18.",
+          "steps": [
+            "Open the denial detail for CLM-223.",
+            "Clear the clinical-note reference field and save.",
+            "Read the claim state and the ready control."
+          ],
+          "expected": "CLM-223 returns to denied and the control is disabled again, named 'Mark appeal packet ready - missing: clinical-note reference'."
+        },
+        {
+          "id": "SCN-7",
+          "criterionIds": [
+            "AC-1"
+          ],
+          "role": "Biller",
+          "startingState": "Signed in. CLM-412 for PAT-412 is denied with CO-16 and fixture remark MA130; the CO-50 gate fields are empty.",
+          "steps": [
+            "Open CLM-412 from the workqueue.",
+            "Read the meaning and the only allowed next action.",
+            "Look for a CO-50 readiness gate or ready control."
+          ],
+          "expected": "No gate is applied, the meaning reads 'Claim/service lacks information or has a submission or billing error.', the next action reads 'Correct the missing element named by the remark and resubmit the claim.' verbatim, and the resubmit path is unchanged."
+        },
+        {
+          "id": "SCN-8",
+          "criterionIds": [
+            "AC-2"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-413 for PAT-413 is denied with CO-197 and no authorization reference.",
+          "steps": [
+            "Open the denial detail for CLM-413.",
+            "Read the only allowed next action.",
+            "Look for a CO-50 readiness gate."
+          ],
+          "expected": "No gate is applied, the next action reads 'Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request.' verbatim, and the line is not moved to appeal-ready."
+        },
+        {
+          "id": "SCN-9",
+          "criterionIds": [
+            "AC-3",
+            "AC-26"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-414 for PAT-414 holds a CO-50 line missing both gate items and a PR-1 line; CLM-430 for PAT-430 holds a PR-1 line only and is not denied.",
+          "steps": [
+            "Open CLM-414 and inspect both lines.",
+            "Open the patient-responsibility group and open CLM-430.",
+            "Look for an appeal action on each PR-1 line."
+          ],
+          "expected": "The disabled gate appears only on the CO-50 line of CLM-414; both PR-1 lines stay out of denied, open no appeal, are excluded from the appeal packet, and show 'Post the amount to patient responsibility. Do not open an appeal.' verbatim."
+        },
+        {
+          "id": "SCN-10",
+          "criterionIds": [
+            "AC-23",
+            "AC-28"
+          ],
+          "role": "Biller",
+          "startingState": "Signed in. CLM-432 for PAT-432 is denied with CO-4 and fixture remark N519; the modifier field is blank.",
+          "steps": [
+            "Open CLM-432 from the workqueue.",
+            "Read the only allowed next action.",
+            "Look for a suggested modifier and for the CO-50 gate."
+          ],
+          "expected": "No gate is applied, the next action reads 'Correct the modifier and resubmit. Do not invent a modifier in this product.' verbatim, and no modifier is suggested or pre-filled."
+        },
+        {
+          "id": "SCN-11",
+          "criterionIds": [
+            "AC-24"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-431 for PAT-431 is paid and carries OA-23 only.",
+          "steps": [
+            "Open CLM-431 from the informational area of the queue.",
+            "Read the only allowed next action.",
+            "Look for a denial ready control."
+          ],
+          "expected": "The line is not worked as a denial, no gate appears, and the next action reads 'Confirm the prior payer adjudication. Do not work this as a denial.' verbatim."
+        },
+        {
+          "id": "SCN-12",
+          "criterionIds": [
+            "AC-31",
+            "AC-32",
+            "AC-33"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in on 17 November 2026. Closed workqueue rows include CLM-301 deadline 2026-09-29, CLM-302 deadline 2026-11-18, CLM-303 deadline 2026-12-17, CLM-304 deadline 2027-01-18, CLM-305 blank deadline, plus boundary rows at 2026-11-17, 2026-12-01, 2026-12-02, 2027-01-01, 2027-01-02, and 2026-11-16, a CO-16 row, and a PR-1 row.",
+          "steps": [
+            "Open the appeal workqueue without opening any row.",
+            "Read the risk label and the blocked or ready marker on each row.",
+            "Read the sort order.",
+            "Apply the CARC class filter for denials and then view the patient-responsibility group."
+          ],
+          "expected": "Bands read overdue, urgent, soon, comfortable exactly as the boundaries define, with 2026-11-17 and 2026-12-01 urgent, 2026-12-02 and 2027-01-01 soon, 2027-01-02 comfortable, and 2026-11-16 overdue; CLM-305 reads missing and never comfortable and sorts first, followed by CLM-301, CLM-302, CLM-303, CLM-304; blocked and ready markers are visible without opening a row; the PR-1 line appears only in the separate group."
+        },
+        {
+          "id": "SCN-13",
+          "criterionIds": [
+            "AC-9",
+            "AC-34",
+            "AC-35"
+          ],
+          "role": "PFS lead",
+          "startingState": "Signed in, with front desk, coder, and biller sign-ins also available. CLM-220 is a blocked CO-50 line and CLM-223 is a CO-50 line with both gate items valid.",
+          "steps": [
+            "As PFS lead, open the CARC class summary, drill into the blocked CO-50 count, and look for a ready action or override on CLM-220 and CLM-223.",
+            "Sign in as front desk and inspect the navigation menu for a denial workqueue route.",
+            "Sign in as coder, open denial detail from the coding queue, and look for a ready action or a coding suggestion.",
+            "Sign in as biller, open CLM-223, and look for a ready action or override."
+          ],
+          "expected": "The PFS lead sees counts and the blocked count but no ready action and no override; the front desk menu contains no denial route; the coder's detail view is read-only with no ready action and no CPT or ICD suggestion; the biller has no ready action and no override; neither line changes state."
+        },
+        {
+          "id": "SCN-14",
+          "criterionIds": [
+            "AC-37"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. Booth data on screen is limited to PAT-223, CLM-223, and DOC-318.",
+          "steps": [
+            "Read every identifier on the workqueue rows.",
+            "Open the denial detail for CLM-223 and read the patient, claim, and document identifiers."
+          ],
+          "expected": "Every identifier matches PAT-###, CLM-###, or DOC-###, and no social security number, email address, phone number, raw MRN, date of birth, or real name appears anywhere."
+        },
+        {
+          "id": "SCN-15",
+          "criterionIds": [
+            "AC-38"
+          ],
+          "role": "Denial specialist",
+          "startingState": "A new intake brief and seed data for a CO-50 packet are being submitted; the first version contains a date labelled DOB beside PAT-021.",
+          "steps": [
+            "Submit the brief containing the DOB-labelled date.",
+            "Correct the brief to use only PAT-###, CLM-###, and DOC-### identifiers.",
+            "Resubmit."
+          ],
+          "expected": "The first submission is blocked by the demo scanner before any requirement document is written; the corrected submission proceeds, and the blocking message states that the scanner is not a HIPAA determination."
+        },
+        {
+          "id": "SCN-16",
+          "criterionIds": [
+            "AC-15",
+            "AC-19"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-225 for PAT-225 is denied with CO-50, clinical-note reference DOC-318, date of service 2026-08-20, and a remit deadline of 2026-12-01.",
+          "steps": [
+            "Open the denial detail for CLM-225.",
+            "Compare the remit deadline with the calculated date of service plus 90 days.",
+            "Look for a control that would let a substitute deadline be typed.",
+            "Read the ready control."
+          ],
+          "expected": "Both dates are shown, the calculated 2026-11-18 drives the gate and the urgent risk band, an advisory marks that the remit date differs, no substitute-date control exists, and the enabled control is named 'Mark appeal packet ready'."
+        },
+        {
+          "id": "SCN-17",
+          "criterionIds": [
+            "AC-16"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in on 17 November 2026. CLM-301 for PAT-301 is denied with CO-50, clinical-note reference DOC-318, no date of service, and a remit deadline of 2026-09-29.",
+          "steps": [
+            "Open the denial detail for CLM-301.",
+            "Read the deadline, its risk band, and the ready control."
+          ],
+          "expected": "The remit deadline 2026-09-29 is used, the band reads overdue, the gate passes on presence, and the control is enabled rather than blocking on the overdue band."
+        },
+        {
+          "id": "SCN-18",
+          "criterionIds": [
+            "AC-36"
+          ],
+          "role": "PFS lead",
+          "startingState": "Signed in. The specialist has already had one ready attempt blocked on CLM-220 and completed one ready on CLM-223.",
+          "steps": [
+            "Open the ready-attempt audit log.",
+            "Read the blocked entry and the completed entry.",
+            "Look for an edit control or an override field."
+          ],
+          "expected": "Both entries show claim and line identifier, acting role, demo timestamp, and outcome, with the blocked entry naming 'clinical-note reference' and 'filing deadline'; the log is read-only with no override field."
+        },
+        {
+          "id": "SCN-19",
+          "criterionIds": [
+            "AC-25"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-433 for PAT-433 carries a CARC code that is not in the demo table.",
+          "steps": [
+            "Open CLM-433 from the workqueue.",
+            "Read the code, the meaning area, and the next-action area.",
+            "Look for a readiness gate."
+          ],
+          "expected": "The code is shown as unmapped, no meaning or next action is invented, and no gate is applied."
+        },
+        {
+          "id": "SCN-20",
+          "criterionIds": [
+            "AC-8"
+          ],
+          "role": "Denial specialist",
+          "startingState": "Signed in. CLM-226 for PAT-226 carries two CO-50 lines: line A with DOC-318 and date of service 2026-08-20, line B with an empty clinical-note reference.",
+          "steps": [
+            "Open CLM-226 and read the ready control on each line.",
+            "Activate the control on line A.",
+            "Read the state of both lines."
+          ],
+          "expected": "Line A's control is enabled and line A becomes appeal-ready; line B's control stays disabled named 'Mark appeal packet ready - missing: clinical-note reference' and line B stays in denied, confirming per-line packets."
+        },
+        {
+          "id": "SCN-21",
+          "criterionIds": [
+            "AC-21"
+          ],
+          "role": "Release checklist owner",
+          "startingState": "The merged branch is under release review and CLM-220, a blocked CO-50 line, is open in both the workqueue and the denial detail.",
+          "steps": [
+            "Inspect the readiness module and the two surfaces for duplicated presence checks and record the finding on the release checklist.",
+            "Read the missing-item phrases shown on the workqueue row and on the detail control for CLM-220."
+          ],
+          "expected": "The checklist records one domain module with no second copy of the presence checks, and both surfaces display the identical phrases 'clinical-note reference' and 'filing deadline'."
+        },
+        {
+          "id": "SCN-22",
+          "criterionIds": [
+            "AC-39"
+          ],
+          "role": "PFS lead",
+          "startingState": "Signed in. The CARC reference panel is reachable from the oversight view.",
+          "steps": [
+            "Open the CARC reference panel.",
+            "Read the provenance note beside the demo table."
+          ],
+          "expected": "The note states that the meanings and fixture remark pairings are shortened demo text to be confirmed by the product owner against the current X12 external code list before production use, that an unknown code stays unmapped, and that the demo scanner is not a HIPAA determination and no business associate agreement is offered."
+        }
+      ],
+      "screens": [
+        {
+          "id": "SCR-1",
+          "title": "Denial workqueue",
+          "purpose": "Dense table of appealable denials sorted by days remaining to the filing deadline, with the CARC class filter, the risk band, a blank-deadline 'missing' label sorted first, and a blocked or ready marker visible on the closed row. Patient-responsibility lines sit in a separate group and OA-23 is not worked as a denial, so CO-16, CO-4, CO-197, PR-1, and OA-23 keep their current paths.",
+          "scenarioIds": [
+            "SCN-7",
+            "SCN-9",
+            "SCN-10",
+            "SCN-11",
+            "SCN-12",
+            "SCN-13",
+            "SCN-14",
+            "SCN-19",
+            "SCN-20"
+          ]
+        },
+        {
+          "id": "SCR-2",
+          "title": "CO-50 denial detail and appeal checklist",
+          "purpose": "Shows the claim lines, the demo-table meaning and the only allowed next action verbatim, and the appeal checklist with the two gate items plus the advisory coverage-policy item. Hosts the ready control, which calls the shared domain rule, names each missing item when disabled, and exposes no override, diagnosis-change, substitute-date, or write-off control.",
+          "scenarioIds": [
+            "SCN-1",
+            "SCN-2",
+            "SCN-3",
+            "SCN-4",
+            "SCN-5",
+            "SCN-6",
+            "SCN-8",
+            "SCN-9",
+            "SCN-16",
+            "SCN-17",
+            "SCN-21"
+          ]
+        },
+        {
+          "id": "SCR-3",
+          "title": "Oversight: CARC class summary, ready-attempt audit log, and CARC provenance",
+          "purpose": "Read-only oversight for the PFS lead: counts by CARC class including the blocked CO-50 count, the audit log of blocked and completed ready attempts, and the provenance note on the demo CARC table. The screen deliberately carries no ready action and no override, so oversight cannot clear a blocked packet.",
+          "scenarioIds": [
+            "SCN-13",
+            "SCN-18",
+            "SCN-22"
+          ]
+        }
+      ],
+      "openQuestions": [],
+      "citations": [
+        "pack/phi-policy.md",
+        "pack/payer-northwind.md",
+        "pack/carc-demo.md",
+        "pack/claim-states.md",
+        "pack/patterns/detail-checklist.md",
+        "pack/patterns/workqueue.md",
+        "pack/roles.md"
+      ],
+      "carcReferences": [
+        {
+          "code": "CO-16",
+          "nextAction": "Correct the missing element named by the remark and resubmit the claim."
+        },
+        {
+          "code": "CO-50",
+          "nextAction": "Appeal with the coverage policy and a clinical-note reference. Do not change the diagnosis code in this product."
+        },
+        {
+          "code": "CO-197",
+          "nextAction": "Attach the authorization reference if one exists. Otherwise route to the authorization desk for a retro request."
+        },
+        {
+          "code": "CO-4",
+          "nextAction": "Correct the modifier and resubmit. Do not invent a modifier in this product."
+        },
+        {
+          "code": "PR-1",
+          "nextAction": "Post the amount to patient responsibility. Do not open an appeal."
+        },
+        {
+          "code": "OA-23",
+          "nextAction": "Confirm the prior payer adjudication. Do not work this as a denial."
+        }
+      ]
+    },
+    "rationale": {
+      "takenFromA": [
+        "A's problem framing and scope split, including the explicit out-of-scope list for appeal authoring, outcome tracking, and payer submission.",
+        "A's user list phrased by role responsibility, extended with B's negative-authority detail.",
+        "A's requirement that the clinical-note reference stores an identifier and no note body, and that nothing is stored or displayed beyond the DOC-### value.",
+        "A's refusal of a direct ready request that bypasses the disabled button (A AC-8), merged with B's domain-rule framing.",
+        "A's workqueue requirement for a blocked/ready marker visible on the closed row, which B did not have.",
+        "A's open questions were used as the decision agenda: per-line packets, overdue behaviour, DOC-### provenance, coverage policy as advisory, audit trail, and reopening a cleared appeal-ready line are now decided requirements (REQ-2, REQ-5, REQ-4, REQ-8, REQ-13, REQ-10) rather than questions."
+      ],
+      "takenFromB": [
+        "REQ-7 with AC-20: the gate lives in one domain rule and a forced transition is rejected with the same phrases the observer reads on the control.",
+        "REQ-11's treatment of a blank deadline: labelled missing, never comfortable, sorted ahead of dated rows.",
+        "B's correct deadline arithmetic and fixture set (2026-08-20 + 90 = 2026-11-18; CLM-301 overdue, CLM-302 urgent, CLM-303 soon, CLM-304 comfortable against the 17 November 2026 clock).",
+        "B's full CARC coverage: CO-4, OA-23, PR-1, and the unmapped rule all carry criteria, closing A's gap.",
+        "B's negative-authority scenario set for PFS lead, front desk, coder, and biller as the test of the Q-2 answer, and B's before-and-after write-off check.",
+        "B's rule that the control must never name a coverage-policy reference as a missing gate item, keeping the two-field gate honest.",
+        "B's boundary question about the risk bands, answered as inclusive boundaries in REQ-11 and AC-32."
+      ],
+      "rejected": [
+        "A's AC-11 and SCN-3 expectation that a 2026-12-04 deadline is 'urgent' on 17 November 2026. That interval is 17 days, which pack/payer-northwind.md makes 'soon'. The merged PRD uses the arithmetically correct fixture set instead.",
+        "A's AC-17 phrased as an observer check that the component does not restate the field checks. It is replaced by AC-21, an artifact review with a named owner paired with a behavioural phrase-match check.",
+        "A's SCR-3 link to the pre-document scanner scenario. The scanner runs before any screen is used, so SCN-15 is deliberately not tied to a screen.",
+        "B's REQ-5 date-equality condition as a P0 gate rule. Q-4 grants presence-or-blank only, and pack/payer-northwind.md says the shown deadline is that date or blank, so a present-but-mismatched date is now an advisory while the computed date drives the gate and the band.",
+        "B's SCN-5 wording that a populated but mismatched deadline is named 'missing' on the control, which contradicted its own REQ-6; SCN-16 now shows the advisory instead.",
+        "B's single overloaded REQ-8; the display rule and the prohibited-action rule are now REQ-8 and REQ-9.",
+        "B's vague 'open the denial workbench available to this role' starting state for front desk and coder; SCN-13 now names the concrete entry points and states that the front-desk denial route is absent.",
+        "All eighteen open questions from the two drafts, rejected as open items and converted into decided requirements, because this PRD goes to approval with no open questions."
+      ],
+      "defects": [
+        {
+          "defectId": "D-A1",
+          "disposition": "resolved"
+        },
+        {
+          "defectId": "D-A2",
+          "disposition": "resolved"
+        },
+        {
+          "defectId": "D-A3",
+          "disposition": "resolved"
+        },
+        {
+          "defectId": "D-A4",
+          "disposition": "resolved"
+        },
+        {
+          "defectId": "D-B1",
+          "disposition": "resolved"
+        },
+        {
+          "defectId": "D-B2",
+          "disposition": "resolved"
+        },
+        {
+          "defectId": "D-B3",
+          "disposition": "resolved"
+        },
+        {
+          "defectId": "D-B4",
+          "disposition": "resolved"
+        },
+        {
+          "defectId": "D-B5",
+          "disposition": "resolved"
+        }
+      ],
+      "attributes": [
+        {
+          "attribute": "security",
+          "met": true,
+          "note": "The gate fails closed with no override for any role in v1 (REQ-3, AC-9) and is enforced in the domain rule so a bypassed button is also rejected (REQ-7, AC-20). Ready authority is confined to the denial specialist with explicit negative checks for the other four roles, including an absent front-desk route (REQ-12, AC-34). No control decides medical necessity, changes a diagnosis, invents a modifier, or writes off a balance in any state (REQ-9, AC-27). Identifiers are restricted to PAT-###, CLM-###, and DOC-### with no note body in the identifier field, the pre-run scanner blocks disallowed shapes before a requirement document is written, and the PRD repeats that this is not a HIPAA determination and no business associate agreement is offered (REQ-4, REQ-14, AC-37, AC-38, AC-39)."
+        },
+        {
+          "attribute": "accuracy",
+          "met": true,
+          "note": "Every next action and meaning is copied verbatim from the CARC table for all six codes, with unknown codes left unmapped (REQ-8, AC-1, AC-2, AC-22, AC-23, AC-24, AC-25, AC-26). Deadline arithmetic is checked: 2026-08-20 plus 90 days is 2026-11-18, which is urgent at 1 day remaining on the 17 November 2026 clock, and the queue fixture bands overdue, urgent, soon, and comfortable are all consistent with pack/payer-northwind.md, including inclusive boundaries at day 0, 14, 15, 45, and 46 (AC-13, AC-31, AC-32). The faulty 17-day 'urgent' claim from draft A is gone, and the ungranted date-equality gate from draft B is demoted to a non-blocking advisory, so the gate matches Q-4 exactly. No requirement is contradicted by any scenario: a present-but-mismatched deadline is reported as an advisory, never as 'missing'."
+        },
+        {
+          "attribute": "maintainability",
+          "met": true,
+          "note": "Ids follow the conventions; all 15 requirements carry at least one acceptance criterion; all 26 P0 criteria are exercised by at least one named scenario, and each scenario names the acting role, the starting state, the steps, and the expected result. Three screens are each tied only to scenarios that actually use them, with the pre-document scanner scenario deliberately left unlinked. The readiness rule is specified as one domain module that both surfaces call (REQ-7), and the code-inspection check is reframed as a release-checklist artifact review with a named owner plus a behavioural phrase-match test (AC-21). The overloaded display-plus-prohibitions requirement is split into REQ-8 and REQ-9 so each criterion traces to one statement, and openQuestions is empty because every undecided item from both drafts is now a decided requirement or an explicit out-of-scope entry."
+        }
+      ]
+    }
+  },
+  "quality": {
+    "analystA": {
+      "verdict": "issues",
+      "summary": "2 P0 · 2 P1 from critique · 1/3 attributes met",
+      "findings": [
+        "D-A1 P0 OTHER: AC-11 and SCN-3 require risk band 'urgent' for filing deadline 2026-12-04 against the demo clock of 17 November 2026, and justify it as within 14 days. That interval is 17 days. pack/payer-northwind.md sets urgent to within 14 days and soon to within 45 days, so the observable band is 'soon'. A P0 then-clause that is false would fail a correct implementation.",
+        "D-A2 P0 UNTESTABLE: OQ-1 reopens whether a present date of service and a remit with no deadline should auto-compute date of service plus 90 days and satisfy the gate. Q-4, the assumptions entry, inScope, REQ-5, and AC-11 already fix the deadline as date of service plus 90 days and fail only a blank deadline. The same gate input cannot be both required and undecided, so the filing-deadline half of the gate is not stably testable.",
+        "D-A3 P1 MISSING_COVERAGE: REQ-6 says CO-4 and OA-23 keep their current paths, but no acceptance criterion asserts CO-4's next action 'Correct the modifier and resubmit. Do not invent a modifier in this product.' or OA-23's next action 'Confirm the prior payer adjudication. Do not work this as a denial.' AC-13 and AC-14 cover only CO-16, CO-197, and PR-1.",
+        "D-A4 P1 UNTESTABLE: AC-17's then-clause (detail and workqueue must not restate the field checks locally) cannot be checked by an observer; it needs source inspection. SCN-4 lists P0 AC-2 but uses CLM-120 rather than CLM-108 and never observes the empty clinical-note reference before overwriting it, so AC-2 is not exercised. SCR-3 lists SCN-9, which is a pre-document scanner step and does not use that screen."
+      ]
+    },
+    "analystB": {
+      "verdict": "issues",
+      "summary": "1 P0 · 4 P1 from critique · 2/3 attributes met",
+      "findings": [
+        "D-B1 P0 OTHER: SCN-5 says the disabled control \"names filing deadline as missing\" for CLM-225, whose deadline field is populated with 2026-12-01. REQ-6 states the control \"names only items that are actually missing.\" The two statements contradict each other, so an implementer cannot tell whether a present-but-mismatched date should be reported as missing or as mismatched, and AC-13 does not fix the wording. Define a distinct phrase (for example, filing deadline does not match date of service plus 90 days) or drop the mismatch branch.",
+        "D-B2 P1 OTHER: REQ-5 and AC-13 add a gate condition the question round did not grant. Q-4 says the deadline is date of service plus 90 days and that a blank deadline fails; it does not say a populated date that differs must fail. pack/payer-northwind.md states the shown deadline is that date or blank, so the mismatch case is outside the fixture. Making equality a release-blocking P0 condition can hold a packet that has a usable deadline. OQ-1 flags the question but the requirement already decided it.",
+        "D-B3 P1 OTHER: REQ-8 bundles four distinct rules (CARC meaning and next-action display for five codes, no medical-necessity or diagnosis decision, no invented modifier, no write-off, unmapped handling) and carries six criteria including AC-29 on write-off. Splitting the display rule from the prohibited-action rule would keep each criterion traceable to one statement.",
+        "D-B4 P1 OTHER: SCN-13 (front desk) and SCN-14 (coder) start with \"Open the denial workbench available to this role\" and are both attached to SCR-1, the denial workqueue. pack/roles.md says front desk does not work denials, so the starting state is unclear about what screen these roles can reach at all. Name the concrete entry point or state that the route is absent, otherwise the expected result is not checkable.",
+        "D-B5 P1 OTHER: AC-17 asks a reviewer to inspect \"how missing items are determined\" and confirm there is no \"second copy of the presence checks.\" That is a code-review step, not something a product observer can check from the running demo. Phrase it as an artifact review with a named owner, or pair it with a behavioural check (same phrases from rule and button, already in AC-16)."
+      ]
+    },
+    "critiqueOfA": {
+      "verdict": "pass",
+      "summary": "3/3 attributes covered · 4 defects raised",
+      "findings": []
+    },
+    "critiqueOfB": {
+      "verdict": "pass",
+      "summary": "3/3 attributes covered · 5 defects raised",
+      "findings": []
+    },
+    "synthesizer": {
+      "verdict": "pass",
+      "summary": "All gates pass · 3/3 attributes met · 9/9 defects resolved",
+      "findings": []
+    }
+  }
+}

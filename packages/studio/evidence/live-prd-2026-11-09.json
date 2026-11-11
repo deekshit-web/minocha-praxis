@@ -148,5 +148,24 @@
     "id": "D-A1",
     "severity": "P0",
     "point": "AC-11 and SCN-3 require risk band 'urgent' for filing deadline 2026-12-04 against the demo clock of 17 November 2026, and justify it as within 14 days. That interval is 17 days. pack/payer-northwind.md sets urgent to within 14 days and soon to within 45 days, so the observable band is 'soon'. A P0 then-clause that is false would fail a correct implementation."
-  }
+  },
+  "attempts": [
+    {
+      "session": "2026-11-09 04:21 UTC",
+      "outcome": "stopped: a network call failed after the first draft"
+    },
+    {
+      "session": "2026-11-09 04:31 UTC",
+      "outcome": "stopped: the merge hit its 16,000-token output limit"
+    },
+    {
+      "session": "2026-11-09 04:49 UTC",
+      "outcome": "completed: resumed from the saved calls, merge re-run with a higher limit"
+    },
+    {
+      "session": "2026-11-09 04:57 UTC",
+      "outcome": "gates re-checked from the saved calls; no new model calls"
+    }
+  ],
+  "candour": "This is the one complete live run so far. The merge accepted all 9 findings; nobody has yet judged how many a person would call false alarms, and there is no single-model baseline yet."
 }

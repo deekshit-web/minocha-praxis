@@ -228,6 +228,11 @@
       .models p { margin: 2px 0 0; font-size: 13px; line-height: 1.35; color: var(--muted); }
       .models .real { margin-top: 3px; font-size: 12.5px; color: var(--teal-deep); }
       @media (max-width: 760px) { .models { grid-template-columns: 1fr; } }
+      .codeview, .detail pre.codeview { margin: 8px 0; padding: 10px 12px; overflow-x: auto; background: #f6f2ea; border-radius: 6px; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+      .codeview .del { background: #f6d5c9; display: block; }
+      .codeview .add { background: #d5ecdf; display: block; }
+      .mutants { margin-top: 6px; font-size: 13.5px; }
+      .mutants li { margin: 3px 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
       .testlab { margin-top: 14px; }
       .testlab h2 { margin: 2px 0 4px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
       .testlab .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
@@ -377,6 +382,8 @@
       let selected = null;
       // The finished deliverable shows when the run ends, or earlier if a viewer asks for it.
       let outputShown = false;
+      // Set when the presenter looks back at another phase or stage; the diagram then stays put until the run moves on.
+      let viewPinned = false;
       // The live checks (public/checks.js) and the figures the viewer has typed over the AI's.
       // Model C's live answers, fetched from the server when a decision step is reached.
       let decisions = {};
@@ -589,12 +596,20 @@
             tab.textContent = index + 1 + " " + name;
             tab.addEventListener("click", () => {
               phase = index;
+              viewPinned = true;
               buildPipe();
               render();
             });
             tabs.appendChild(tab);
           });
         }
+      }
+
+      // Steps that genuinely execute here: the live code checks and the build tests. Everything else is replayed.
+      function isReal(step) {
+        if (step.id === "checks") return !!(LIVE && LIVE.LIVE_CHECKS[flow.id]);
+        if (step.id === "testsRed" || step.id === "testsGreen" || step.id === "unitRun") return !!(TESTS && TESTS.LIVE_TESTS.includes(flow.id));
+        return false;
       }
 
       function nodeText(step, state) {
@@ -608,6 +623,7 @@
           const share = state === "running" ? play.progress : 1;
           meta = state === "idle" ? "simulated call" : duration(step.seconds * share) + " · " + money((step.estimatedCostUsd || 0) * share);
         } else if (step.kind === "human") meta = state === "waiting" ? "waiting for you" : state === "idle" ? "" : "approved";
+        else if (step.kind === "tool" || step.kind === "check") meta = isReal(step) ? "real code" : "replay";
         const label = { idle: "", running: step.kind === "llm" ? "thinking…" : "working…", waiting: "your turn", done: "done", flagged: "flagged", blocked: "blocked: " + liveFailures().length + " failed" }[state];
         const flaggedLabel = step.id.startsWith("reviewOf") || step.id === "archReview" || step.id === "codeReview" ? "caught a serious defect" : step.id === "testsRed" ? "1 test failing" : "flagged";
         if (state === "done" && (step.id === "archReview" || step.id === "codeReview")) {
@@ -620,7 +636,7 @@
       function render() {
         if (!flow) return;
         const current = flow.steps[play.index];
-        if (current && current.phase !== phase && (play.playing || play.progress > 0)) {
+        if (current && current.phase !== phase && (play.playing || (play.progress > 0 && !viewPinned))) {
           phase = current.phase;
           buildPipe();
         }
@@ -797,6 +813,8 @@
               : "Streaming (simulated): " + Math.round(step.tokens.output * share).toLocaleString() + " of about " + step.tokens.output.toLocaleString() + " output tokens · " + duration(step.seconds * play.progress) + " of about " + duration(step.seconds) + "."
             : step.kind === "llm"
             ? "Not called. A live run would take about " + duration(step.seconds) + " and cost about " + money(step.estimatedCostUsd) + " (" + step.tokens.input.toLocaleString() + " tokens in, " + step.tokens.output.toLocaleString() + " out)."
+            : (step.kind === "tool" || step.kind === "check") && !isReal(step) && step.kind !== "input"
+            ? "Replayed: nothing actually ran here. " + step.caption
             : step.caption;
         detail.append(heading, meta);
         const section = (label, body, share) => {
@@ -856,6 +874,51 @@
           jump.appendChild(go);
           detail.appendChild(jump);
         }
+        if (TESTS && TESTS.LIVE_TESTS.includes(flow.id) && (step.id === "code" || step.id === "fix") && state !== "idle") {
+          const label = document.createElement("p");
+          label.className = "label";
+          label.textContent = step.id === "code" ? "The real code, as first written (the code the tests run against)" : "The fix, as a diff against the first version";
+          const pre = document.createElement("pre");
+          pre.className = "codeview";
+          const body = step.id === "code" ? TESTS.sourceOf(flow.id, "first") : TESTS.fixDiff(flow.id);
+          for (const line of body.split("\n")) {
+            const span = document.createElement("span");
+            span.textContent = line + "\n";
+            if (step.id === "fix") span.className = line.startsWith("- ") ? "del" : line.startsWith("+ ") ? "add" : "";
+            pre.appendChild(span);
+          }
+          const note = document.createElement("p");
+          note.className = "meta";
+          note.textContent = step.id === "code" ? "This first version carries a bug we planted to show the mechanism. The code and the tests are real; the tests below run against exactly this." : "The planted bug, and the change that removes it.";
+          detail.append(label, pre, note);
+        }
+        if (step.id === "route" && state !== "idle" && flow.lowRiskRequest) {
+          const turn = document.createElement("div");
+          turn.className = "yourturn";
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = "Now try the router on a low-risk request";
+          const result = document.createElement("div");
+          const key = flow.id + ":routeLow";
+          const show = (answer) => {
+            result.className = "approving";
+            result.textContent = "Request: \u201c" + flow.lowRiskRequest + "\u201d\n" + answer.text + "\n" + decisionNote(answer);
+          };
+          if (decisions[key] && !decisions[key].pending) show(decisions[key]);
+          button.addEventListener("click", () => {
+            result.className = "meta";
+            result.textContent = "Asking Model C…";
+            fetch("/api/decide/" + flow.id + "/routeLow")
+              .then((response) => response.json())
+              .then((answer) => {
+                decisions[key] = answer;
+                show(answer);
+              })
+              .catch(() => (result.textContent = "Model C could not be reached."));
+          });
+          turn.appendChild(button);
+          detail.append(turn, result);
+        }
         section("Given", step.given);
         if (state === "idle") section(step.kind === "human" ? "Outcome" : "Produced", "Not reached yet.");
         else if (state === "waiting") {
@@ -904,7 +967,7 @@
           const realTests = TESTS && TESTS.LIVE_TESTS.includes(flow.id) && (step.id === "testsRed" || step.id === "testsGreen");
           if (realTests) {
             const run = testRun(step.id === "testsRed" ? "first" : "fixed");
-            meta.textContent = "These tests really ran, in your browser, against the " + (step.id === "testsRed" ? "first version of the code" : "fixed code") + ": " + run.results.length + " tests in " + run.ms.toFixed(1) + " ms.";
+            meta.textContent = "These tests really ran, in your browser, against the " + (step.id === "testsRed" ? "first version of the code, which carries a bug we planted to show the mechanism" : "fixed code") + ": " + run.results.length + " tests in " + run.ms.toFixed(1) + " ms.";
           }
           if (decision) meta.textContent = decisionNote(decision);
           const body = decision && !decision.pending ? decision.text : decision ? "" : realUnit ? TESTS.report(TESTS.runTests(flow.id, "first", "unit")) : realTests ? TESTS.report(testRun(step.id === "testsRed" ? "first" : "fixed").results) : step.id === "checks" && liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name + "\n  " + check.detail).join("\n") : step.output;
@@ -1083,6 +1146,7 @@
           button.addEventListener("click", () => {
             const first = flow.steps[indexes[0]];
             stop();
+            viewPinned = true;
             phase = first.phase;
             selected = first.id;
             buildPipe();
@@ -1204,6 +1268,7 @@
             item.addEventListener("click", () => {
               const first = flow.steps[indexes[0]];
               stop();
+              viewPinned = true;
               phase = first.phase;
               selected = first.id;
               buildPipe();
@@ -1232,14 +1297,15 @@
         card.append(
           add("p", "Run the tests yourself", "eyebrow"),
           add("h2", "Model B's test script is real code. Run it against the first version of the feature, then against Model A's fix."),
-          add("p", "Nothing here is recorded: the tests run in your browser each time you press a button, against working code.", "meta"),
+          add("p", "Nothing here is recorded: the tests run in your browser each time you press a button, against working code. The first version carries a bug we planted to show the mechanism.", "meta"),
         );
         const buttons = add("div", undefined, "buttons");
         const first = add("button", "▶ Run against the first version", "primary");
         const fixed = add("button", "▶ Run against the fixed version");
         const unit = add("button", "▶ Run Model A's own unit tests");
-        first.type = fixed.type = unit.type = "button";
-        buttons.append(first, fixed, unit);
+        const mutate = add("button", "▶ Measure the tests: break the code on purpose");
+        first.type = fixed.type = unit.type = mutate.type = "button";
+        buttons.append(first, fixed, unit, mutate);
         const out = add("div", undefined, "runout");
         const run = (version, suite) => {
           clear(out);
@@ -1262,6 +1328,25 @@
         first.addEventListener("click", () => run("first"));
         fixed.addEventListener("click", () => run("fixed"));
         unit.addEventListener("click", () => run("first", "unit"));
+        mutate.addEventListener("click", () => {
+          clear(out);
+          const started = performance.now();
+          const result = TESTS.mutationTest(flow.id);
+          const ms = performance.now() - started;
+          out.appendChild(add("div", "Mutation testing: the fixed code was broken " + result.total + " different ways (each < made <=, each && made ||, each number nudged by one, and so on), and every test re-run against each broken version.", ""));
+          out.appendChild(add("div", "The tests caught " + result.killed + " of " + result.total + " broken versions · ran just now in " + ms.toFixed(0) + " ms", "sum " + (result.killed === result.total ? "ok" : "")));
+          const survivors = result.results.filter((item) => !item.killed);
+          if (survivors.length) {
+            out.appendChild(add("div", "Not caught (a change the tests cannot tell apart from the real code; often harmless, such as a nudge that rounding hides, sometimes a test worth adding):", ""));
+            const list = add("ul", undefined, "mutants");
+            for (const item of survivors) list.appendChild(add("li", item.operator + "  in  " + item.line));
+            out.appendChild(list);
+          }
+        });
+        const source = add("details");
+        source.appendChild(add("summary", "Show the code under test (after the fix)"));
+        source.appendChild(add("pre", TESTS.sourceOf(flow.id, "fixed"), "codeview"));
+        card.append(source);
         const script = add("details");
         script.appendChild(add("summary", "Show the test script"));
         const scriptStep = flow.steps.find((step) => step.id === "testScript");
@@ -1311,7 +1396,9 @@
           time.textContent = clock(finishedAt(index)) + "  ";
           let what;
           let tone = "";
-          if (step.kind === "llm") {
+          const liveAnswer = step.actor === "jev-1.14.0" ? decisions[flow.id + ":" + step.id] : null;
+          if (liveAnswer && liveAnswer.live) what = step.actor + " · live · " + (liveAnswer.inputTokens || 0).toLocaleString() + " in · " + liveAnswer.ms + " ms · typed answers · $" + (liveAnswer.costUsd || 0).toFixed(6) + " real";
+          else if (step.kind === "llm") {
             const vendor = VENDOR[step.actor] || { stop: "stop" };
             what = step.actor + " · " + step.tokens.input.toLocaleString() + " in / " + step.tokens.output.toLocaleString() + " out · " + duration(step.seconds) + " · " + vendor.stop + " · " + money(step.estimatedCostUsd) + " if live";
             if (step.verdict === "flagged") {
@@ -1512,6 +1599,7 @@
           runId = "run_" + hashHex(flow.id + runStartedAt, 8);
         }
         play.playing = true;
+        viewPinned = false;
         play.last = performance.now();
         selected = null;
         play.frame = requestAnimationFrame(tick);
@@ -1535,6 +1623,7 @@
         const step = flow.steps[play.index];
         if (step.kind === "human") play.approved.add(step.id);
         selected = null;
+        viewPinned = false;
         advance();
         if (play.index < flow.steps.length) play.progress = 0.001;
         render();
@@ -1647,7 +1736,12 @@
           table.appendChild(tr);
         }
         details.appendChild(table);
-        card.append(row, summary, plainly, quote, why, details);
+        const candour = add("p", (run.candour || "") + (run.attempts ? " It took " + run.attempts.length + " sessions: " + run.attempts.map((attempt) => attempt.outcome).join("; ") + "." : ""), "meta");
+        const transcript = add("a", "Download the full transcript: both drafts, both reviews, the merge and the gate verdicts (JSON)");
+        transcript.href = "/api/evidence/transcript";
+        const transcriptLine = add("p");
+        transcriptLine.appendChild(transcript);
+        card.append(row, summary, plainly, quote, why, candour, transcriptLine, details);
         card.hidden = false;
       }
 

@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { LIVE_CHECKS, runChecks } from "../public/checks.js";
-import { LIVE_TESTS, report, runTests } from "../public/tests.js";
+import { LIVE_TESTS, fixDiff, mutationTest, report, runTests, sourceOf } from "../public/tests.js";
 import { BUILD_STAGES, DOCUMENT_STAGES, DOMAINS, catalog, expand, loadSpecs, workflowIssues } from "./workflows.ts";
 
 test("every domain offers a feature build and a document workflow", () => {
@@ -109,6 +109,8 @@ test("the real-run evidence adds up and carries no patient data", () => {
   assert.equal(run.totals.costUsd, Math.round(used.reduce((total, call) => total + call.costUsd, 0) * 100) / 100);
   assert.equal(run.totals.costIncludingRetryUsd, Math.round(run.calls.reduce((total, call) => total + call.costUsd, 0) * 100) / 100);
   assert.deepEqual(findPhi(JSON.stringify(run)), []);
+  const transcript = readFileSync(join(repoRoot(), "packages/studio/evidence/live-prd-2026-11-09-transcript.json"), "utf8");
+  assert.deepEqual(findPhi(transcript), []);
 });
 
 test("each before-and-after quotes a flagged draft and the output that replaced it", () => {
@@ -200,5 +202,24 @@ test("the decision model routes every request, triages findings in line with wha
       assert.equal((apply.match(/→ yes/g) ?? []).length, (revise.match(/ applied/g) ?? []).length, spec.id);
       assert.equal((apply.match(/→ no/g) ?? []).length, (revise.match(/ declined/g) ?? []).length, spec.id);
     }
+  }
+});
+
+test("the code shown is the code tested: the first version is the fixed source with its one planted patch", () => {
+  for (const spec of loadSpecs().filter((item) => item.kind === "build")) {
+    assert.notEqual(sourceOf(spec.id, "first"), sourceOf(spec.id, "fixed"), spec.id);
+    assert.match(fixDiff(spec.id), /^- /m, spec.id);
+    assert.match(fixDiff(spec.id), /^\+ /m, spec.id);
+    // Any count of passing tests the output cites is the real one.
+    const passing = (spec.testsGreen?.match(/^✓/gm) ?? []).length;
+    for (const match of spec.output.matchAll(/(\d+) tests passing/g)) assert.equal(Number(match[1]), passing, spec.id);
+  }
+});
+
+test("mutation testing: the tests catch most deliberately broken versions of each feature", () => {
+  for (const id of LIVE_TESTS) {
+    const result = mutationTest(id);
+    assert.ok(result.total >= 5, `${id}: only ${result.total} mutants`);
+    assert.ok(result.killed / result.total >= 0.7, `${id}: ${result.killed}/${result.total}`);
   }
 });
