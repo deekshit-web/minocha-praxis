@@ -211,6 +211,14 @@
       .recap .head .out { font-weight: 500; color: var(--muted); }
       .recap li.caught .head .out { color: var(--clay); }
       .recap .story { color: var(--ink); font-size: 15px; }
+      .qa { list-style: none; margin: 8px 0; padding: 0; }
+      .qa li { margin: 0 0 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+      .qa .q { font-weight: 650; }
+      .qa .a { margin-top: 4px; color: var(--teal-deep); }
+      .qa .a::before { content: "Suggested answer: "; color: var(--muted); font-weight: 600; }
+      .yourturn { margin: 10px 0 2px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .yourturn button { border: 0; border-radius: 999px; padding: 10px 20px; background: var(--teal); color: #f7fffe; font: inherit; font-weight: 650; cursor: pointer; }
+      .approving { margin: 6px 0; padding: 10px 14px; border-left: 3px solid var(--teal); background: var(--sky); white-space: pre-wrap; font-size: 14.5px; }
       .testlab { margin-top: 14px; }
       .testlab h2 { margin: 2px 0 4px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
       .testlab .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
@@ -332,10 +340,10 @@
             <div class="pipe" id="pipe"><svg id="lines" aria-hidden="true"></svg></div>
           </div>
         </div>
+        <div class="card detail" id="detail" hidden></div>
         <section class="card recap" id="recap" hidden></section>
         <section class="card tryit" id="tryit" hidden></section>
         <section class="card testlab" id="testlab" hidden></section>
-        <div class="card detail" id="detail" hidden></div>
         <div class="card logcard tech" id="logcard" hidden><p class="eyebrow">Run log</p><div class="log" id="log"></div></div>
         <div class="card output" id="output" hidden></div>
       </section>
@@ -620,6 +628,38 @@
         text("checks-sub", play.blocked ? "Run stopped by the checks" : run.length ? "Plain code checks, no model" : "Not run yet");
       }
 
+      // What a person is asked to do at each pause, so a booth audience can see what is being agreed to.
+      function questionsAndAnswers() {
+        const out = (id) => (flow.steps.find((step) => step.id === id) || { output: "" }).output;
+        const answers = {};
+        for (const line of out("answers").split("\n")) {
+          const match = line.match(/^Q(\d+)\.\s*(.*)$/);
+          if (match) answers[match[1]] = match[2];
+        }
+        return out("clarify")
+          .split("\n")
+          .map((line) => line.match(/^Q(\d+)\.\s*(.*)$/))
+          .filter(Boolean)
+          .map((match) => ({ number: match[1], question: match[2], answer: answers[match[1]] || "" }));
+      }
+      function approveLabel(step) {
+        return { answers: "Accept these answers", approve: flow.kind === "build" ? "Approve the PRD" : "Approve the result", archApprove: "Approve the design", deployApprove: "Approve for production" }[step.id] || "Approve";
+      }
+      function waitingCaption(step) {
+        if (step.id === "answers") return "Your turn: Claude has " + questionsAndAnswers().length + " questions before it writes anything. Read them below, then accept the answers.";
+        if (step.id === "approve") return flow.kind === "build" ? "Your turn: the requirements are merged and checked. Read what you are approving below, then approve." : "Your turn: the result is merged and checked. Read it below, then approve.";
+        if (step.id === "archApprove") return "Your turn: the design has been reviewed and checked. Approve it, and code can start.";
+        if (step.id === "deployApprove") return "Your turn: tests and smoke tests passed on staging. Approve the move to production.";
+        return step.caption;
+      }
+      function approvingText(step) {
+        const out = (id) => (flow.steps.find((item) => item.id === id) || { output: "" }).output;
+        if (step.id === "approve") return out("merge") + "\n\nCode checks:\n" + (liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name).join("\n") : out("checks"));
+        if (step.id === "archApprove") return out("archFinal") + "\n\nDesign checks:\n" + out("archChecks");
+        if (step.id === "deployApprove") return "Smoke tests on staging:\n" + out("smoke") + "\n\n" + (out("production").match(/^Rollback plan:.*$/m) || [""])[0];
+        return step.given;
+      }
+
       function renderCaption() {
         const total = flow.steps.length;
         const approve = byId("approve");
@@ -644,7 +684,8 @@
         }
         const waiting = step.kind === "human" && !play.approved.has(step.id) && (play.playing || play.progress > 0);
         approve.hidden = !waiting;
-        text("caption", play.progress === 0 && !play.playing && play.index === 0 ? "Press Play, or step through with Next step." : step.caption);
+        approve.textContent = waiting ? approveLabel(step) : "Approve";
+        text("caption", waiting ? waitingCaption(step) : play.progress === 0 && !play.playing && play.index === 0 ? "Press Play, or step through with Next step." : step.caption);
       }
 
       // A live model pauses before its first token, then streams in uneven bursts. Replay the same shape.
@@ -738,7 +779,46 @@
         }
         section("Given", step.given);
         if (state === "idle") section(step.kind === "human" ? "Outcome" : "Produced", "Not reached yet.");
-        else if (state === "waiting") section("Waiting", "Approve to continue.");
+        else if (state === "waiting") {
+          if (step.id === "answers") {
+            const title = document.createElement("p");
+            title.className = "label";
+            title.textContent = "Claude's questions";
+            const list = document.createElement("ol");
+            list.className = "qa";
+            for (const item of questionsAndAnswers()) {
+              const li = document.createElement("li");
+              const q = document.createElement("div");
+              q.className = "q";
+              q.textContent = "Q" + item.number + ". " + item.question;
+              const a = document.createElement("div");
+              a.className = "a";
+              a.textContent = item.answer;
+              li.append(q, a);
+              list.appendChild(li);
+            }
+            const note = document.createElement("p");
+            note.className = "meta";
+            note.textContent = "In a live run the requester types their own answers, and the answers change what gets built. This replay uses the answers above.";
+            detail.append(title, list, note);
+          } else {
+            const title = document.createElement("p");
+            title.className = "label";
+            title.textContent = "What you are approving";
+            const box = document.createElement("div");
+            box.className = "approving";
+            box.textContent = approvingText(step);
+            detail.append(title, box);
+          }
+          const turn = document.createElement("div");
+          turn.className = "yourturn";
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = approveLabel(step);
+          button.addEventListener("click", () => byId("approve").click());
+          turn.appendChild(button);
+          detail.appendChild(turn);
+        }
         else {
           const realUnit = TESTS && TESTS.LIVE_TESTS.includes(flow.id) && step.id === "unitRun";
           if (realUnit) meta.textContent = "These unit tests really ran, in your browser, against Claude's code as first written. They pass: the author did not think to test the case with the bug.";
@@ -979,7 +1059,7 @@
         const started = play.index > 0 || play.progress > 0 || play.playing;
         card.hidden = !started || !flow.stages || !flow.stages.length;
         if (card.hidden) return;
-        const key = flow.id + "|" + play.index + "|" + !!play.blocked + "|" + document.body.className;
+        const key = flow.id + "|" + play.index + "|" + !!play.blocked + "|" + document.body.className + "|" + (play.progress > 0);
         if (key === recapKey) return;
         recapKey = key;
         clear(card);
@@ -1001,7 +1081,7 @@
           item.appendChild(add("span", done ? (caught ? "!" : "✓") : String(number + 1), "mark"));
           const head = add("div", undefined, "head");
           head.append(document.createTextNode(number + 1 + ". " + name + " "), add("span", done ? "· " + stageOutcome(name) + (caught ? " · caught a problem" : "") : now ? "· in progress" : "· not yet", "out"));
-          item.append(head, add("div", done ? stageStory(name) : now ? (play.blocked ? "Stopped: a code check failed, so nothing goes further until it is fixed." : "Happening now: " + (flow.steps[play.index] || {}).caption) : "", "story"));
+          item.append(head, add("div", done ? stageStory(name) : now ? (play.blocked ? "Stopped: a code check failed, so nothing goes further until it is fixed." : stateOf(flow.steps[play.index], play.index) === "waiting" ? "Waiting for you: " + waitingCaption(flow.steps[play.index]).replace(/^Your turn: /, "") : "Happening now: " + (flow.steps[play.index] || {}).caption) : "", "story"));
           if (done || now)
             item.addEventListener("click", () => {
               const first = flow.steps[indexes[0]];
