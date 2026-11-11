@@ -117,6 +117,7 @@
       }
       #approve { border: 0; border-radius: 999px; padding: 10px 20px; font: inherit; font-weight: 650; cursor: pointer; white-space: nowrap; }
       .pipe-scroll { overflow-x: auto; }
+      .pipe.dense .node { padding-left: 8px; padding-right: 8px; }
       .pipe { position: relative; display: grid; grid-template-rows: auto 26px auto; column-gap: 22px; padding: 6px 2px; min-width: 980px; }
       .pipe svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
       .pipe path { fill: none; stroke: var(--line); stroke-width: 2; }
@@ -648,7 +649,10 @@
         for (const node of [...pipe.querySelectorAll(".node, .wall")]) node.remove();
         const steps = flow.steps.filter((step) => step.phase === phase);
         const cols = Math.max(...steps.map((step) => step.col)) + 1;
-        pipe.style.gridTemplateColumns = "repeat(" + cols + ", minmax(" + (cols > 8 ? 100 : 118) + "px, 1fr))";
+        // Wide phases (the PRD with its final check has 12 steps) tighten up so the last step, the person, stays on screen.
+        pipe.style.gridTemplateColumns = "repeat(" + cols + ", minmax(" + (cols > 10 ? 84 : cols > 8 ? 100 : 118) + "px, 1fr))";
+        pipe.style.columnGap = cols > 10 ? "14px" : "";
+        pipe.classList.toggle("dense", cols > 10);
         for (const step of steps) {
           const node = document.createElement("button");
           node.type = "button";
