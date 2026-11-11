@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { LIVE_CHECKS, runChecks } from "../public/checks.js";
 import { LIVE_TESTS, report, runTests } from "../public/tests.js";
-import { DOMAINS, catalog, expand, loadSpecs, workflowIssues } from "./workflows.ts";
+import { BUILD_STAGES, DOMAINS, catalog, expand, loadSpecs, workflowIssues } from "./workflows.ts";
 
 test("every domain offers a feature build and a document workflow", () => {
   const specs = loadSpecs();
@@ -83,7 +83,7 @@ test("a build workflow goes red before it goes green", () => {
     assert.match(spec.testsRed ?? "", /✗/, spec.id);
     assert.doesNotMatch(spec.testsGreen ?? "", /✗/, spec.id);
     const flow = expand(spec);
-    assert.deepEqual(flow.phases, ["Requirements", "Build and verify"], spec.id);
+    assert.deepEqual(flow.phases, ["PRD", "Architecture", "Code and review", "Test", "Deploy"], spec.id);
   }
 });
 
@@ -150,5 +150,20 @@ test("each build's tests really run: one fails on the first version, all pass af
     const from = source.indexOf("// <test-script>", start) + "// <test-script>".length;
     const block = source.slice(from, source.indexOf("// </test-script>", from)).split("\n").map((line) => line.replace(/^ {4}/, "")).join("\n").trim();
     assert.equal(spec.testScript, block, spec.id);
+  }
+});
+
+test("a build walks every stage of software development, in order, each with a person or a check at its end", () => {
+  for (const spec of loadSpecs().filter((item) => item.kind === "build")) {
+    const flow = expand(spec);
+    assert.deepEqual(flow.stages, BUILD_STAGES, spec.id);
+    const order = flow.steps.map((item) => BUILD_STAGES.indexOf(item.stage ?? ""));
+    assert.ok(order.every((at) => at >= 0), `${spec.id}: a step has no stage`);
+    assert.deepEqual([...new Set(order)], BUILD_STAGES.map((_, index) => index), `${spec.id}: stages out of order or missing`);
+    // Claude's unit tests pass on the code as first written; the independent tests are what catch the bug.
+    assert.ok(runTests(spec.id, "first", "unit").every((result) => result.pass), spec.id);
+    assert.equal(spec.unitRun, report(runTests(spec.id, "first", "unit")), spec.id);
+    // Each design and deployment ends with a person.
+    for (const id of ["archApprove", "deployApprove"]) assert.equal(flow.steps.find((item) => item.id === id)?.kind, "human", `${spec.id}:${id}`);
   }
 });

@@ -303,10 +303,133 @@ const SCRIPTS = {
   },
 };
 
+// ---------- Claude's own unit tests, written with the code. They cover what the author thought of, and pass
+// on the first version too: the independent tests above are what catch the bug.
+
+const UNIT_SCRIPTS = {
+  "healthcare-build": (test, assert, code) => {
+    // <unit-script>
+    const { appealReady } = code;
+
+    test("ready when the note and deadline are present", () => {
+      assert.equal(appealReady({ carc: "CO-50", noteRef: "DOC-318", filingDeadline: "2026-11-18" }).ready, true);
+    });
+    test("not ready without a deadline", () => {
+      assert.deepEqual(appealReady({ carc: "CO-50", noteRef: "DOC-318", filingDeadline: "" }).missing, ["filing deadline"]);
+    });
+    test("names both items when both are missing", () => {
+      assert.equal(appealReady({ carc: "CO-50", noteRef: "", filingDeadline: "" }).missing.length, 2);
+    });
+    test("PR-1 is never appealable", () => {
+      assert.equal(appealReady({ carc: "PR-1", noteRef: "DOC-318", filingDeadline: "2026-11-18" }).ready, false);
+    });
+    test("other codes are not gated", () => {
+      assert.equal(appealReady({ carc: "CO-16", noteRef: "", filingDeadline: "" }).ready, true);
+    });
+    // </unit-script>
+  },
+  "education-build": (test, assert, code) => {
+    // <unit-script>
+    const { riskFlag, canSeeFlag } = code;
+    const student = (over = {}) => ({ present: 20, schoolDays: 20, failingGrades: 0, clearDays: 0, ...over });
+
+    test("flags 17 of 20 days", () => {
+      assert.equal(riskFlag(student({ present: 17 })).flagged, true);
+    });
+    test("flags two failing grades", () => {
+      assert.equal(riskFlag(student({ failingGrades: 2 })).flagged, true);
+    });
+    test("one failing grade alone is not flagged", () => {
+      assert.equal(riskFlag(student({ failingGrades: 1 })).flagged, false);
+    });
+    test("clears after 10 school days", () => {
+      assert.equal(riskFlag(student({ present: 17, clearDays: 10 })).flagged, false);
+    });
+    test("the counsellor can see the flag", () => {
+      assert.equal(canSeeFlag("counsellor"), true);
+    });
+    // </unit-script>
+  },
+  "fmcg-build": (test, assert, code) => {
+    // <unit-script>
+    const { daysOfCover, createAlerter } = code;
+
+    test("840 units at 60 a day is 14 days", () => {
+      assert.equal(daysOfCover(840, 1680, 4), 14);
+    });
+    test("300 units at 60 a day is 5 days", () => {
+      assert.equal(daysOfCover(300, 1680, 4), 5);
+    });
+    test("a new product uses the weeks it has", () => {
+      assert.equal(daysOfCover(840, 840, 2), 14);
+    });
+    test("no sales means unlimited cover", () => {
+      assert.equal(daysOfCover(300, 0, 4), Infinity);
+    });
+    test("sends one alert per day", () => {
+      const alerter = createAlerter();
+      const order = { distributor: "DIST-27", sku: "SKU-4471", stock: 300, sellOut: 1680, weeks: 4, date: "2026-11-10" };
+      assert.ok(alerter.check(order));
+      assert.equal(alerter.check(order), null);
+    });
+    // </unit-script>
+  },
+  "finance-build": (test, assert, code) => {
+    // <unit-script>
+    const { prequalify } = code;
+    const input = (over = {}) => ({ grossMonthlyIncome: 7500, monthlyDebt: 1500, newPayment: 900, creditScore: 700, ...over });
+
+    test("45% is not pre-qualified", () => {
+      assert.equal(prequalify(input({ grossMonthlyIncome: 6000, monthlyDebt: 1800 })).prequalified, false);
+    });
+    test("32% is pre-qualified", () => {
+      assert.equal(prequalify(input()).prequalified, true);
+    });
+    test("credit score 639 is declined", () => {
+      assert.equal(prequalify(input({ creditScore: 639 })).prequalified, false);
+    });
+    test("reasons say it is not a final decision", () => {
+      assert.match(prequalify(input({ creditScore: 639 })).reasons.join(" "), /not a final decision/);
+    });
+    test("dti is rounded to basis points", () => {
+      assert.equal(prequalify(input({ grossMonthlyIncome: 6000, monthlyDebt: 1800 })).dti, 0.45);
+    });
+    // </unit-script>
+  },
+  "logistics-build": (test, assert, code) => {
+    // <unit-script>
+    const { minutesLate, toUtc, createNotifier, formatForCustomer } = code;
+    const promised = { local: "2026-11-12T18:00", zone: "Asia/Kolkata" };
+
+    test("30 minutes late is not notified", () => {
+      assert.equal(createNotifier().update("SHP-5120", promised, "2026-11-12T13:00Z"), null);
+    });
+    test("3 hours late is notified", () => {
+      assert.equal(minutesLate(promised, "2026-11-12T15:30Z"), 180);
+      assert.ok(createNotifier().update("SHP-5121", promised, "2026-11-12T15:30Z"));
+    });
+    test("a small further slip sends nothing", () => {
+      const notifier = createNotifier();
+      notifier.update("SHP-5121", promised, "2026-11-12T15:30Z");
+      assert.equal(notifier.update("SHP-5121", promised, "2026-11-12T16:00Z"), null);
+    });
+    test("daylight-saving date uses that day's offset", () => {
+      assert.equal(toUtc({ local: "2026-11-02T18:00", zone: "America/New_York" }), "2026-11-02T23:00Z");
+    });
+    test("times shown in the local zone", () => {
+      assert.equal(formatForCustomer("2026-11-12T15:30Z", "Asia/Kolkata"), "12 Nov, 21:00 (India time)");
+    });
+    // </unit-script>
+  },
+};
+
 export const LIVE_TESTS = Object.keys(SCRIPTS);
 
-/** Runs a build workflow's generated tests against the first version of its feature, or the fixed one. */
-export function runTests(id, version = "fixed") {
+/**
+ * Runs a build workflow's tests against the first version of its feature, or the fixed one: the generated
+ * acceptance tests by default, or with suite "unit" Claude's own unit tests.
+ */
+export function runTests(id, version = "fixed", suite = "acceptance") {
   const code = FEATURES[id](version === "fixed");
   const results = [];
   const test = (name, body) => {
@@ -320,7 +443,7 @@ export function runTests(id, version = "fixed") {
     const ms = (typeof performance !== "undefined" ? performance.now() : Date.now()) - started;
     results.push({ name, pass: !error, message: error, ms });
   };
-  SCRIPTS[id](test, assert, code);
+  (suite === "unit" ? UNIT_SCRIPTS : SCRIPTS)[id](test, assert, code);
   return results;
 }
 

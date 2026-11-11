@@ -47,5 +47,37 @@
     "before": "REQ-2 Promised times are stored as the customer saw them (local time); carrier ETAs are read as given.",
     "after": "REQ-1 Every comparison is in UTC. Promised times are stored with their time zone; carrier ETAs arrive in UTC.",
     "why": "India time and UTC were compared as if they were the same clock, a 5½-hour error: real delays would go unreported and on-time deliveries could trigger apologies."
-  }
+  },
+  "architecture": {
+    "draft": "Components:\n- src/tracking/delay.ts: minutesLate(promisedAt, etaUtc).\n- src/tracking/notify.ts: decides when to notify; one notice, then another after a further 2-hour slip.\n- A carrier webhook that receives ETA updates.\n- Messaging: SMS and email through the existing notification service.\nData: shipments gain promised_at with its time zone; a notices table records each notice and the ETA it was based on.\nFile fence: src/tracking/*, src/webhooks/carrierEta.ts, migrations/0031_promised_zone.sql and their tests.",
+    "review": "AR-1 · P1 · Out-of-order updates\n  Carriers resend old ETAs. Ignore an update older than the last one received, or a stale ETA could trigger a notice.\nAR-2 · P1 · Quiet hours\n  A 03:00 text about a delay is worse than none. Hold notices between 21:00 and 08:00 local time.\nStrengths: every time carries its zone; notices record the ETA they were based on.",
+    "final": "Kept: the delay rule, the notice rule and the notices table.\nFixed AR-1: each ETA update carries the carrier's timestamp; older updates are ignored.\nFixed AR-2: notices are held between 21:00 and 08:00 local time.\nFile fence: src/tracking/*, src/webhooks/carrierEta.ts, migrations/0031_promised_zone.sql and their tests.",
+    "checks": [
+      {
+        "name": "Every requirement has a home",
+        "detail": "REQ-1 to REQ-4 each map to a component."
+      },
+      {
+        "name": "Every stored time has a zone",
+        "detail": "Times are UTC, or carry their zone."
+      },
+      {
+        "name": "Notice volume is bounded",
+        "detail": "One, plus one per further 2-hour slip."
+      }
+    ],
+    "approval": "Approved by the engineering lead and the customer experience lead."
+  },
+  "codeReview": {
+    "review": "CR-1 · P1 · Webhook not verified\n  carrierEta.ts accepts any POST. Verify the carrier's signature header.\nCR-2 · P2 · Duplicate time parsing\n  delay.ts and notify.ts each parse ISO strings; share one helper.\nCR-3 · P2 · Library\n  Use a date library instead of Intl for time zones.",
+    "revise": "CR-1 applied: a request without a valid signature gets 401.\nCR-2 applied: one parse helper.\nCR-3 declined: Intl handles the zones we need without a new dependency, and the daylight-saving test covers it."
+  },
+  "deploy": {
+    "staging": "Build 2026.11.11-1 deployed to staging.\nMigration 0031 applied: promised_at gains its zone.\nCarrier sandbox webhook connected.",
+    "smoke": "✓ Sandbox ETA for SHP-5121 at 3 hours late: one notice queued\n✓ A resent older ETA is ignored\n✓ An unsigned webhook call gets 401\n✓ A 02:00 notice is held until 08:00",
+    "approval": "Approved for production by the customer experience lead.",
+    "production": "Enabled for one carrier for 2 days: 61 notices, none for on-time deliveries.\nEnabled for all carriers.\nRollback plan: turn off the delay_notices flag; the notices table keeps its history."
+  },
+  "unitScript": "const { minutesLate, toUtc, createNotifier, formatForCustomer } = code;\nconst promised = { local: \"2026-11-12T18:00\", zone: \"Asia/Kolkata\" };\n\ntest(\"30 minutes late is not notified\", () => {\n  assert.equal(createNotifier().update(\"SHP-5120\", promised, \"2026-11-12T13:00Z\"), null);\n});\ntest(\"3 hours late is notified\", () => {\n  assert.equal(minutesLate(promised, \"2026-11-12T15:30Z\"), 180);\n  assert.ok(createNotifier().update(\"SHP-5121\", promised, \"2026-11-12T15:30Z\"));\n});\ntest(\"a small further slip sends nothing\", () => {\n  const notifier = createNotifier();\n  notifier.update(\"SHP-5121\", promised, \"2026-11-12T15:30Z\");\n  assert.equal(notifier.update(\"SHP-5121\", promised, \"2026-11-12T16:00Z\"), null);\n});\ntest(\"daylight-saving date uses that day's offset\", () => {\n  assert.equal(toUtc({ local: \"2026-11-02T18:00\", zone: \"America/New_York\" }), \"2026-11-02T23:00Z\");\n});\ntest(\"times shown in the local zone\", () => {\n  assert.equal(formatForCustomer(\"2026-11-12T15:30Z\", \"Asia/Kolkata\"), \"12 Nov, 21:00 (India time)\");\n});",
+  "unitRun": "✓ 30 minutes late is not notified\n✓ 3 hours late is notified\n✓ a small further slip sends nothing\n✓ daylight-saving date uses that day's offset\n✓ times shown in the local zone\n5 passing"
 }

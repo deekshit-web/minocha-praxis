@@ -181,6 +181,21 @@
       .tryit .verdict { margin: 6px 0 0; font-weight: 650; }
       .tryit .verdict.fail { color: var(--clay); }
       .tryit .verdict.ok { color: var(--moss); }
+      .stages { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; margin: 14px 0 0; }
+      .stage { position: relative; text-align: left; border: 1px solid var(--line); background: var(--paper-2); border-radius: 10px; padding: 9px 10px 10px; font: inherit; color: var(--muted); cursor: pointer; min-width: 0; }
+      .stage .num { display: block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+      .stage .name { display: block; margin-top: 2px; font-weight: 650; color: var(--ink); font-size: 14px; }
+      .stage .status { display: block; margin-top: 4px; font-size: 12.5px; line-height: 1.35; }
+      .stage .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; border-radius: 0 0 10px 10px; background: transparent; }
+      .stage.done { border-color: #b9cfc6; }
+      .stage.done .status { color: var(--moss); }
+      .stage.done .bar { background: var(--moss); }
+      .stage.active { border-color: var(--teal); background: var(--sky); box-shadow: 0 0 0 3px rgba(14, 107, 102, 0.14); }
+      .stage.active .status { color: var(--teal-deep); font-weight: 600; }
+      .stage.active .bar { background: linear-gradient(90deg, var(--teal) var(--p, 0%), #cfe3df var(--p, 0%)); }
+      .stage.caught .num::after { content: " · caught a bug"; color: var(--clay); font-weight: 650; text-transform: none; letter-spacing: 0; }
+      @media (max-width: 980px) { .stages { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+      @media (max-width: 520px) { .stages { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       .testlab { margin-top: 14px; }
       .testlab h2 { margin: 2px 0 4px; font: 21px/1.25 Palatino, "Iowan Old Style", Georgia, serif; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
       .testlab .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
@@ -273,6 +288,7 @@
 
       <section id="run" hidden>
         <div class="runhead" id="runhead"></div>
+        <div class="stages" id="stages" role="list" aria-label="Stages of software development" hidden></div>
         <div class="scoreboard">
           <div class="tile" id="tile-step"><span class="label">Step</span><span class="value" id="step-value">-</span><span class="sub" id="step-sub"></span></div>
           <div class="tile"><span class="label">Model time if live</span><span class="value" id="time-value">0 s</span><span class="sub" id="time-sub"></span></div>
@@ -442,6 +458,7 @@
         claimEdits = {};
         tryKey = "";
         labKey = "";
+        stagesKey = "";
         testRuns = {};
         play.blocked = false;
         history.replaceState(null, "", "#" + flow.id);
@@ -519,7 +536,11 @@
           meta = state === "idle" ? "simulated call" : duration(step.seconds * share) + " · " + money((step.estimatedCostUsd || 0) * share);
         } else if (step.kind === "human") meta = state === "waiting" ? "waiting for you" : state === "idle" ? "" : "approved";
         const label = { idle: "", running: step.kind === "llm" ? "thinking…" : "working…", waiting: "your turn", done: "done", flagged: "flagged", blocked: "blocked: " + liveFailures().length + " failed" }[state];
-        const flaggedLabel = step.id.startsWith("reviewOf") ? "caught a serious defect" : step.id === "testsRed" ? "1 test failing" : "flagged";
+        const flaggedLabel = step.id.startsWith("reviewOf") || step.id === "archReview" || step.id === "codeReview" ? "caught a serious defect" : step.id === "testsRed" ? "1 test failing" : "flagged";
+        if (state === "done" && (step.id === "archReview" || step.id === "codeReview")) {
+          const findings = (step.output.match(/^(AR|CR)-\d/gm) || []).length;
+          return [kicker, name, meta, findings + " finding" + (findings === 1 ? "" : "s")];
+        }
         return [kicker, name, meta, state === "flagged" ? flaggedLabel : label];
       }
 
@@ -552,6 +573,7 @@
         renderRunLog();
         renderTryIt();
         renderTestLab();
+        renderStages();
         byId("play").textContent = play.playing ? "❚❚ Pause" : play.index >= flow.steps.length ? "▶ Replay" : play.index > 0 || play.progress > 0 ? "▶ Resume" : "▶ Play";
       }
 
@@ -585,7 +607,12 @@
         const approve = byId("approve");
         byId("caption").parentElement.classList.remove("blocked");
         if (play.index >= total) {
-          text("caption", "Done. Two models drafted and reviewed, code checks passed, and a person approved: " + flow.deliverable.toLowerCase() + ". The output is below.");
+          text(
+            "caption",
+            flow.stages && flow.stages.length
+              ? "Done. All eight stages are complete, from PRD to production: " + flow.deliverable.toLowerCase() + ". The output is below."
+              : "Done. Two models drafted and reviewed, code checks passed, and a person approved: " + flow.deliverable.toLowerCase() + ". The output is below.",
+          );
           approve.hidden = true;
           return;
         }
@@ -695,12 +722,14 @@
         if (state === "idle") section(step.kind === "human" ? "Outcome" : "Produced", "Not reached yet.");
         else if (state === "waiting") section("Waiting", "Approve to continue.");
         else {
+          const realUnit = TESTS && TESTS.LIVE_TESTS.includes(flow.id) && step.id === "unitRun";
+          if (realUnit) meta.textContent = "These unit tests really ran, in your browser, against Claude's code as first written. They pass: the author did not think to test the case with the bug.";
           const realTests = TESTS && TESTS.LIVE_TESTS.includes(flow.id) && (step.id === "testsRed" || step.id === "testsGreen");
           if (realTests) {
             const run = testRun(step.id === "testsRed" ? "first" : "fixed");
             meta.textContent = "These tests really ran, in your browser, against the " + (step.id === "testsRed" ? "first version of the code" : "fixed code") + ": " + run.results.length + " tests in " + run.ms.toFixed(1) + " ms.";
           }
-          const body = realTests ? TESTS.report(testRun(step.id === "testsRed" ? "first" : "fixed").results) : step.id === "checks" && liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name + "\n  " + check.detail).join("\n") : step.output;
+          const body = realUnit ? TESTS.report(TESTS.runTests(flow.id, "first", "unit")) : realTests ? TESTS.report(testRun(step.id === "testsRed" ? "first" : "fixed").results) : step.id === "checks" && liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name + "\n  " + check.detail).join("\n") : step.output;
           const pre = section(step.kind === "human" ? "Outcome" : state === "blocked" ? "Failed" : "Produced", body, state === "running" ? share : undefined);
           if (state === "running") pre.scrollTop = pre.scrollHeight;
         }
@@ -790,6 +819,81 @@
           : "All checks pass. The run can continue to a person for approval.";
       }
 
+      function stageOutcome(name) {
+        const out = (id) => (flow.steps.find((step) => step.id === id) || { output: "" }).output;
+        const count = (text, pattern) => (text.match(pattern) || []).length;
+        if (name === "PRD") {
+          const fixed = out("merge").match(/Defects resolved: (\d+)/);
+          return "Approved · " + (fixed ? fixed[1] + " defects fixed" : "checked");
+        }
+        if (name === "Architecture") return "Approved · " + count(out("archReview"), /^AR-\d/gm) + " findings resolved";
+        if (name === "Code") return new Set(out("code").match(/(?:src|packages|migrations)\/[\w./*-]+\.(?:ts|tsx|sql)/g) || []).size + " files written";
+        if (name === "Code review") {
+          const revise = out("codeRevise");
+          return count(out("codeReview"), /^CR-\d/gm) + " findings · " + count(revise, / applied/g) + " applied · " + count(revise, / declined/g) + " declined";
+        }
+        if (name === "Unit tests") {
+          const passing = TESTS && TESTS.LIVE_TESTS.includes(flow.id) ? TESTS.runTests(flow.id, "first", "unit").filter((result) => result.pass).length : count(out("unitRun"), /^✓/gm);
+          return passing + " passing (Claude's own)";
+        }
+        if (name === "Test cases") return count(out("testCases"), /^TC-/gm) + " cases, from the PRD";
+        if (name === "Testing") {
+          const failing = (out("testsRed").match(/(\d+) failing/) || [0, 0])[1];
+          const passing = (out("testsGreen").match(/(\d+) passing/) || [0, 0])[1];
+          return failing + " failed → fixed → " + passing + " passing";
+        }
+        if (name === "Deployment") return "Live in production";
+        return "Done";
+      }
+
+      let stagesKey = "";
+      function renderStages() {
+        const rail = byId("stages");
+        rail.hidden = !flow.stages || !flow.stages.length;
+        if (rail.hidden) return;
+        const started = play.index > 0 || play.progress > 0 || play.playing;
+        const key = flow.id + "|" + play.index + "|" + started + "|" + Math.round(play.progress * 20) + "|" + !!play.blocked;
+        if (key === stagesKey) return;
+        stagesKey = key;
+        clear(rail);
+        flow.stages.forEach((name, number) => {
+          const indexes = flow.steps.map((step, index) => (step.stage === name ? index : -1)).filter((index) => index >= 0);
+          const done = indexes.every((index) => index < play.index);
+          const active = started && !done && indexes.some((index) => index <= play.index);
+          const caught = indexes.some((index) => index < play.index && flow.steps[index].verdict === "flagged");
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "stage" + (done ? " done" : active ? " active" : "") + (caught ? " caught" : "");
+          button.setAttribute("role", "listitem");
+          const within = indexes.filter((index) => index < play.index).length + (indexes.includes(play.index) ? play.progress : 0);
+          if (active) button.style.setProperty("--p", Math.round((within / indexes.length) * 100) + "%");
+          const current = flow.steps[play.index];
+          const parts = [
+            ["num", String(number + 1)],
+            ["name", name],
+            ["status", done ? stageOutcome(name) : active ? (play.blocked ? "Stopped by a check" : current && current.stage === name ? current.title + "…" : "In progress") : "Not started"],
+          ];
+          for (const [className, value] of parts) {
+            const span = document.createElement("span");
+            span.className = className;
+            span.textContent = value;
+            button.appendChild(span);
+          }
+          const bar = document.createElement("span");
+          bar.className = "bar";
+          button.appendChild(bar);
+          button.addEventListener("click", () => {
+            const first = flow.steps[indexes[0]];
+            stop();
+            phase = first.phase;
+            selected = first.id;
+            buildPipe();
+            render();
+          });
+          rail.appendChild(button);
+        });
+      }
+
       let labKey = "";
       function renderTestLab() {
         const card = byId("testlab");
@@ -812,13 +916,14 @@
         const buttons = add("div", undefined, "buttons");
         const first = add("button", "▶ Run against the first version", "primary");
         const fixed = add("button", "▶ Run against the fixed version");
-        first.type = fixed.type = "button";
-        buttons.append(first, fixed);
+        const unit = add("button", "▶ Run Claude's own unit tests");
+        first.type = fixed.type = unit.type = "button";
+        buttons.append(first, fixed, unit);
         const out = add("div", undefined, "runout");
-        const run = (version) => {
+        const run = (version, suite) => {
           clear(out);
           const started = performance.now();
-          const results = TESTS.runTests(flow.id, version);
+          const results = TESTS.runTests(flow.id, version, suite);
           const ms = performance.now() - started;
           for (const result of results) {
             out.appendChild(add("div", (result.pass ? "✓ " : "✗ ") + result.name + "  (" + result.ms.toFixed(2) + " ms)", result.pass ? "ok" : "bad"));
@@ -828,13 +933,14 @@
           out.appendChild(
             add(
               "div",
-              (failing ? failing + " failing, " + (results.length - failing) + " passing" : results.length + " passing") + " · ran just now in " + ms.toFixed(1) + " ms · " + (version === "first" ? "the first version of the code" : "the code after Claude's fix"),
+              (failing ? failing + " failing, " + (results.length - failing) + " passing" : results.length + " passing") + " · ran just now in " + ms.toFixed(1) + " ms · " + (suite === "unit" ? "Claude's own unit tests, on the first version. They pass, bug and all: only Grok's independent tests catch it." : version === "first" ? "the first version of the code" : "the code after Claude's fix"),
               "sum " + (failing ? "bad" : "ok"),
             ),
           );
         };
         first.addEventListener("click", () => run("first"));
         fixed.addEventListener("click", () => run("fixed"));
+        unit.addEventListener("click", () => run("first", "unit"));
         const script = add("details");
         script.appendChild(add("summary", "Show the test script"));
         const scriptStep = flow.steps.find((step) => step.id === "testScript");

@@ -47,5 +47,37 @@
     "before": "AC-13 Date of service 2026-08-20, demo clock 2026-11-17: the deadline is 2026-11-28 and the band reads urgent.",
     "after": "AC-13 Date of service 2026-08-20, clock 2026-11-17: deadline 2026-11-18, 1 day remaining, band urgent.",
     "why": "One AI alone got the date maths wrong by ten days. Software built to that requirement would tell staff they had 11 days left to appeal when they had 1."
-  }
+  },
+  "architecture": {
+    "draft": "Components:\n- packages/domain/src/appealReady.ts: the gate rule, a pure function appealReady(line) -> { ready, missing[] }. The only place the rule lives.\n- Denial detail screen: calls appealReady() to enable or disable \"Mark appeal ready\" and to name what is missing.\n- Workqueue: shows the risk band from the filing deadline (urgent within 14 days, soon within 45).\nData: no new tables. Reads carc, noteRef (a DOC-### id only, never note text) and filingDeadline from the claim line.\nFile fence: packages/domain/src/appealReady.ts, packages/rcm/src/denialDetail.ts, packages/rcm/src/workqueue.ts and their tests.",
+    "review": "AR-1 · P1 · Gate enforced only in the screen\n  A direct call to the ready endpoint would bypass a disabled button. The server must re-check the rule.\nAR-2 · P2 · Hard-coded band thresholds\n  14 and 45 days belong to the payer. Read them from the payer pack so a payer change needs no code change.\nStrengths: one pure rule shared by every screen; no note text stored.",
+    "final": "Kept: one pure rule in appealReady.ts, used by the screen and the workqueue.\nFixed AR-1: POST /lines/:id/ready re-runs appealReady() on the server and refuses with the missing items; added to the fence.\nFixed AR-2: band thresholds read from pack/payer-northwind.md.\nFile fence: packages/domain/src/appealReady.ts, packages/rcm/src/denialDetail.ts, packages/rcm/src/workqueue.ts, packages/rcm/src/routes/ready.ts and their tests.",
+    "checks": [
+      {
+        "name": "Every requirement has a home",
+        "detail": "REQ-1 to REQ-6 each map to a component."
+      },
+      {
+        "name": "The fence is minimal",
+        "detail": "4 source files; no gates, tooling or secret files."
+      },
+      {
+        "name": "No patient data stored",
+        "detail": "Only DOC-### references, never note text."
+      }
+    ],
+    "approval": "Approved by the engineering lead."
+  },
+  "codeReview": {
+    "review": "CR-1 · P1 · Missing-item text duplicated\n  denialDetail.ts rebuilds the \"missing:\" text instead of using appealReady().missing, so the two can drift.\nCR-2 · P2 · Unclear name\n  workqueue.ts calls readiness \"ok\"; call it \"ready\".\nCR-3 · P2 · Comments\n  Explain the 90-day rule with a comment at every call site.",
+    "revise": "CR-1 applied: the screen renders appealReady().missing.\nCR-2 applied: renamed to ready.\nCR-3 declined: the rule lives in one function with one comment; copies at call sites would drift."
+  },
+  "deploy": {
+    "staging": "Build 2026.11.11-1 deployed to staging.\nNo database migrations.\nFeature flag appeal_ready_gate: on in staging only.",
+    "smoke": "✓ CLM-221 (CO-50, DOC-318, deadline set) can be marked ready\n✓ CLM-108 (CO-50, no note) shows \"missing: clinical-note reference\"\n✓ A direct POST to /lines/CLM-108/ready is refused\n✓ CO-16 lines unchanged",
+    "approval": "Approved for production by the PFS lead and the engineering lead.",
+    "production": "Rolled out to 10% of specialists for 1 hour: 0 errors, 14 ready marks, 3 correctly blocked.\nRolled out to 100%.\nRollback plan: switch appeal_ready_gate off; there is no data to undo."
+  },
+  "unitScript": "const { appealReady } = code;\n\ntest(\"ready when the note and deadline are present\", () => {\n  assert.equal(appealReady({ carc: \"CO-50\", noteRef: \"DOC-318\", filingDeadline: \"2026-11-18\" }).ready, true);\n});\ntest(\"not ready without a deadline\", () => {\n  assert.deepEqual(appealReady({ carc: \"CO-50\", noteRef: \"DOC-318\", filingDeadline: \"\" }).missing, [\"filing deadline\"]);\n});\ntest(\"names both items when both are missing\", () => {\n  assert.equal(appealReady({ carc: \"CO-50\", noteRef: \"\", filingDeadline: \"\" }).missing.length, 2);\n});\ntest(\"PR-1 is never appealable\", () => {\n  assert.equal(appealReady({ carc: \"PR-1\", noteRef: \"DOC-318\", filingDeadline: \"2026-11-18\" }).ready, false);\n});\ntest(\"other codes are not gated\", () => {\n  assert.equal(appealReady({ carc: \"CO-16\", noteRef: \"\", filingDeadline: \"\" }).ready, true);\n});",
+  "unitRun": "✓ ready when the note and deadline are present\n✓ not ready without a deadline\n✓ names both items when both are missing\n✓ PR-1 is never appealable\n✓ other codes are not gated\n5 passing"
 }
