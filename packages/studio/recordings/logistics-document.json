@@ -1,0 +1,89 @@
+{
+  "id": "logistics-document",
+  "recordedAt": "2026-11-11T04:40:11.368Z",
+  "calls": [
+    {
+      "role": "analystA",
+      "model": "claude-opus-5",
+      "seconds": 8.7,
+      "inputTokens": 638,
+      "outputTokens": 604,
+      "costUsd": 0.01902875
+    },
+    {
+      "role": "analystB",
+      "model": "grok-4.7",
+      "seconds": 16.1,
+      "inputTokens": 1575,
+      "outputTokens": 231,
+      "costUsd": 0.002808
+    },
+    {
+      "role": "critiqueOfB",
+      "model": "claude-opus-5",
+      "seconds": 8.8,
+      "inputTokens": 1317,
+      "outputTokens": 617,
+      "costUsd": 0.02303
+    },
+    {
+      "role": "critiqueOfA",
+      "model": "grok-4.7",
+      "seconds": 120.2,
+      "inputTokens": 2100,
+      "outputTokens": 160,
+      "costUsd": 0.003432
+    },
+    {
+      "role": "synthesizer",
+      "model": "claude-opus-5",
+      "seconds": 11.3,
+      "inputTokens": 2104,
+      "outputTokens": 1063,
+      "costUsd": 0.03813
+    }
+  ],
+  "draftA": "CLAIM DECISION - SHP-9031\n\nFacts relied on\n- Shipment SHP-9031: 18 kg glassware, invoice value 1,200, delivered 2026-11-03, damage photos on file.\n- No declared value cover purchased.\n- Carrier contract C-7: liability limited to 25 per kg absent declared value cover; claims must be filed within 30 days of delivery.\n- Customer policy R-4: refund invoice value for damage on arrival; recover from carrier what the contract allows.\n\nDecision\n1. Refund to customer: 1,200 (full invoice value). Reason: damage on arrival, as required by policy R-4.\n2. Claim against carrier: 450. Reason: contract C-7 caps liability at 25 per kg with no declared value cover; 18 kg x 25 = 450. The invoice value is not recoverable because declared value cover was not bought.\n3. Unrecovered amount absorbed by us: 1,200 - 450 = 750.\n\nDeadline\nFile the carrier claim within 30 days of delivery (2026-11-03), i.e. on or before 2026-12-03. Submit with the damage photos on file.\n\nAction\n- Issue customer refund of 1,200 now.\n- Lodge carrier claim of 450 before 2026-12-03 with photo evidence and shipment weight.\n\nNote: no facts were available on cause of damage, packaging, or any other recovery route, so none is assumed.",
+  "draftB": "Claim decision: shipment SHP-9031.\n\nChecked facts: 18 kg glassware, invoice value 1,200, no declared value cover, delivered 2026-11-03, damage photos on file.\n\nRefund the customer 1,200. Policy R-4 requires a refund of the invoice value for damage on arrival. Photos support damage on arrival.\n\nClaim 450 from the carrier. Contract C-7 limits liability to 25 per kg when no declared value cover was bought. 25 times 18 kg is 450. Declared value cover was not bought, so the higher invoice value cannot be claimed.\n\nFile the carrier claim by 2026-12-03. C-7 allows claims only within 30 days of delivery, and 30 days after 2026-11-03 is 2026-12-03.\n\nResult: customer refund 1,200; carrier recovery 450; unrecovered balance 750, borne under R-4 because the contract cap is lower than the invoice value.",
+  "reviewOfA": {
+    "findings": [
+      {
+        "id": "D-A1",
+        "severity": "P1",
+        "title": "Action deadline excludes last day",
+        "detail": "Delivery on 2026-11-03 plus 30 days is 2026-12-03, the last timely day. The Deadline section says on or before that date, but the Action says before 2026-12-03, which drops the last valid day and conflicts with the contract window.",
+        "quote": "Lodge carrier claim of 450 before 2026-12-03 with photo evidence and shipment weight."
+      }
+    ],
+    "strengths": "The customer refund of 1,200 and the carrier claim of 450 are calculated correctly from policy R-4 and the 18 kg times 25 liability cap."
+  },
+  "reviewOfB": {
+    "findings": [
+      {
+        "id": "D-B1",
+        "severity": "P2",
+        "title": "Loss allocation attributed to R-4",
+        "detail": "R-4 states only that the invoice value is refunded and that the carrier is pursued for what the contract allows. It says nothing about who absorbs the 750 shortfall, so citing R-4 as the authority overstates the source. State it as an arithmetic consequence instead.",
+        "quote": "unrecovered balance 750, borne under R-4 because the contract cap is lower than the invoice value"
+      }
+    ],
+    "strengths": "Every figure and date checks out: 25 per kg times 18 kg is 450, 1,200 minus 450 leaves 750, and 30 days after delivery on 2026-11-03 is indeed 2026-12-03, each tied to the correct source."
+  },
+  "merge": {
+    "document": "CLAIM DECISION - SHP-9031\n\nFacts relied on\n- Shipment SHP-9031: 18 kg glassware, invoice value 1,200, delivered 2026-11-03, damage photos on file.\n- No declared value cover purchased.\n- Carrier contract C-7: liability limited to 25 per kg absent declared value cover; claims must be filed within 30 days of delivery.\n- Customer policy R-4: refund invoice value for damage on arrival; recover from carrier what the contract allows.\n\nDecision\n1. Refund to customer: 1,200 (full invoice value). Reason: damage on arrival, as required by policy R-4; the photos on file support damage on arrival.\n2. Claim against carrier: 450. Reason: contract C-7 caps liability at 25 per kg with no declared value cover; 18 kg x 25 = 450. The invoice value is not recoverable because declared value cover was not bought.\n3. Unrecovered balance: 1,200 - 450 = 750, absorbed by us. This is the arithmetic consequence of the contract cap being lower than the invoice value; R-4 does not itself allocate the shortfall.\n\nDeadline\nFile the carrier claim within 30 days of delivery (2026-11-03), i.e. on or before 2026-12-03, which is the last timely day. Submit with the damage photos on file.\n\nAction\n- Issue customer refund of 1,200 now.\n- Lodge carrier claim of 450 on or before 2026-12-03, with photo evidence and shipment weight.\n\nNote: no facts were available on cause of damage, packaging, or any other recovery route, so none is assumed.",
+    "keptFromA": "Kept draft A's structure and headings (facts relied on, numbered decision, deadline, action) and its closing note that nothing is assumed about cause, packaging or other recovery routes.",
+    "keptFromB": "Kept draft B's explicit reasoning links - photos supporting damage on arrival, the 25 x 18 = 450 working, and the stated 30-days-after-2026-11-03 derivation of 2026-12-03.",
+    "resolutions": [
+      {
+        "finding": "D-A1 - Action deadline excludes last day",
+        "outcome": "fixed",
+        "note": "The Action line now reads 'on or before 2026-12-03', matching the Deadline section and the contract's 30-day window, which makes 2026-12-03 the last timely day."
+      },
+      {
+        "finding": "D-B1 - Loss allocation attributed to R-4",
+        "outcome": "fixed",
+        "note": "The 750 shortfall is now presented as the arithmetic consequence of 1,200 minus the 450 contract cap, with an explicit note that R-4 does not allocate the shortfall."
+      }
+    ]
+  }
+}

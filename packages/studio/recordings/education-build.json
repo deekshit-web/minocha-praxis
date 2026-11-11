@@ -1,0 +1,112 @@
+{
+  "id": "education-build",
+  "recordedAt": "2026-11-11T04:15:52.036Z",
+  "calls": [
+    {
+      "role": "analystA",
+      "model": "claude-opus-5",
+      "seconds": 20.8,
+      "inputTokens": 690,
+      "outputTokens": 1415,
+      "costUsd": 0.03956125
+    },
+    {
+      "role": "analystB",
+      "model": "grok-4.7",
+      "seconds": 66.3,
+      "inputTokens": 1625,
+      "outputTokens": 233,
+      "costUsd": 0.00292
+    },
+    {
+      "role": "critiqueOfB",
+      "model": "claude-opus-5",
+      "seconds": 19.7,
+      "inputTokens": 1311,
+      "outputTokens": 1364,
+      "costUsd": 0.0416725
+    },
+    {
+      "role": "critiqueOfA",
+      "model": "grok-4.7",
+      "seconds": 65,
+      "inputTokens": 2171,
+      "outputTokens": 45,
+      "costUsd": 0.002884
+    },
+    {
+      "role": "synthesizer",
+      "model": "claude-opus-5",
+      "seconds": 28.7,
+      "inputTokens": 2332,
+      "outputTokens": 2191,
+      "costUsd": 0.0674675
+    }
+  ],
+  "draftA": "REQ-1: For each year 7 student, the system evaluates two signals each school day: attendance percentage over the last 20 school days, and count of failing grades in the current term.\nREQ-2: A student is flagged at risk if either condition holds: attendance below 90% over the last 20 school days, OR two or more failing grades in the current term. Either condition alone is sufficient.\nREQ-3: The flag is visible only to the student's assigned counsellor and the head of year 7; it is not shown to any other staff, the student, or parents.\nREQ-4: The flag clears automatically when neither condition has held for 10 consecutive school days; it does not clear earlier and needs no manual action.\nAC-1: Student present 17 of the last 20 school days (85%) with no failing grades -> flagged, on the attendance condition alone.\nAC-2: Student present 18 of the last 20 school days (exactly 90%) with one failing grade this term -> not flagged, because 90% is not below 90% and 1 is fewer than 2.\nAC-3: Student with 95% attendance over the last 20 school days and two failing grades this term -> flagged, on the grades condition alone; the flag appears in the counsellor's and head of year's view the same day, so follow-up can occur within a week.\nAC-4: A flagged student whose attendance returns to 92% and who has one failing grade: the flag is still shown on school day 9 after both conditions stopped holding, and clears automatically at the end of school day 10 provided neither condition recurred in that period; if attendance drops to 88% on day 6, the 10-day count restarts.\n",
+  "draftB": "REQ-1: Flag a student for counsellor follow-up within a week if attendance over the last 20 school days is below 90%, or the student has two or more failing grades in the current term.\nREQ-2: Use both attendance and grades, and let either condition alone raise the flag.\nREQ-3: Show the flag only to the student's counsellor and the head of year.\nREQ-4: Clear the flag when neither condition has held for 10 school days, and keep it until then.\nAC-1: 17 of the last 20 school days present is 85%, below 90%, so flag the student with zero failing grades.\nAC-2: 18 of the last 20 school days present is 90%, not below 90%, and one failing grade does not flag the student.\nAC-3: Exactly two failing grades in the current term flags the student even with 20 of the last 20 school days present.\nAC-4: Neither condition for 9 school days keeps the flag; neither condition for 10 school days clears it.",
+  "reviewOfA": {
+    "findings": [],
+    "strengths": "Thresholds, audience, and the ten-school-day clear rule match the brief, and the acceptance figures recompute correctly, including the exact 90 percent boundary."
+  },
+  "reviewOfB": {
+    "findings": [
+      {
+        "id": "D-B1",
+        "severity": "P1",
+        "title": "No test for flag visibility",
+        "detail": "REQ-3 restricts the flag to the counsellor and head of year, but no acceptance criterion verifies that other staff (for example teachers or office staff) cannot see it. An untested access restriction on sensitive pupil data risks an unnoticed disclosure defect.",
+        "quote": "REQ-3: Show the flag only to the student's counsellor and the head of year."
+      },
+      {
+        "id": "D-B2",
+        "severity": "P1",
+        "title": "Within-a-week follow-up untested",
+        "detail": "The brief requires counsellor follow-up within a week. REQ-1 states the week only as wording; nothing defines notification to the counsellor or an acceptance criterion checking the flag reaches them in time, so the delivery timeframe is unverifiable.",
+        "quote": "REQ-1: Flag a student for counsellor follow-up within a week"
+      },
+      {
+        "id": "D-B3",
+        "severity": "P2",
+        "title": "Clearing window consecutiveness unclear",
+        "detail": "REQ-4 and AC-4 do not say the 10 school days must be consecutive, nor whether a condition recurring mid-window restarts the count. Without this, two implementations could both pass the stated tests with different clearing behaviour.",
+        "quote": "AC-4: Neither condition for 9 school days keeps the flag; neither condition for 10 school days clears it."
+      },
+      {
+        "id": "D-B4",
+        "severity": "P2",
+        "title": "No test above two failing grades",
+        "detail": "The rule is two or more failing grades, but acceptance criteria only cover one grade (no flag) and exactly two (flag). A case with three or more failing grades, and a case where both conditions hold together, are untested.",
+        "quote": "AC-3: Exactly two failing grades in the current term flags the student even with 20 of the last 20 school days present."
+      }
+    ],
+    "strengths": "Every figure checks out: 17/20 is 85% (below 90%, flags), 18/20 is exactly 90% (does not flag), and the 20-day, two-grade and 10-day rules match the requester's answers precisely."
+  },
+  "merge": {
+    "document": "REQ-1: For each year 7 student, the system evaluates two signals each school day: attendance percentage over the last 20 school days, and the count of failing grades in the current term.\nREQ-2: A student is flagged at risk if either condition holds: attendance below 90% over the last 20 school days, OR two or more failing grades in the current term. Either condition alone is sufficient.\nREQ-3: The flag is visible only to the student's assigned counsellor and the head of year 7; it is not shown to any other staff, the student, or parents.\nREQ-4: The flag appears in the counsellor's and head of year's view on the school day the condition is first met, so follow-up can occur within a week.\nREQ-5: The flag clears automatically when neither condition has held for 10 consecutive school days; it does not clear earlier, needs no manual action, and any recurrence of either condition within the window restarts the 10-day count.\nAC-1: Student present 17 of the last 20 school days (85%) with no failing grades -> flagged, on the attendance condition alone.\nAC-2: Student present 18 of the last 20 school days (exactly 90%) with one failing grade this term -> not flagged, because 90% is not below 90% and 1 is fewer than 2.\nAC-3: Student present 20 of the last 20 school days (100%) with exactly two failing grades this term -> flagged, on the grades condition alone; the flag is visible to the counsellor and head of year 7 the same school day, leaving the rest of the week for follow-up.\nAC-4: Student at 85% attendance with three failing grades (both conditions, grades above the threshold) -> flagged once, and remains flagged while either condition holds.\nAC-5: For a flagged student, the assigned counsellor and the head of year 7 see the flag; a class teacher, office staff, the student, and a parent opening the same record see no flag and no indication one exists.\nAC-6: A flagged student whose attendance returns to 92% and who has one failing grade: the flag is still shown on school day 9 after both conditions stopped holding, and clears automatically at the end of school day 10 provided neither condition recurred; if attendance drops to 88% on day 6, the 10-day count restarts from that day.",
+    "keptFromA": "I kept draft A's structure and wording: daily evaluation of both signals, the explicit \"either condition alone is sufficient\" statement, the restricted-audience phrasing, and its precise acceptance figures (85%, exactly 90%, day 9 / day 10 clearing with restart).",
+    "keptFromB": "I kept draft B's direct link between the flag and counsellor follow-up within a week, which became a separate requirement (REQ-4), and its plain phrasing that the flag is kept until the clearing condition is met.",
+    "resolutions": [
+      {
+        "finding": "D-B1 - No test for flag visibility",
+        "outcome": "fixed",
+        "note": "Added AC-5: counsellor and head of year 7 see the flag; class teacher, office staff, student and parent see nothing, not even an indication one exists."
+      },
+      {
+        "finding": "D-B2 - Within-a-week follow-up untested",
+        "outcome": "fixed",
+        "note": "Added REQ-4 (flag appears to counsellor and head of year on the school day the condition is first met) and tested it in AC-3, so the week-long follow-up window is verifiable."
+      },
+      {
+        "finding": "D-B3 - Clearing window consecutiveness unclear",
+        "outcome": "fixed",
+        "note": "REQ-5 now states 10 consecutive school days with any recurrence restarting the count, and AC-6 tests both the day 9 / day 10 boundary and a restart after a drop to 88% on day 6."
+      },
+      {
+        "finding": "D-B4 - No test above two failing grades",
+        "outcome": "fixed",
+        "note": "Added AC-4: three failing grades with 85% attendance, covering both a count above two and both conditions holding together, flagged once."
+      }
+    ]
+  }
+}

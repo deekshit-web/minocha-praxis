@@ -48,15 +48,18 @@ It stops at **Your answers**: four questions with suggested answers. Have them p
 
 ## 5. The catch (30 s)
 
-Drafts are written apart ("cannot see each other"). **B reviews A** turns red: *caught a serious defect*. Click
-it: Draft A used **age** to tighten the lending limit. That is unlawful.
+Drafts are written apart ("cannot see each other"). These steps are a **recording of a real run**: the badge says
+"Recorded live call" with its real time and cost. Click **A reviews B**: Model A found **4 findings** in Model B's
+draft, including no rule for an applicant who fails both checks and no source for the new loan payment. Click
+**B reviews A**: **0 findings**.
 
-> "A single agent would have shipped that. Model B caught it, Model C triaged it in a tenth of a second,
-> and the merge had to fix it."
+> "Nothing here is planted. These are real gaps one model found in the other's work, and the merge fixed all of
+> them. Note it is lopsided: in our ten recorded runs, Model A's reviews found far more than Model B's. That's
+> the kind of thing you only learn by running both."
 
 ## 6. Break it yourself (40 s)
 
-Scroll to **Try to break it**. Click **Use draft A's version**. The check fails: "age" is a protected
+Scroll to **Try to break it**. Click **Try a common mistake** (it loads the classic wrong figure, here "age" as an input). The check fails: "age" is a protected
 attribute. When the run reaches **Code checks** it stops, and nothing goes to a person.
 
 > "These checks are code, not a model grading a model."
@@ -105,23 +108,29 @@ there is a rollback plan.
 The **What happened** recap tells every stage in one sentence. The output opens with **One AI alone would have
 handed you** next to **What you get instead**.
 
-> "Eight stages. Each one caught something the others didn't. A live run on your own problem costs about $3
-> and takes about an hour."
+> "Eight stages. Each one caught something the others didn't. A live run on your own problem costs about 30
+> cents in model calls and about 25 minutes, most of it staging and rollout."
 
 ## Hard questions, straight answers
 
 - **"Is this real?"** Partly, and the page says which parts. The proof run, the Jev decisions, the checks and
-  the tests are real; the diagram marks steps as **real code**, **live** or **replay**. Drafts and reviews are
-  replayed so the booth costs nothing, and the bugs in them were planted. The proof box links the full
-  transcript of the real run.
-- **"You wrote both the mistake and the catch."** In the replay, yes. Say so. The real evidence is the proof
-  run, where a model caught a mistake nobody planted, and the full transcript is downloadable. Recording real
-  runs for every workflow is the next step.
+  the tests are real; the diagram marks steps as **real code**, **live**, **recorded** or **replay**. Drafts,
+  reviews and merges replay real recorded runs, so the booth costs nothing. The architecture, code review and
+  deployment stages are still prepared, and the bug the tests catch was planted to show the mechanism.
+- **"You wrote both the mistake and the catch."** Not any more. Every workflow's drafts, reviews and merge are a
+  recording of a real run, labelled "Recorded live call" with its real time, tokens and cost. What they caught is
+  what the models caught.
 - **"Model C's triage just reads the labels."** Here, yes, and the caption says a plain rule would decide the
   same. Model C earns its keep on calls with no labels, like routing.
-- **"How often does cross-review actually catch things?"** The proof is one run. A measured evaluation across
-  many cases, against a single-model baseline, is built and pending. Don't claim a rate we haven't measured.
+- **"How often does cross-review actually catch things?"** Eleven real runs so far: one caught a P0 (the 17-day
+  deadline in the proof box) and ten caught 34 P1/P2 gaps. A measured comparison against a single model is built
+  and pending. Don't claim a rate we haven't measured.
 - **"What stops the models colluding?"** They are different vendors, they never see each other's drafts, the
   checks are code, the tests are written from the PRD and not the code, and a person approves at four gates.
-- **"Cost?"** About $3 and an hour for a feature, $1.50–2 for a document. Each Model C decision costs about
-  $0.00002.
+- **"Cost?"** Measured on 50 real calls: the two-model panel costs $0.09–0.22 a run. A whole feature build comes
+  to about $0.30 in model calls and about 25 minutes; a document $0.09–0.22 and 1–5 minutes. Each Model C decision
+  costs about $0.00002.
+- **"Did the real runs catch anything?"** Yes, and honestly: across ten real panel runs the reviews raised 34 points,
+  all P1 or P2 and none P0. They were real gaps, like an untested access rule or practice problems that were never
+  written, and every merge resolved them, rejecting some with reasons. The dramatic catches in earlier replays were
+  planted, and are gone.

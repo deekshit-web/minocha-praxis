@@ -619,6 +619,8 @@
         if (step.actor === "jev-1.14.0" && state !== "idle") {
           const result = decisions[flow.id + ":" + step.id];
           meta = result && result.live ? "live · " + result.ms + " ms" : result && !result.pending ? "replay · <$0.01" : "asking…";
+        } else if (step.kind === "llm" && step.recorded && state !== "idle") {
+          meta = "recorded · " + duration(step.seconds * (state === "running" ? play.progress : 1)) + " · $" + ((step.estimatedCostUsd || 0) * (state === "running" ? play.progress : 1)).toFixed(3);
         } else if (step.kind === "llm") {
           const share = state === "running" ? play.progress : 1;
           meta = state === "idle" ? "simulated call" : duration(step.seconds * share) + " · " + money((step.estimatedCostUsd || 0) * share);
@@ -626,8 +628,8 @@
         else if (step.kind === "tool" || step.kind === "check") meta = isReal(step) ? "real code" : "replay";
         const label = { idle: "", running: step.kind === "llm" ? "thinking…" : "working…", waiting: "your turn", done: "done", flagged: "flagged", blocked: "blocked: " + liveFailures().length + " failed" }[state];
         const flaggedLabel = step.id.startsWith("reviewOf") || step.id === "archReview" || step.id === "codeReview" ? "caught a serious defect" : step.id === "testsRed" ? "1 test failing" : "flagged";
-        if (state === "done" && (step.id === "archReview" || step.id === "codeReview")) {
-          const findings = (step.output.match(/^(AR|CR)-\d/gm) || []).length;
+        if (state === "done" && (step.id === "archReview" || step.id === "codeReview" || step.id === "reviewOfA" || step.id === "reviewOfB")) {
+          const findings = (step.output.match(/^(AR|CR|D-[AB])-?\d/gm) || []).length;
           return [kicker, name, meta, findings + " finding" + (findings === 1 ? "" : "s")];
         }
         return [kicker, name, meta, state === "flagged" ? flaggedLabel : label];
@@ -794,7 +796,8 @@
         const badge = document.createElement("span");
         badge.className = "badge" + (step.kind === "llm" ? " llm" : "");
         const liveDecision = step.actor === "jev-1.14.0" && decisions[flow.id + ":" + step.id] && decisions[flow.id + ":" + step.id].live;
-        badge.textContent = step.actor === "jev-1.14.0" ? (liveDecision ? "Live decision" : "Simulated decision") : KIND_BADGE[step.kind];
+        badge.textContent = step.actor === "jev-1.14.0" ? (liveDecision ? "Live decision" : "Simulated decision") : step.recorded ? "Recorded live call" : KIND_BADGE[step.kind];
+        if (step.recorded) badge.style.background = "#d9efe2";
         if (liveDecision) badge.style.background = "#d9efe2";
         heading.append(badge, document.createTextNode(step.title + (step.kind === "llm" ? " · " + modelLabel(step.actor) : "")));
         const meta = document.createElement("p");
@@ -811,6 +814,8 @@
             ? share === 0
               ? "Request sent to " + modelLabel(step.actor) + " (simulated). Waiting for the first token… " + step.tokens.input.toLocaleString() + " tokens in."
               : "Streaming (simulated): " + Math.round(step.tokens.output * share).toLocaleString() + " of about " + step.tokens.output.toLocaleString() + " output tokens · " + duration(step.seconds * play.progress) + " of about " + duration(step.seconds) + "."
+            : step.recorded
+            ? "Recorded live on " + new Date(flow.recording.recordedAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + ": this is what " + modelLabel(step.actor) + " actually wrote. It took " + duration(step.seconds) + ", read " + step.tokens.input.toLocaleString() + " tokens, wrote " + step.tokens.output.toLocaleString() + ", and cost $" + (step.estimatedCostUsd || 0).toFixed(3) + ". Replaying it costs nothing."
             : step.kind === "llm"
             ? "Not called. A live run would take about " + duration(step.seconds) + " and cost about " + money(step.estimatedCostUsd) + " (" + step.tokens.input.toLocaleString() + " tokens in, " + step.tokens.output.toLocaleString() + " out)."
             : (step.kind === "tool" || step.kind === "check") && !isReal(step) && step.kind !== "input"
@@ -836,7 +841,16 @@
           const done = state === "done" || state === "flagged";
           const firstToken = Math.max(1, Math.round(step.seconds * FIRST_TOKEN));
           const real = decision && decision.live ? decision : null;
-          const rows = real
+          const rows = step.recorded
+            ? [
+                ["Model", step.actor + " · " + vendor.api],
+                ["Request", "A recorded live call, " + new Date(flow.recording.recordedAt).toISOString().slice(0, 16).replace("T", " ") + " UTC"],
+                ["Tokens", step.tokens.input.toLocaleString() + " in · " + step.tokens.output.toLocaleString() + " out"],
+                ["Timing", "took " + duration(step.seconds)],
+                ["Stop reason", vendor.stop],
+                ["Cost", "$" + (step.estimatedCostUsd || 0).toFixed(4) + ", real"],
+              ]
+            : real
             ? [
                 ["Model", (real.model || step.actor) + " · " + vendor.api],
                 ["Request", "A live call; its id stays on the server"],
@@ -851,7 +865,7 @@
             ["Tokens", step.tokens.input.toLocaleString() + " in · " + (done ? step.tokens.output.toLocaleString() : share ? Math.round(step.tokens.output * share).toLocaleString() + "…" : "0") + " out" + (vendor.limit ? " · limit " + vendor.limit : "")],
             ["Timing", done ? "first token " + duration(firstToken) + " · total " + duration(step.seconds) : state === "running" ? "running · " + duration(step.seconds * play.progress) : "not started"],
             ["Stop reason", done ? vendor.stop : "-"],
-            ["Cost if live", money(step.estimatedCostUsd)],
+            ["Cost if live", money(step.estimatedCostUsd) + (step.calibrated && recordings.count ? " (estimate, calibrated on " + recordings.calls + " real calls)" : " (estimate)")],
           ];
           const record = document.createElement("dl");
           record.className = "record tech";
@@ -1007,7 +1021,7 @@
           const facts = add("dl");
           for (const [name, value] of live.facts) facts.append(add("dt", name), add("dd", value));
           left.appendChild(facts);
-          left.appendChild(add("p", "What the AI wrote (edit it)", "label"));
+          left.appendChild(add("p", "Figures to check (edit them)", "label"));
           for (const claim of live.claims) {
             const label = add("label", claim.label);
             const input = document.createElement("input");
@@ -1018,7 +1032,8 @@
               claimEdits[claim.id] = input.value;
               afterEdit();
             });
-            const draft = add("button", "Use draft " + claim.draftFrom + "'s version", "draft");
+            const draft = add("button", "Try a common mistake", "draft");
+            draft.title = "Load a typical wrong figure for this case and watch the checks catch it.";
             draft.type = "button";
             draft.addEventListener("click", () => {
               claimEdits[claim.id] = claim.draft;
@@ -1170,9 +1185,10 @@
         const out = (id) => (flow.steps.find((step) => step.id === id) || { output: "" }).output;
         const firstLine = (text) => text.split("\n")[0].replace(/\.$/, "");
         const caught = serious(out("reviewOfA") + "\n" + out("reviewOfB"));
+        const raised = (out("reviewOfA") + "\n" + out("reviewOfB")).match(/^D-[AB]\d+ · P\d/gm) || [];
         const fixed = (out("merge").match(/Defects resolved: (\d+)/) || [0, "all"])[1];
         if (name === "PRD")
-          return "Model C routed the request to the full panel in a fraction of a second. Model A asked " + questionsAndAnswers().length + " questions, then Model A and Model B each wrote the requirements without seeing the other's and reviewed each other's. " + (caught.length ? "The review caught a serious problem: " + listOf(caught) + ". " : "") + "Model C triaged the findings, and Model A merged both and fixed " + fixed + " defects, and code checks passed. " + out("approve");
+          return "Model C routed the request to the full panel in a fraction of a second. Model A asked " + questionsAndAnswers().length + " questions, then Model A and Model B each wrote the requirements without seeing the other's and reviewed each other's. " + (caught.length ? "The review caught a serious problem: " + listOf(caught) + ". " : raised.length ? "Their reviews raised " + raised.length + " point" + (raised.length === 1 ? "" : "s") + ", none of them serious. " : "Neither review found a defect. ") + "Model C triaged the findings, and Model A merged both and fixed " + fixed + " defects, and code checks passed. " + out("approve");
         if (name === "Architecture") {
           const found = titles(out("archReview"));
           return "Model A designed the components, data and the files it may change. Model B's review found " + found.length + " issue" + (found.length === 1 ? "" : "s") + " (" + listOf(found) + ")" + (serious(out("archReview")).length ? ", one of them serious," : "") + " and Model A revised the design to fix them. Design checks passed. " + out("archApprove");
@@ -1198,7 +1214,7 @@
         if (name === "Deployment") return "The release gate re-checked approvals, tests and data rules. The build went to staging and passed its smoke tests, and Model C recommended go. " + out("deployApprove") + " " + out("production").split("\n").slice(0, 2).join(" ");
         if (name === "Research") return "Model C routed the request to the full panel in a fraction of a second. The relevant policies and records were looked up first, so both drafts work from the same facts: " + (out("sources").match(/^.+$/gm) || []).length + " sources.";
         if (name === "Drafts") return "Model A and Model B each wrote a draft without seeing the other's, so they could not copy each other's mistakes.";
-        if (name === "Cross-review") return "Each model reviewed the other's draft. " + (caught.length ? "Caught: " + listOf(caught) + ". " : "") + "Model C triaged every finding and marked which ones the merge must fix.";
+        if (name === "Cross-review") return "Each model reviewed the other's draft. " + (caught.length ? "Caught: " + listOf(caught) + ". " : raised.length ? raised.length + " point" + (raised.length === 1 ? "" : "s") + " raised, none serious. " : "Neither found a defect. ") + "Model C triaged every finding and marked which ones the merge must fix.";
         if (name === "Merge") return "Model A merged the two drafts and had to resolve every defect either review raised: " + fixed + " resolved.";
         if (name === "Checks") return "Plain code checks, with no AI involved, recomputed the figures: " + (liveResults().map((check) => check.name.toLowerCase()).join("; ") || "all passed") + ".";
         if (name === "Approval") return out("approve");
@@ -1485,6 +1501,12 @@
             doc.appendChild(node);
           }
           const contrast = flow.contrast;
+          if (!contrast) {
+            const none = document.createElement("p");
+            none.className = "why";
+            none.textContent = "In this recorded run, neither review found a defect worth putting side by side. That happens with real models: the panel is there for the times one model gets it wrong.";
+            card.append(eyebrow, title, meta, none);
+          }
           const vs = document.createElement("div");
           vs.className = "vs";
           const side = (className, heading, quote, sub) => {
@@ -1513,7 +1535,8 @@
           const full = document.createElement("p");
           full.className = "label";
           full.textContent = "The full output";
-          card.append(eyebrow, title, meta, vs, why, full, doc);
+          if (contrast) card.append(eyebrow, title, meta, vs, why, full, doc);
+          else card.append(full, doc);
         }
         if (scrollToOutput) {
           scrollToOutput = false;
@@ -1697,6 +1720,17 @@
         if (wanted && (!flow || flow.id !== wanted) && domains.some((domain) => domain.workflows.some((workflow) => workflow.id === wanted))) chooseWorkflow(wanted);
       });
 
+      function proofRecordings() {
+        const proof = byId("proof");
+        if (!recordings.count || proof.querySelector(".recorded-note")) return;
+        const note = document.createElement("p");
+        note.className = "recorded-note";
+        note.textContent = "Since then, the drafting and review panel of every workflow on this page has also been run for real: " + recordings.count + " runs, " + recordings.calls + " model calls, $" + recordings.costUsd.toFixed(2) + " in all. The replay shows those recordings as they happened, including the reviews that found nothing serious.";
+        const anchor = proof.querySelector(".meta");
+        if (anchor) anchor.before(note);
+        else proof.appendChild(note);
+      }
+
       function renderProof(run) {
         const card = byId("proof");
         clear(card);
@@ -1742,6 +1776,7 @@
         const transcriptLine = add("p");
         transcriptLine.appendChild(transcript);
         card.append(row, summary, plainly, quote, why, candour, transcriptLine, details);
+        proofRecordings();
         card.hidden = false;
       }
 
@@ -1777,15 +1812,26 @@
 
       // Whether Model C's decisions run live here, so the page never claims "no model is called" when one is.
       let decisionsLive = false;
+      let recordings = { count: 0, calls: 0, costUsd: 0 };
       fetch("/api/status")
         .then((response) => (response.ok ? response.json() : null))
         .then((status) => {
           decisionsLive = !!(status && status.decisionsLive);
-          if (!decisionsLive) return;
+          if (status && status.recordings) recordings = status.recordings;
+          if (recordings.count) {
+            const proof = byId("proof");
+            if (!proof.hidden) proofRecordings();
+          }
+          if (!decisionsLive && !recordings.count) return;
           const badge = byId("sim");
-          badge.lastChild.textContent = "Replayed models · Model C live · under a cent";
+          badge.lastChild.textContent = (recordings.count ? "Real recorded runs" : "Replayed models") + (decisionsLive ? " · Model C live" : "") + " · under a cent";
           badge.title = "The drafting, review and coding models are replayed and cost nothing. Model C's small decisions run live on a decision model, for a fraction of a cent each.";
-          text("lede", "AI writes fluently and is sometimes confidently wrong. Here two different AIs do the work separately and check each other, plain code checks verify the result, and a person approves it, so mistakes are caught before they reach you. The drafting and review models are replayed, so they cost nothing; Model C's small decisions run live, for a fraction of a cent. The run summarised below is real.");
+          text(
+            "lede",
+            "AI writes fluently and is sometimes confidently wrong. Here two different AIs do the work separately and check each other, plain code checks verify the result, and a person approves it, so mistakes are caught before they reach you. " +
+              (recordings.count ? "The drafts, reviews and merge replay real recorded runs of both models, so they cost nothing now" : "The drafting and review models are replayed, so they cost nothing") +
+              (decisionsLive ? "; Model C's small decisions run live, for a fraction of a cent." : "."),
+          );
           if (flow) render();
         })
         .catch(() => {});
