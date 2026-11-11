@@ -217,60 +217,154 @@ const RISK: Record<string, { level: "high" | "medium"; data: boolean }> = {
   "logistics-document": { level: "medium", data: false },
 };
 
-/** Model C's routing decision: how much checking the request needs. */
-function routeDecision(spec: WorkflowSpec): string {
+/** One typed question for the decision model. `expect` and the confidence range drive the replay's answer. */
+export interface DecisionQuestion {
+  key: string;
+  type: "noul" | "choice";
+  /** What the decision model is asked. */
+  instructions: string;
+  /** Choice questions: each option and what it means. */
+  criteria?: Record<string, string>;
+  /** How the question reads on the page. */
+  label: string;
+  expect: string;
+  confidence: [number, number];
+}
+
+export type DecisionAnswer = { type: "noul"; noul: number } | { type: "choice"; choice: string; probabilities: Record<string, number> };
+
+/** A decision the decision model makes: what it reads, what it is asked, and how its answers are concluded. */
+export interface Decision {
+  state: string;
+  questions: DecisionQuestion[];
+  conclude(answers: Record<string, DecisionAnswer>): string;
+}
+
+const yesNo = (answer: DecisionAnswer | undefined) => answer?.type === "noul" && answer.noul >= 0.5;
+
+/** The questions behind each of Model C's steps, built from the workflow's own content. */
+export function decisionFor(spec: WorkflowSpec, stepId: string): Decision | null {
   const risk = RISK[spec.id] ?? { level: "high", data: true };
-  const top = confidence(`${spec.id}:risk`, 0.78, 0.93);
-  const rest = (1 - Number(top)).toFixed(2);
-  const low = (Number(rest) * 0.25).toFixed(2);
-  const other = (Number(rest) - Number(low)).toFixed(2);
-  const distribution = risk.level === "high" ? `low ${low} · medium ${other} · high ${top}` : `low ${low} · medium ${top} · high ${other}`;
-  return [
-    "Q1 · choice · How risky is this change?",
-    `   → ${risk.level} · ${top}   (${distribution})`,
-    "Q2 · yes/no · Does it touch personal, health or financial data?",
-    `   → ${risk.data ? "yes" : "no"} · ${confidence(`${spec.id}:data`, 0.88, 0.98)}`,
-    "Q3 · yes/no · Can one model handle it safely on its own?",
-    `   → no · ${confidence(`${spec.id}:single`, 0.84, 0.96)}`,
-    `Decision: the full panel. Two independent models check each other, and a person signs off at every gate.`,
-    "A low-risk request, such as fixing a typo, would go to one model and a person, at a fraction of the cost.",
-  ].join("\n");
+  if (stepId === "route")
+    return {
+      state: `Project: ${spec.project}\nRequested by: ${spec.requester}\nRequest: ${spec.brief}`,
+      questions: [
+        {
+          key: "risk",
+          type: "choice",
+          instructions: "How risky is this change if it is wrong?",
+          criteria: {
+            low: "A small, contained change; a mistake is cheap and easy to undo.",
+            medium: "A mistake costs money or time, or misleads customers or staff, but harms no one's rights, health or finances.",
+            high: "A mistake could harm someone's health, privacy, finances or legal rights, or breach a regulation.",
+          },
+          label: "How risky is this change?",
+          expect: risk.level,
+          confidence: [0.78, 0.93],
+        },
+        { key: "data", type: "noul", instructions: "Does this change touch personal, health or financial data about people?", label: "Does it touch personal, health or financial data?", expect: risk.data ? "yes" : "no", confidence: [0.88, 0.98] },
+        { key: "single", type: "noul", instructions: "Can a single AI model, working alone with no independent review, handle this change safely?", label: "Can one model handle it safely on its own?", expect: "no", confidence: [0.84, 0.96] },
+      ],
+      conclude(answers) {
+        const level = answers.risk?.type === "choice" ? answers.risk.choice : "high";
+        return level === "low" && yesNo(answers.single)
+          ? "Decision: one model and a person. A low-risk change does not need the full panel."
+          : "Decision: the full panel. Two independent models check each other, and a person signs off at every gate.\nA low-risk request, such as fixing a typo, would go to one model and a person, at a fraction of the cost.";
+      },
+    };
+  if (stepId === "triage") {
+    const findings = [...`${spec.reviewOfA}\n${spec.reviewOfB}`.matchAll(/^(D-[AB]\d+) · (P\d) · (.+)$/gm)];
+    return {
+      state: `${spec.reviewOfA}\n\n${spec.reviewOfB}`,
+      questions: findings.map(([, id, severity, title]) => ({
+        key: (id ?? "").replace("-", "_"),
+        type: "noul" as const,
+        instructions: `Must finding ${id} (${title}) be fixed before this can be approved?`,
+        label: `Must the next step fix ${id} (${(title ?? "").toLowerCase()})?`,
+        expect: severity === "P0" || severity === "P1" ? "yes" : "no",
+        confidence: (severity === "P0" ? [0.95, 0.99] : severity === "P1" ? [0.68, 0.9] : [0.65, 0.88]) as [number, number],
+      })),
+      conclude(answers) {
+        const must = findings.map(([, id]) => id ?? "").filter((id) => yesNo(answers[id.replace("-", "_")]));
+        return `Decision: ${must.length ? `must fix ${must.join(", ")}` : "nothing blocks"}.`;
+      },
+    };
+  }
+  if (stepId === "reviewTriage") {
+    const revise = spec.codeReview?.revise ?? "";
+    const findings = [...(spec.codeReview?.review ?? "").matchAll(/^(CR-\d+) · (P\d) · (.+)$/gm)];
+    return {
+      state: `${spec.codeReview?.review ?? ""}\n\nThe change:\n${spec.code ?? ""}`,
+      questions: findings.map(([, id, severity, title]) => {
+        const apply = new RegExp(`^${id} applied`, "m").test(revise);
+        return {
+          key: (id ?? "").replace("-", "_"),
+          type: "noul" as const,
+          instructions: `Is review point ${id} (${title}) worth applying before release, rather than declining it?`,
+          label: `Worth applying ${id} (${(title ?? "").toLowerCase()})?`,
+          expect: apply ? "yes" : "no",
+          confidence: (apply ? (severity === "P1" ? [0.86, 0.97] : [0.6, 0.78]) : [0.7, 0.88]) as [number, number],
+        };
+      }),
+      conclude: () => "Decision: apply the points marked yes; the builder records why it declines the rest.",
+    };
+  }
+  if (stepId === "goNoGo") {
+    const smoke = spec.deploy?.smoke ?? "";
+    const passed = (smoke.match(/^✓/gm) ?? []).length;
+    const rollback = (spec.deploy?.production ?? "").match(/^Rollback plan:.*$/m)?.[0] ?? "";
+    return {
+      state: `Smoke tests on staging:\n${smoke}\n\n${rollback}`,
+      questions: [
+        { key: "smoke", type: "noul", instructions: "Did every smoke test pass?", label: `Did every smoke test pass (${passed} of ${passed})?`, expect: "yes", confidence: [0.97, 0.99] },
+        { key: "rollback", type: "noul", instructions: "Is there a clear plan to roll this back if it goes wrong?", label: "Is there a tested rollback plan?", expect: "yes", confidence: [0.9, 0.98] },
+        { key: "risk", type: "noul", instructions: "Is there any sign this release would harm real users?", label: "Any sign of risk to real users?", expect: "no", confidence: [0.86, 0.95] },
+      ],
+      conclude: (answers) =>
+        yesNo(answers.smoke) && yesNo(answers.rollback) && !yesNo(answers.risk) ? "Recommendation: go. A person makes the final call." : "Recommendation: no-go. A person should look before anything ships.",
+    };
+  }
+  return null;
 }
 
-/** Model C's triage of review findings: which ones the next step must fix. */
-function triageDecision(spec: WorkflowSpec, reviews: string, key: string): string {
-  const findings = [...reviews.matchAll(/^((?:D-[AB]|AR-|CR-)\d+) · (P\d) · (.+)$/gm)];
-  const lines = findings.map(([, id, severity, title]) => {
-    const yes = severity === "P0" || severity === "P1";
-    const p = severity === "P0" ? confidence(`${spec.id}:${key}:${id}`, 0.95, 0.99) : severity === "P1" ? confidence(`${spec.id}:${key}:${id}`, 0.68, 0.9) : confidence(`${spec.id}:${key}:${id}`, 0.12, 0.35);
-    return `Must the next step fix ${id} (${(title ?? "").toLowerCase()})?  → ${yes ? "yes" : "no"} · ${yes ? p : (1 - Number(p)).toFixed(2)}`;
+/** The answers a replay shows: the expected answer, with a confidence fixed per workflow and question. */
+export function replayAnswers(spec: WorkflowSpec, stepId: string, decision: Decision): Record<string, DecisionAnswer> {
+  const answers: Record<string, DecisionAnswer> = {};
+  for (const question of decision.questions) {
+    const p = Number(confidence(`${spec.id}:${stepId}:${question.key}`, question.confidence[0], question.confidence[1]));
+    if (question.type === "noul") answers[question.key] = { type: "noul", noul: question.expect === "yes" ? p : Number((1 - p).toFixed(2)) };
+    else {
+      const options = Object.keys(question.criteria ?? {});
+      const rest = 1 - p;
+      const others = options.filter((option) => option !== question.expect);
+      const probabilities: Record<string, number> = {};
+      others.forEach((option, index) => (probabilities[option] = Number((rest * (index === 0 ? 0.25 : 0.75)).toFixed(2))));
+      probabilities[question.expect] = p;
+      answers[question.key] = { type: "choice", choice: question.expect, probabilities };
+    }
+  }
+  return answers;
+}
+
+/** How a decision reads on the page, whether the answers are live or replayed. */
+export function formatDecision(decision: Decision, answers: Record<string, DecisionAnswer>): string {
+  const lines = decision.questions.map((question) => {
+    const answer = answers[question.key];
+    if (!answer) return `${question.label}  → no answer`;
+    if (answer.type === "noul") {
+      const yes = answer.noul >= 0.5;
+      return `${question.label}  → ${yes ? "yes" : "no"} · ${(yes ? answer.noul : 1 - answer.noul).toFixed(2)}`;
+    }
+    const options = Object.keys(question.criteria ?? answer.probabilities);
+    const spread = options.map((option) => `${option} ${(answer.probabilities[option] ?? 0).toFixed(2)}`).join(" · ");
+    return `${question.label}  → ${answer.choice} · ${(answer.probabilities[answer.choice] ?? 0).toFixed(2)}  (${spread})`;
   });
-  const must = findings.filter(([, , severity]) => severity === "P0" || severity === "P1").map(([, id]) => id);
-  return [...lines, `Decision: ${must.length ? `must fix ${must.join(", ")}` : "nothing blocks"}.`].join("\n");
+  return [...lines, decision.conclude(answers)].join("\n");
 }
 
-/** Model C's call on which code-review points are worth applying, matching what the builder then does. */
-function applyDecision(spec: WorkflowSpec): string {
-  const revise = spec.codeReview?.revise ?? "";
-  const findings = [...(spec.codeReview?.review ?? "").matchAll(/^(CR-\d+) · (P\d) · (.+)$/gm)];
-  const lines = findings.map(([, id, severity, title]) => {
-    const apply = new RegExp(`^${id} applied`, "m").test(revise);
-    const p = apply ? confidence(`${spec.id}:cr:${id}`, severity === "P1" ? 0.86 : 0.6, severity === "P1" ? 0.97 : 0.78) : confidence(`${spec.id}:cr:${id}`, 0.7, 0.88);
-    return `Worth applying ${id} (${(title ?? "").toLowerCase()})?  → ${apply ? "yes" : "no"} · ${p}`;
-  });
-  return [...lines, "Decision: apply the points marked yes; the builder records why it declines the rest."].join("\n");
-}
-
-/** Model C's go/no-go on the staging results; a person still makes the call. */
-function goDecision(spec: WorkflowSpec): string {
-  const smoke = spec.deploy?.smoke ?? "";
-  const passed = (smoke.match(/^✓/gm) ?? []).length;
-  return [
-    `Did every smoke test pass (${passed} of ${passed})?  → yes · ${confidence(`${spec.id}:smoke`, 0.97, 0.99)}`,
-    `Is there a tested rollback plan?  → yes · ${confidence(`${spec.id}:rollback`, 0.9, 0.98)}`,
-    `Any sign of risk to real users?  → no · ${confidence(`${spec.id}:users`, 0.86, 0.95)}`,
-    "Recommendation: go. A person makes the final call.",
-  ].join("\n");
+function decisionText(spec: WorkflowSpec, stepId: string): string {
+  const decision = decisionFor(spec, stepId);
+  return decision ? formatDecision(decision, replayAnswers(spec, stepId, decision)) : "";
 }
 
 /** Both shapes share the panel: two walled-off drafts, crossed reviews, one merge, code checks, a person. */
@@ -281,7 +375,7 @@ function panel(spec: WorkflowSpec, startCol: number, inputs: string[]): Step[] {
     llm({ id: "draftB", phase: 0, col: c, row: 2, title: "Draft B", caption: "Model B writes its own draft, separately. Two different models bring two different sets of blind spots.", given: "The same brief and material. Not draft A.", output: spec.draftB, after: inputs }, GROK, SIZE.draftGrok),
     llm({ id: "reviewOfB", phase: 0, col: c + 1, row: 0, title: "A reviews B", caption: "Model A reviews Model B's draft for defects. No model reviews its own work.", given: "Draft B only.", output: spec.reviewOfB, after: ["draftB"], verdict: reviewVerdict(spec.reviewOfB) }, CLAUDE, SIZE.reviewClaude),
     llm({ id: "reviewOfA", phase: 0, col: c + 1, row: 2, title: "B reviews A", caption: "Model B reviews Model A's draft the same way.", given: "Draft A only.", output: spec.reviewOfA, after: ["draftA"], verdict: reviewVerdict(spec.reviewOfA) }, GROK, SIZE.reviewGrok),
-    llm({ id: "triage", phase: 0, col: c + 2, row: 1, title: "Triage", caption: "Model C, a fast decision model, decides which findings the merge must fix, each with a confidence score. It costs a fraction of a cent.", given: "Both reviews' findings.", output: triageDecision(spec, `${spec.reviewOfA}\n${spec.reviewOfB}`, "prd"), after: ["reviewOfA", "reviewOfB"] }, JEV, SIZE.decide),
+    llm({ id: "triage", phase: 0, col: c + 2, row: 1, title: "Triage", caption: "Model C, a fast decision model, decides which findings the merge must fix, each with a confidence score. It costs a fraction of a cent.", given: "Both reviews' findings.", output: decisionText(spec, "triage"), after: ["reviewOfA", "reviewOfB"] }, JEV, SIZE.decide),
     llm({ id: "merge", phase: 0, col: c + 3, row: 1, title: "Merge", caption: "Model A merges both drafts and has to resolve every finding Model C marked.", given: "Both drafts, both reviews and the triage.", output: spec.synthesis, after: ["triage"], verdict: "pass" }, CLAUDE, SIZE.merge),
     step({ id: "checks", kind: "check", phase: 0, col: c + 4, row: 1, title: "Code checks", actor: "No model", caption: "Plain code checks verify the result. No model is involved here.", given: "The merged result.", output: spec.checks.map((item) => `✓ ${item.name}\n  ${item.detail}`).join("\n"), after: ["merge"], seconds: 1, verdict: "pass" }),
     step({ id: "approve", kind: "human", phase: 0, col: c + 5, row: 1, title: "You approve", actor: "Person", caption: "A person approves. Nothing moves forward without it.", given: "The checked result, both drafts, and both reviews.", output: spec.approval, after: ["checks"], seconds: 0 }),
@@ -332,7 +426,7 @@ export function expand(spec: WorkflowSpec): Workflow {
     const deploy = spec.deploy;
     steps = [
       brief,
-      llm({ id: "route", phase: 0, col: 1, row: 1, title: "Route", caption: "Model C, a fast decision model, judges how risky the request is and how much checking it needs, in about a tenth of a second.", given: "The brief.", output: routeDecision(spec), after: ["brief"] }, JEV, SIZE.decide),
+      llm({ id: "route", phase: 0, col: 1, row: 1, title: "Route", caption: "Model C, a fast decision model, judges how risky the request is and how much checking it needs, in about a tenth of a second.", given: "The brief.", output: decisionText(spec, "route"), after: ["brief"] }, JEV, SIZE.decide),
       llm({ id: "clarify", phase: 0, col: 2, row: 1, title: "Questions", caption: "Model A asks the few questions whose answers change what gets built.", given: "The brief.", output: spec.questions ?? "", after: ["route"] }, CLAUDE, SIZE.clarify),
       step({ id: "answers", kind: "human", phase: 0, col: 3, row: 1, title: "Your answers", actor: "Requester", caption: "The requester answers. Their answers become the agreed assumptions.", given: "The questions.", output: spec.answers ?? "", after: ["clarify"], seconds: 0 }),
       ...panel(spec, 4, ["answers"]),
@@ -343,7 +437,7 @@ export function expand(spec: WorkflowSpec): Workflow {
       step({ id: "archApprove", kind: "human", phase: 1, col: 4, row: 1, title: "You approve", actor: "Person", caption: "A person approves the design. Code starts only after this.", given: "The architecture, the review and the checks.", output: arch?.approval ?? "", after: ["archChecks"], seconds: 0 }),
       llm({ id: "code", phase: 2, col: 0, row: 1, title: "Write code", caption: "Model A writes the change, and may touch only the files the approved design allows.", given: "The approved PRD and architecture. Not the tests.", output: spec.code ?? "", after: ["archApprove"] }, CLAUDE, SIZE.code),
       llm({ id: "codeReview", phase: 2, col: 1, row: 1, title: "Code review", caption: "Model B reviews Model A's code, as a second engineer would.", given: "The code change and the architecture.", output: review?.review ?? "", after: ["code"], verdict: reviewVerdict(review?.review ?? "") }, GROK, SIZE.codeReview),
-      llm({ id: "reviewTriage", phase: 2, col: 2, row: 1, title: "Decide", caption: "Model C decides which review points are worth applying, each with a confidence score.", given: "The review's points.", output: applyDecision(spec), after: ["codeReview"] }, JEV, SIZE.decide),
+      llm({ id: "reviewTriage", phase: 2, col: 2, row: 1, title: "Decide", caption: "Model C decides which review points are worth applying, each with a confidence score.", given: "The review's points.", output: decisionText(spec, "reviewTriage"), after: ["codeReview"] }, JEV, SIZE.decide),
       llm({ id: "codeRevise", phase: 2, col: 3, row: 1, title: "Apply review", caption: "Model A applies the points Model C marked, and records why it declines the rest.", given: "The code, the review and the decision.", output: review?.revise ?? "", after: ["reviewTriage"] }, CLAUDE, SIZE.codeRevise),
       llm({ id: "unitTests", phase: 2, col: 4, row: 1, title: "Unit tests", caption: "Model A writes unit tests for its own code.", given: "Its own code.", output: spec.unitScript ?? "", after: ["codeRevise"] }, CLAUDE, SIZE.unitTests),
       step({ id: "unitRun", kind: "tool", phase: 2, col: 5, row: 1, title: "Run unit tests", actor: "Test runner", caption: "Model A's unit tests pass. But an author tests what they thought of; the next stage tests what was asked for.", given: "Claude's unit tests and code.", output: spec.unitRun ?? "", after: ["unitTests"], seconds: 10, verdict: "pass" }),
@@ -355,7 +449,7 @@ export function expand(spec: WorkflowSpec): Workflow {
       step({ id: "release", kind: "check", phase: 4, col: 0, row: 1, title: "Release gate", actor: "No model", caption: "The release gate re-checks approvals, tests and data rules before anything ships.", given: "Approvals, test results and scans.", output: spec.release ?? "", after: ["testsGreen"], seconds: 2, verdict: "pass" }),
       step({ id: "staging", kind: "tool", phase: 4, col: 1, row: 1, title: "Deploy to staging", actor: "Pipeline", caption: "The build goes to staging, a copy of production with no real users.", given: "The released build.", output: deploy?.staging ?? "", after: ["release"], seconds: 240 }),
       step({ id: "smoke", kind: "check", phase: 4, col: 2, row: 1, title: "Smoke tests", actor: "No model", caption: "Scripted checks exercise the main paths on staging.", given: "The staging deployment.", output: deploy?.smoke ?? "", after: ["staging"], seconds: 60, verdict: "pass" }),
-      llm({ id: "goNoGo", phase: 4, col: 3, row: 1, title: "Go / no-go", caption: "Model C weighs the staging results and recommends go or no-go, with its confidence. A person still decides.", given: "Smoke tests and the rollback plan.", output: goDecision(spec), after: ["smoke"] }, JEV, SIZE.decide),
+      llm({ id: "goNoGo", phase: 4, col: 3, row: 1, title: "Go / no-go", caption: "Model C weighs the staging results and recommends go or no-go, with its confidence. A person still decides.", given: "Smoke tests and the rollback plan.", output: decisionText(spec, "goNoGo"), after: ["smoke"] }, JEV, SIZE.decide),
       step({ id: "deployApprove", kind: "human", phase: 4, col: 4, row: 1, title: "You approve", actor: "Person", caption: "A person approves the move to production.", given: "Model C's recommendation, test results, smoke tests and the rollback plan.", output: deploy?.approval ?? "", after: ["goNoGo"], seconds: 0 }),
       step({ id: "production", kind: "tool", phase: 4, col: 5, row: 1, title: "Production", actor: "Pipeline", caption: "A gradual rollout to real users, watched, with a rollback plan ready.", given: "The approved build.", output: deploy?.production ?? "", after: ["deployApprove"], seconds: 600 }),
     ];
@@ -371,7 +465,7 @@ export function expand(spec: WorkflowSpec): Workflow {
     walls = [{ phase: 0, col: 3, span: 1, label: "cannot see each other" }];
     steps = [
       brief,
-      llm({ id: "route", phase: 0, col: 1, row: 1, title: "Route", caption: "Model C, a fast decision model, judges how risky the request is and how much checking it needs, in about a tenth of a second.", given: "The brief.", output: routeDecision(spec), after: ["brief"] }, JEV, SIZE.decide),
+      llm({ id: "route", phase: 0, col: 1, row: 1, title: "Route", caption: "Model C, a fast decision model, judges how risky the request is and how much checking it needs, in about a tenth of a second.", given: "The brief.", output: decisionText(spec, "route"), after: ["brief"] }, JEV, SIZE.decide),
       step({ id: "sources", kind: "tool", phase: 0, col: 2, row: 1, title: "Knowledge lookup", actor: "Retrieval", caption: "The relevant policies and records are looked up, so the drafts work from facts.", given: "The brief.", output: spec.sources ?? "", after: ["route"], seconds: 2 }),
       ...panel(spec, 3, ["sources"]),
       step({ id: "deliver", kind: "tool", phase: 0, col: 9, row: 1, title: "Deliver", actor: "Workflow", caption: "The approved result goes out, with a record of who approved what.", given: "The approved result.", output: spec.deliver ?? "", after: ["approve"], seconds: 2 }),

@@ -375,6 +375,30 @@
       // The finished deliverable shows when the run ends, or earlier if a viewer asks for it.
       let outputShown = false;
       // The live checks (public/checks.js) and the figures the viewer has typed over the AI's.
+      // Model C's live answers, fetched from the server when a decision step is reached.
+      let decisions = {};
+      function decisionFor(step) {
+        if (step.actor !== "jev-1.14.0") return null;
+        const key = flow.id + ":" + step.id;
+        if (!decisions[key]) {
+          decisions[key] = { pending: true };
+          fetch("/api/decide/" + flow.id + "/" + step.id)
+            .then((response) => (response.ok ? response.json() : null))
+            .then((result) => {
+              decisions[key] = result || { live: false, text: step.output, reason: "the server did not answer" };
+              stagesKey = "";
+              recapKey = "";
+              render();
+            })
+            .catch(() => (decisions[key] = { live: false, text: step.output, reason: "the server could not be reached" }));
+        }
+        return decisions[key];
+      }
+      function decisionNote(result) {
+        if (!result || result.pending) return "Asking Model C…";
+        if (result.live) return "Live decision" + (result.cached ? " (answered earlier today)" : "") + ": " + (technical() ? result.model + " " : "Model C ") + "answered in " + result.ms + " ms, using " + (result.inputTokens || 0).toLocaleString() + " tokens, for $" + (result.costUsd || 0).toFixed(6) + ".";
+        return "Replayed answer: " + result.reason + ".";
+      }
       let LIVE = null;
       // The build workflows' real tests (public/tests.js), and the runs made for this replay.
       let TESTS = null;
@@ -496,6 +520,7 @@
         runStartedAt = null;
         runId = null;
         claimEdits = {};
+        decisions = {};
         tryKey = "";
         labKey = "";
         stagesKey = "";
@@ -573,7 +598,10 @@
         const kicker = step.title;
         const name = step.kind === "llm" ? modelLabel(step.actor) : step.actor;
         let meta = "";
-        if (step.kind === "llm") {
+        if (step.actor === "jev-1.14.0" && state !== "idle") {
+          const result = decisions[flow.id + ":" + step.id];
+          meta = result && result.live ? "live · " + result.ms + " ms" : result && !result.pending ? "replay · <$0.01" : "asking…";
+        } else if (step.kind === "llm") {
           const share = state === "running" ? play.progress : 1;
           meta = state === "idle" ? "simulated call" : duration(step.seconds * share) + " · " + money((step.estimatedCostUsd || 0) * share);
         } else if (step.kind === "human") meta = state === "waiting" ? "waiting for you" : state === "idle" ? "" : "approved";
@@ -744,6 +772,7 @@
         const meta = document.createElement("p");
         meta.className = "meta";
         const share = state === "running" ? streamed(step, play.progress) : null;
+        const decision = (state === "running" || state === "done") && step.actor === "jev-1.14.0" ? decisionFor(step) : null;
         const plainView = document.body.classList.contains("plain");
         meta.textContent =
           plainView && step.kind === "llm" && share !== null
@@ -845,7 +874,8 @@
             const run = testRun(step.id === "testsRed" ? "first" : "fixed");
             meta.textContent = "These tests really ran, in your browser, against the " + (step.id === "testsRed" ? "first version of the code" : "fixed code") + ": " + run.results.length + " tests in " + run.ms.toFixed(1) + " ms.";
           }
-          const body = realUnit ? TESTS.report(TESTS.runTests(flow.id, "first", "unit")) : realTests ? TESTS.report(testRun(step.id === "testsRed" ? "first" : "fixed").results) : step.id === "checks" && liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name + "\n  " + check.detail).join("\n") : step.output;
+          if (decision) meta.textContent = decisionNote(decision);
+          const body = decision && !decision.pending ? decision.text : decision ? "" : realUnit ? TESTS.report(TESTS.runTests(flow.id, "first", "unit")) : realTests ? TESTS.report(testRun(step.id === "testsRed" ? "first" : "fixed").results) : step.id === "checks" && liveResults().length ? liveResults().map((check) => (check.pass ? "✓ " : "✗ ") + check.name + "\n  " + check.detail).join("\n") : step.output;
           const pre = section(step.kind === "human" ? "Outcome" : state === "blocked" ? "Failed" : "Produced", body, state === "running" ? share : undefined);
           if (state === "running") pre.scrollTop = pre.scrollHeight;
         }
