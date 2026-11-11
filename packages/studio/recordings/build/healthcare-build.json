@@ -1,0 +1,115 @@
+{
+  "id": "healthcare-build",
+  "recordedAt": "2026-11-11T09:45:17.756Z",
+  "contract": "appealReady(line) where line = { carc: string (a CARC code such as \"CO-50\"), noteRef: string (a DOC-### id or \"\"), filingDeadline: string (\"YYYY-MM-DD\" or \"\") }. Returns { ready: boolean, missing: string[] } where missing names what blocks readiness, using exactly \"clinical-note reference\" and \"filing deadline\".",
+  "calls": [
+    {
+      "role": "archDraft",
+      "model": "claude-opus-5-5",
+      "seconds": 18.5,
+      "inputTokens": 1429,
+      "outputTokens": 1850,
+      "costUsd": 0.043384
+    },
+    {
+      "role": "archReview",
+      "model": "grok-4.7",
+      "seconds": 424.5,
+      "inputTokens": 2795,
+      "outputTokens": 29,
+      "costUsd": 0.004036
+    },
+    {
+      "role": "archFinal",
+      "model": "claude-opus-5-5",
+      "seconds": 12,
+      "inputTokens": 2481,
+      "outputTokens": 1168,
+      "costUsd": 0.034127
+    },
+    {
+      "role": "code",
+      "model": "claude-opus-5-5",
+      "seconds": 12,
+      "inputTokens": 2177,
+      "outputTokens": 1239,
+      "costUsd": 0.03418
+    },
+    {
+      "role": "codeReview",
+      "model": "grok-4.7",
+      "seconds": 187.3,
+      "inputTokens": 2524,
+      "outputTokens": 53,
+      "costUsd": 0.003638
+    },
+    {
+      "role": "codeRevise",
+      "model": "claude-opus-5-5",
+      "seconds": 8.1,
+      "inputTokens": 2164,
+      "outputTokens": 769,
+      "costUsd": 0.024879
+    },
+    {
+      "role": "unitTests",
+      "model": "claude-opus-5-5",
+      "seconds": 10.5,
+      "inputTokens": 1887,
+      "outputTokens": 1201,
+      "costUsd": 0.032236
+    },
+    {
+      "role": "testCases",
+      "model": "grok-4.7",
+      "seconds": 76.1,
+      "inputTokens": 2121,
+      "outputTokens": 385,
+      "costUsd": 0.004824
+    },
+    {
+      "role": "testScript",
+      "model": "grok-4.7",
+      "seconds": 106.6,
+      "inputTokens": 2557,
+      "outputTokens": 902,
+      "costUsd": 0.008798
+    }
+  ],
+  "architecture": {
+    "draft": "Components: (1) new pure module appealReady(line) per the contract; (2) new helper filingDeadline(dos) returning DOS + 90 calendar days as YYYY-MM-DD, computed in UTC to avoid timezone off-by-one errors, or \"\" if DOS is missing; (3) Mark Ready button wiring; (4) server-side check in the Mark Ready handler.\nData: the caller builds line = {carc, noteRef, filingDeadline: filingDeadline(dos)}. The contract takes a deadline, not a DOS, so derivation happens upstream. No role field is passed, so no override path exists (REQ-4).\nLogic: if carc !== \"CO-50\", return {ready:true, missing:[]} so current behavior is unchanged (REQ-1). Otherwise noteRef must match ^DOC-\\d{3}$ (assumed format, PFS to confirm) and filingDeadline must be a valid YYYY-MM-DD date. missing uses a fixed order: [\"clinical-note reference\", \"filing deadline\"].\nUI mismatch to resolve: the contract strings differ from the AC-2 button text ('Missing: clinical note'). The button maps them explicitly: 'Missing: clinical note', 'Missing: filing deadline', or 'Missing: clinical note, filing deadline' for both (wording for 'both' to be confirmed).\nEnforcement: the Mark Ready API handler also calls appealReady and rejects if not ready, so a supervisor or admin cannot bypass the disabled button via the API (AC-3).\nFile fence (paths assumed, since no repo layout was given; confirm before build): src/denials/appealReady.ts (new), src/denials/filingDeadline.ts (new), src/denials/MarkReadyButton.tsx, src/api/denials/markReady.ts, tests/appealReady.test.ts (new), tests/filingDeadline.test.ts (new). No other files may change.\nTests: DOS 2024-03-01 gives 2024-05-30, verified as 30 days left in March + 30 in April + 30 in May = 90. Also cover each AC-2 case, including DOC-12 treated as missing; a non-CO-50 denial with no note and no DOS passes; and the result is identical for every role.\nOpen: confirm the DOC-### digit count; whether to trim whitespace in noteRef; whether variants like 'CO50' count as CO-50; the 'both' label wording; and the repo paths.",
+    "review": "No defects found.\nStrengths: Server-side appealReady rejection blocks every role from overriding a blocked CO-50 denial.",
+    "final": "Architecture unchanged; the review found no defects.\nComponents: pure appealReady(line) per contract; filingDeadline(dos) returns DOS + 90 calendar days in UTC as YYYY-MM-DD, or \"\" if DOS is missing; Mark Ready button wiring; server-side check in the Mark Ready handler.\nData: the caller builds line = {carc, noteRef, filingDeadline: filingDeadline(dos)}. No role field is passed, so there is no override path (REQ-4).\nLogic: if carc !== \"CO-50\", return {ready:true, missing:[]} (REQ-1). Otherwise noteRef must match ^DOC-\\d{3}$ (assumed) and filingDeadline must be a valid date. missing is ordered [\"clinical-note reference\", \"filing deadline\"].\nUI: the button maps contract strings to 'Missing: clinical note', 'Missing: filing deadline', or 'Missing: clinical note, filing deadline' (wording for both to be confirmed).\nEnforcement: the API handler calls appealReady and rejects if not ready, so no role can bypass the gate (AC-3). Retained as the review's noted strength.\nFile fence (paths assumed): src/denials/appealReady.ts, src/denials/filingDeadline.ts, src/denials/MarkReadyButton.tsx, src/api/denials/markReady.ts, tests/appealReady.test.ts, tests/filingDeadline.test.ts.\nTests: DOS 2024-03-01 gives 2024-05-30. Rechecked: 30 days left in March + 30 in April + 30 in May = 90. Also cover each AC-2 case including DOC-12, the non-CO-50 pass case, and identical results for every role.\nOpen: DOC-### digit count, noteRef whitespace trimming, CARC variants like 'CO50', the 'both' label wording, and repo paths.",
+    "resolutions": "No defects found; strength: server-side appealReady rejection blocks every role from overriding a blocked CO-50 denial. declined: Not a change request. The server-side check is already in the design and is kept as is. The 90-day date math was independently rechecked and is correct."
+  },
+  "code": {
+    "first": "({ appealReady(line) {\n  const l = line && typeof line === \"object\" ? line : {};\n  if (l.carc !== \"CO-50\") {\n    return { ready: true, missing: [] };\n  }\n  const missing = [];\n  const note = typeof l.noteRef === \"string\" ? l.noteRef : \"\";\n  if (!/^DOC-\\d{3}$/.test(note)) {\n    missing.push(\"clinical-note reference\");\n  }\n  const fd = typeof l.filingDeadline === \"string\" ? l.filingDeadline : \"\";\n  let validDate = false;\n  const m = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(fd);\n  if (m) {\n    const y = Number(m[1]);\n    const mo = Number(m[2]);\n    const d = Number(m[3]);\n    const dt = new Date(Date.UTC(y, mo - 1, d));\n    validDate = dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;\n  }\n  if (!validDate) {\n    missing.push(\"filing deadline\");\n  }\n  return { ready: missing.length === 0, missing };\n} })",
+    "summary": "The module exposes only appealReady, which is the one function in the contract. filingDeadline(dos) is a separate component in the architecture, so it is not included here.\n\nHow it works:\n1. Any CARC other than exactly \"CO-50\" returns {ready:true, missing:[]}. This keeps current behavior for other denial classes (REQ-1, AC-3).\n2. On CO-50, noteRef must match ^DOC-\\d{3}$. That is the assumed three-digit format, and it is not trimmed. So DOC-12, blank, or a padded value counts as missing.\n3. filingDeadline must be a real calendar date in YYYY-MM-DD form, checked with a UTC round trip. Blank or impossible dates such as 2024-02-30 count as missing.\n4. missing is always in the order [\"clinical-note reference\", \"filing deadline\"].\n5. There is no role input, so the gate has no override path (REQ-4).\n6. Bad or missing input on a CO-50 line blocks readiness rather than letting it through.\n\nAC-1 deadline checked: from 2024-03-01, 30 days takes it to Mar 31, 30 more to Apr 30, and 30 more to May 30. That totals 90 days, so 2024-05-30 is correct, and that line is ready.\n\nAC-2 outcomes:\n- No note: [\"clinical-note reference\"]\n- No DOS (the caller passes \"\"): [\"filing deadline\"]\n- Neither: both entries\n- DOC-12: the note is treated as missing\n\nStill open for the PFS lead: the DOC digit count, whether to trim whitespace, CARC variants like CO50 (currently not gated), and the wording of the label when both are missing.",
+    "review": "No defects found.\nStrengths: The CO-50 gate fails closed unless the note is exactly DOC plus three digits and the filing deadline is a real YYYY-MM-DD date, returns the contract missing names, and has no override path.",
+    "revised": "({ appealReady(line) {\n  const l = line && typeof line === \"object\" ? line : {};\n  if (l.carc !== \"CO-50\") {\n    return { ready: true, missing: [] };\n  }\n  const missing = [];\n  const note = typeof l.noteRef === \"string\" ? l.noteRef : \"\";\n  if (!/^DOC-\\d{3}$/.test(note)) {\n    missing.push(\"clinical-note reference\");\n  }\n  const fd = typeof l.filingDeadline === \"string\" ? l.filingDeadline : \"\";\n  let validDate = false;\n  const m = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(fd);\n  if (m) {\n    const y = Number(m[1]);\n    const mo = Number(m[2]);\n    const d = Number(m[3]);\n    const dt = new Date(Date.UTC(y, mo - 1, d));\n    validDate = dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;\n  }\n  if (!validDate) {\n    missing.push(\"filing deadline\");\n  }\n  return { ready: missing.length === 0, missing };\n} })",
+    "resolutions": ""
+  },
+  "unitScript": "test(\"CO-50 with note DOC-123 and deadline 2024-05-30 (DOS 2024-03-01 plus 90 days) is ready\", function() {\n  assert.deepEqual(code.appealReady({ carc: \"CO-50\", noteRef: \"DOC-123\", filingDeadline: \"2024-05-30\" }), { ready: true, missing: [] });\n});\ntest(\"CO-50 with a deadline but no note is blocked and names only the clinical-note reference\", function() {\n  assert.deepEqual(code.appealReady({ carc: \"CO-50\", noteRef: \"\", filingDeadline: \"2024-05-30\" }), { ready: false, missing: [\"clinical-note reference\"] });\n});\ntest(\"CO-50 with a note but no deadline is blocked and names only the filing deadline\", function() {\n  assert.deepEqual(code.appealReady({ carc: \"CO-50\", noteRef: \"DOC-123\", filingDeadline: \"\" }), { ready: false, missing: [\"filing deadline\"] });\n});\ntest(\"CO-50 with blank note and no deadline names both, even when the user is a supervisor or admin\", function() {\n  var expected = { ready: false, missing: [\"clinical-note reference\", \"filing deadline\"] };\n  assert.deepEqual(code.appealReady({ carc: \"CO-50\", noteRef: \"\", filingDeadline: \"\", role: \"supervisor\" }), expected);\n  assert.deepEqual(code.appealReady({ carc: \"CO-50\", noteRef: \"\", filingDeadline: \"\", role: \"admin\" }), expected);\n});\ntest(\"CO-50 note not in DOC plus exactly three digits form, or an impossible date, counts as missing\", function() {\n  assert.deepEqual(code.appealReady({ carc: \"CO-50\", noteRef: \"DOC-12\", filingDeadline: \"2024-05-30\" }).missing, [\"clinical-note reference\"]);\n  assert.deepEqual(code.appealReady({ carc: \"CO-50\", noteRef: \"DOC-1234\", filingDeadline: \"2024-05-30\" }).missing, [\"clinical-note reference\"]);\n  assert.deepEqual(code.appealReady({ carc: \"CO-50\", noteRef: \"DOC-123\", filingDeadline: \"2024-02-30\" }).missing, [\"filing deadline\"]);\n});\ntest(\"a non-CO-50 denial with no note and no deadline is not blocked by the gate\", function() {\n  assert.deepEqual(code.appealReady({ carc: \"CO-97\", noteRef: \"\", filingDeadline: \"\" }), { ready: true, missing: [] });\n});",
+  "testCases": [
+    "TC-1 · REQ-1 gate applies to CO-50 only · carc not CO-50, noteRef empty, filingDeadline empty → this gate does not block; Mark Ready keeps current behavior",
+    "TC-2 · REQ-2 and REQ-3 both items present · carc CO-50, noteRef DOC-123, DOS 2024-03-01, filingDeadline 2024-05-30 → ready true, missing empty, Mark Ready enabled",
+    "TC-3 · REQ-3 filing deadline is date of service plus 90 days · DOS 2024-03-01 → filing deadline 2024-05-30; if DOS is missing the deadline counts as missing",
+    "TC-4 · REQ-2 and REQ-5 clinical-note reference missing · carc CO-50, noteRef empty, filingDeadline 2024-05-30 → ready false, missing exactly clinical-note reference, button names only that",
+    "TC-5 · REQ-3 and REQ-5 filing deadline missing · carc CO-50, noteRef DOC-123, DOS missing, filingDeadline empty → ready false, missing exactly filing deadline, button names only that",
+    "TC-6 · REQ-5 both missing · carc CO-50, noteRef empty, filingDeadline empty → ready false, missing clinical-note reference and filing deadline, button names both",
+    "TC-7 · REQ-2 non-empty DOC-### only · carc CO-50, noteRef DOC-12, filingDeadline 2024-05-30 → ready false, clinical-note reference missing under the PRD assumption of DOC plus exactly three digits",
+    "TC-8 · REQ-4 nobody can override in v1 · carc CO-50, noteRef empty, filingDeadline empty, role supervisor or admin → cannot mark the appeal packet ready"
+  ],
+  "testScript": "test(\"non CO-50 denial with empty note and empty deadline is not blocked by this gate\", function() {\n  var result = code.appealReady({ carc: \"CO-45\", noteRef: \"\", filingDeadline: \"\" });\n  assert.equal(result.ready, true);\n  assert.deepEqual(result.missing, []);\n});\ntest(\"CO-50 is ready when note DOC-123 and filing deadline 2024-05-30 are both present\", function() {\n  var result = code.appealReady({ carc: \"CO-50\", noteRef: \"DOC-123\", filingDeadline: \"2024-05-30\" });\n  assert.equal(result.ready, true);\n  assert.deepEqual(result.missing, []);\n});\ntest(\"filing deadline 2024-05-30 is date of service 2024-03-01 plus 90 days and a missing date of service counts as a missing deadline\", function() {\n  var present = code.appealReady({ carc: \"CO-50\", noteRef: \"DOC-123\", filingDeadline: \"2024-05-30\" });\n  var absent = code.appealReady({ carc: \"CO-50\", noteRef: \"DOC-123\", filingDeadline: \"\" });\n  assert.equal(present.ready, true);\n  assert.deepEqual(present.missing, []);\n  assert.equal(absent.ready, false);\n  assert.deepEqual(absent.missing, [\"filing deadline\"]);\n});\ntest(\"CO-50 with an empty clinical note and a filing deadline names only the clinical-note reference\", function() {\n  var result = code.appealReady({ carc: \"CO-50\", noteRef: \"\", filingDeadline: \"2024-05-30\" });\n  assert.equal(result.ready, false);\n  assert.deepEqual(result.missing, [\"clinical-note reference\"]);\n});\ntest(\"CO-50 with note DOC-123 and an empty filing deadline names only the filing deadline\", function() {\n  var result = code.appealReady({ carc: \"CO-50\", noteRef: \"DOC-123\", filingDeadline: \"\" });\n  assert.equal(result.ready, false);\n  assert.deepEqual(result.missing, [\"filing deadline\"]);\n});\ntest(\"CO-50 with empty note and empty filing deadline names both missing items\", function() {\n  var result = code.appealReady({ carc: \"CO-50\", noteRef: \"\", filingDeadline: \"\" });\n  assert.equal(result.ready, false);\n  assert.deepEqual(result.missing, [\"clinical-note reference\", \"filing deadline\"]);\n});\ntest(\"CO-50 treats note DOC-12 as a missing clinical-note reference because it is not DOC plus three digits\", function() {\n  var result = code.appealReady({ carc: \"CO-50\", noteRef: \"DOC-12\", filingDeadline: \"2024-05-30\" });\n  assert.equal(result.ready, false);\n  assert.deepEqual(result.missing, [\"clinical-note reference\"]);\n});\ntest(\"a supervisor or admin cannot override a blocked CO-50 denial\", function() {\n  var supervisor = code.appealReady({ carc: \"CO-50\", noteRef: \"\", filingDeadline: \"\", role: \"supervisor\" });\n  var admin = code.appealReady({ carc: \"CO-50\", noteRef: \"\", filingDeadline: \"\", role: \"admin\" });\n  assert.equal(supervisor.ready, false);\n  assert.deepEqual(supervisor.missing, [\"clinical-note reference\", \"filing deadline\"]);\n  assert.equal(admin.ready, false);\n  assert.deepEqual(admin.missing, [\"clinical-note reference\", \"filing deadline\"]);\n});",
+  "runs": [
+    {
+      "round": 1,
+      "code": "({ appealReady(line) {\n  const l = line && typeof line === \"object\" ? line : {};\n  if (l.carc !== \"CO-50\") {\n    return { ready: true, missing: [] };\n  }\n  const missing = [];\n  const note = typeof l.noteRef === \"string\" ? l.noteRef : \"\";\n  if (!/^DOC-\\d{3}$/.test(note)) {\n    missing.push(\"clinical-note reference\");\n  }\n  const fd = typeof l.filingDeadline === \"string\" ? l.filingDeadline : \"\";\n  let validDate = false;\n  const m = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(fd);\n  if (m) {\n    const y = Number(m[1]);\n    const mo = Number(m[2]);\n    const d = Number(m[3]);\n    const dt = new Date(Date.UTC(y, mo - 1, d));\n    validDate = dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;\n  }\n  if (!validDate) {\n    missing.push(\"filing deadline\");\n  }\n  return { ready: missing.length === 0, missing };\n} })",
+      "acceptance": "✓ non CO-50 denial with empty note and empty deadline is not blocked by this gate\n✓ CO-50 is ready when note DOC-123 and filing deadline 2024-05-30 are both present\n✓ filing deadline 2024-05-30 is date of service 2024-03-01 plus 90 days and a missing date of service counts as a missing deadline\n✓ CO-50 with an empty clinical note and a filing deadline names only the clinical-note reference\n✓ CO-50 with note DOC-123 and an empty filing deadline names only the filing deadline\n✓ CO-50 with empty note and empty filing deadline names both missing items\n✓ CO-50 treats note DOC-12 as a missing clinical-note reference because it is not DOC plus three digits\n✓ a supervisor or admin cannot override a blocked CO-50 denial\n8 passing",
+      "unit": "✓ CO-50 with note DOC-123 and deadline 2024-05-30 (DOS 2024-03-01 plus 90 days) is ready\n✓ CO-50 with a deadline but no note is blocked and names only the clinical-note reference\n✓ CO-50 with a note but no deadline is blocked and names only the filing deadline\n✓ CO-50 with blank note and no deadline names both, even when the user is a supervisor or admin\n✓ CO-50 note not in DOC plus exactly three digits form, or an impossible date, counts as missing\n✓ a non-CO-50 denial with no note and no deadline is not blocked by the gate\n6 passing",
+      "failing": 0
+    }
+  ],
+  "fixes": [],
+  "finalCode": "({ appealReady(line) {\n  const l = line && typeof line === \"object\" ? line : {};\n  if (l.carc !== \"CO-50\") {\n    return { ready: true, missing: [] };\n  }\n  const missing = [];\n  const note = typeof l.noteRef === \"string\" ? l.noteRef : \"\";\n  if (!/^DOC-\\d{3}$/.test(note)) {\n    missing.push(\"clinical-note reference\");\n  }\n  const fd = typeof l.filingDeadline === \"string\" ? l.filingDeadline : \"\";\n  let validDate = false;\n  const m = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(fd);\n  if (m) {\n    const y = Number(m[1]);\n    const mo = Number(m[2]);\n    const d = Number(m[3]);\n    const dt = new Date(Date.UTC(y, mo - 1, d));\n    validDate = dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;\n  }\n  if (!validDate) {\n    missing.push(\"filing deadline\");\n  }\n  return { ready: missing.length === 0, missing };\n} })"
+}

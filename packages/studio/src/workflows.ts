@@ -2,6 +2,7 @@ import { callCost, findPhi, repoRoot } from "@northwind/orchestrator";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import * as z from "zod/v4";
+import { type BuildRecording, buildRecordingFor } from "./build.ts";
 import { type Recording, recordingFor, renderMerge, renderReview } from "./record.ts";
 
 /**
@@ -111,7 +112,7 @@ export function calibration(): Record<string, { cost: number; seconds: number; i
 }
 
 /** A workflow as authored, plus the real recording of its panel when one has been made. */
-export type WorkflowSpec = z.infer<typeof SpecSchema> & { recording?: Recording };
+export type WorkflowSpec = z.infer<typeof SpecSchema> & { recording?: Recording; buildRecording?: BuildRecording };
 
 export type StepKind = "input" | "llm" | "tool" | "check" | "human";
 
@@ -160,6 +161,8 @@ export interface Workflow {
   brief: string;
   output: string;
   contrast: { draft: "A" | "B"; before: string; after: string; why: string } | null;
+  /** For a build replayed from real recorded stages: the model-written code and test scripts, to rerun. */
+  build: { firstCode: string; finalCode: string; unitScript: string; testScript: string; contract: string } | null;
   /** When the panel is replayed from a real recording: when it was made, what it cost, how long it took. */
   recording: { recordedAt: string; costUsd: number; seconds: number; calls: number } | null;
   phases: string[];
@@ -501,7 +504,23 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
       step({ id: "unitRun", kind: "tool", phase: 2, col: 5, row: 1, title: "Run unit tests", actor: "Test runner", caption: "Model A's unit tests pass. But an author tests what they thought of; the next stage tests what was asked for.", given: "Claude's unit tests and code.", output: spec.unitRun ?? "", after: ["unitTests"], seconds: 10, verdict: "pass" }),
       llm({ id: "testCases", phase: 3, col: 0, row: 1, title: "Test cases", caption: "Model B turns every acceptance criterion into test cases. It works from the PRD and has never seen the code.", given: "The approved PRD only. Not the code.", output: spec.testCases ?? "", after: ["approve"] }, GROK, SIZE.testCases),
       llm({ id: "testScript", phase: 3, col: 1, row: 1, title: "Test script", caption: "Model B writes the test cases as a runnable test script.", given: "The test cases and the code's public interface. Not its implementation.", output: spec.testScript ?? "", after: ["testCases"] }, GROK, SIZE.testScript),
-      step({ id: "testsRed", kind: "tool", phase: 3, col: 2, row: 1, title: "Run tests", actor: "Test runner", caption: "Model B's tests run against Model A's code, and one fails: a bug that passed code review and Model A's own unit tests.", given: "Model B's test script and Model A's code.", output: spec.testsRed ?? "", after: ["testScript", "unitRun"], seconds: 20, verdict: "flagged" }),
+      step({
+        id: "testsRed",
+        kind: "tool",
+        phase: 3,
+        col: 2,
+        row: 1,
+        title: "Run tests",
+        actor: "Test runner",
+        caption: /^✗/m.test(spec.testsRed ?? "")
+          ? "Model B's tests run against Model A's code, and a test fails: a problem that got past code review and Model A's own unit tests."
+          : "Model B's tests run against Model A's code, and every one passes on the first run.",
+        given: "Model B's test script and Model A's code.",
+        output: spec.testsRed ?? "",
+        after: ["testScript", "unitRun"],
+        seconds: 20,
+        verdict: /^✗/m.test(spec.testsRed ?? "") ? "flagged" : "pass",
+      }),
       llm({ id: "fix", phase: 3, col: 3, row: 1, title: "Fix", caption: "Model A reads the failing test and makes one targeted fix.", given: "The failing test output and the code.", output: spec.fix ?? "", after: ["testsRed"] }, CLAUDE, SIZE.fix),
       step({ id: "testsGreen", kind: "tool", phase: 3, col: 4, row: 1, title: "Tests again", actor: "Test runner", caption: "The same tests run again, with the unit tests, and all pass.", given: "The fixed code.", output: spec.testsGreen ?? "", after: ["fix"], seconds: 20, verdict: "pass" }),
       step({ id: "release", kind: "check", phase: 4, col: 0, row: 1, title: "Release gate", actor: "No model", caption: "The release gate re-checks approvals, tests and data rules before anything ships.", given: "Approvals, test results and scans.", output: spec.release ?? "", after: ["testsGreen"], seconds: 2, verdict: "pass" }),
@@ -551,6 +570,22 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
       estimatedCostUsd: (item.estimatedCostUsd ?? 0) * ratio.cost,
     };
   });
+  const built = options.raw ? undefined : spec.buildRecording;
+  if (built) {
+    const stepOf: Record<string, string> = { archDraft: "archDraft", archReview: "archReview", archFinal: "archFinal", code: "code", codeReview: "codeReview", codeRevise: "codeRevise", unitTests: "unitTests", testCases: "testCases", testScript: "testScript" };
+    const fixCalls = built.calls.filter((entry) => entry.role.startsWith("fix"));
+    steps = steps.map((item) => {
+      const calls = item.id === "fix" ? fixCalls : built.calls.filter((entry) => stepOf[entry.role] === item.id);
+      if (!calls.length) return item;
+      return {
+        ...item,
+        recorded: true,
+        seconds: calls.reduce((total, entry) => total + entry.seconds, 0),
+        tokens: { input: calls.reduce((total, entry) => total + entry.inputTokens, 0), output: calls.reduce((total, entry) => total + entry.outputTokens, 0) },
+        estimatedCostUsd: calls.reduce((total, entry) => total + entry.costUsd, 0),
+      };
+    });
+  }
   const recording = options.raw ? undefined : spec.recording;
   if (recording) {
     const stepOf: Record<string, string> = { analystA: "draftA", analystB: "draftB", critiqueOfA: "reviewOfA", critiqueOfB: "reviewOfB", synthesizer: "merge" };
@@ -568,6 +603,16 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
     summary: spec.summary,
     deliverable: spec.deliverable,
     contrast: spec.contrast,
+    build:
+      !options.raw && spec.buildRecording
+        ? {
+            firstCode: spec.buildRecording.runs[0]?.code ?? spec.buildRecording.code.revised,
+            finalCode: spec.buildRecording.finalCode,
+            unitScript: spec.buildRecording.unitScript,
+            testScript: spec.buildRecording.testScript,
+            contract: spec.buildRecording.contract,
+          }
+        : null,
     recording: recording
       ? {
           recordedAt: recording.recordedAt,
@@ -620,8 +665,38 @@ export function loadSpecs(dir = WORKFLOW_DIR(), options: { recordings?: boolean 
   if (options.recordings === false) return authored;
   return authored.map((spec) => {
     const recording = recordingFor(spec.id);
-    return recording ? applyRecording(spec, recording) : spec;
+    const withPanel = recording ? applyRecording(spec, recording) : spec;
+    const build = spec.kind === "build" ? buildRecordingFor(spec.id) : null;
+    return build ? applyBuildRecording(withPanel, build) : withPanel;
   });
+}
+
+/** Puts the real recorded build stages in place of the prepared ones: design, code, reviews, tests and runs. */
+export function applyBuildRecording(spec: WorkflowSpec, build: BuildRecording): WorkflowSpec {
+  const first = build.runs[0];
+  const last = build.runs[build.runs.length - 1];
+  const passing = (last?.acceptance.match(/^✓/gm) ?? []).length;
+  return {
+    ...spec,
+    architecture: {
+      draft: build.architecture.draft,
+      review: build.architecture.review,
+      final: `${build.architecture.final}${build.architecture.resolutions ? `\n\n${build.architecture.resolutions}` : ""}`,
+      checks: spec.architecture?.checks ?? [],
+      approval: spec.architecture?.approval ?? "Approved by the engineering lead.",
+    },
+    code: `${build.code.summary}\n\nWritten to this contract: ${build.contract}`,
+    codeReview: { review: build.code.review, revise: build.code.resolutions || "Nothing to apply." },
+    unitScript: build.unitScript,
+    unitRun: first?.unit ?? "",
+    testCases: build.testCases.join("\n"),
+    testScript: build.testScript,
+    testsRed: first?.acceptance ?? "",
+    fix: build.fixes.length ? build.fixes.map((fix) => `Round ${fix.round}: ${fix.change}`).join("\n") : "No fix was needed: every acceptance test passed on the first run.",
+    testsGreen: last?.acceptance ?? "",
+    output: spec.output.replace(/\b\d+ tests passing/g, `${passing} tests passing`),
+    buildRecording: build,
+  };
 }
 
 /**

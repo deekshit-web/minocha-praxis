@@ -86,19 +86,17 @@ Unit tests: Model A's own five tests **pass**, on code that still has a bug.
 
 > "An author tests what they thought of."
 
-## 9. Independent tests catch it (45 s)
+## 9. Independent tests, really run (45 s)
 
-Model B wrote the test cases from the PRD without seeing the code. **Run tests: 1 failing**. "Exactly 43% is
-pre-qualified": the code added 0.28 + 0.15 and got 0.43000000000000005. Claude fixes it; all pass.
+Everything in this stage is a real recording. Model B wrote the test cases and script from the PRD and the contract,
+**without seeing the code**, and they really ran against Model A's code: in all five builds every test passed first
+time, because design and code review had already caught the problems (point at the P0s in Architecture and Code
+review). Click **Write code** to show the real code.
 
-Click **Fix** to see the real diff. Then scroll to **Run the tests yourself** and press both buttons: real
-tests, real code, about a millisecond.
+Scroll to **Run the tests yourself** and press **Run** and **Measure the tests**. Mutation testing breaks the code
+in every small way and reruns the tests: in the FMCG build they catch only **4 of 11**.
 
-Then press **Measure the tests: break the code on purpose**. Mutation testing breaks the fixed code in every
-small way (`<` to `<=`, `&&` to `||`, each number nudged by one) and reruns every test: "caught 7 of 9". Point
-at the survivors it lists.
-
-> "We show you where the tests are weak, too."
+> "Passing tests prove little on their own. We measure how strong the tests are, and show you when they're weak."
 
 ## 10. Ship it safely (25 s)
 

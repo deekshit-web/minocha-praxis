@@ -14,7 +14,8 @@
     "studio": "node scripts/studio.mjs",
     "record-panels": "node scripts/record-panels.mjs",
     "compare-gated": "node scripts/compare-gated.mjs",
-    "compare-levers": "node scripts/compare-levers.mjs"
+    "compare-levers": "node scripts/compare-levers.mjs",
+    "record-builds": "node scripts/record-builds.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
