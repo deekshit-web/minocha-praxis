@@ -11,7 +11,7 @@ whenever they like. Say it your own way. The quoted lines are only a guide to th
 - Open the site on a laptop at least 1400 px wide. Choose **Technical** (top right).
 - Pick **Financial services**, then **Ship a loan pre-qualification check**. Set the speed to **60×**. Leave it on
   step 1 ("1 of 35 · The brief").
-- What you'll see, top to bottom: the **Proof** box (open), the domain and workflow pickers, three model cards
+- What you'll see, top to bottom: the **Proof** box (folded to one line), the domain and workflow pickers, three model cards
   (Model A Builder, Model B Checker, Model C Decider), a row of 8 stages (PRD to Deployment), five tiles (Step,
   Model time, Would cost, Checks, Spent for real), the controls, and the pipeline diagram.
 - Below the diagram, the other sections sit folded to one line: **What happened**, **Measured: can Model C make it
@@ -26,9 +26,9 @@ whenever they like. Say it your own way. The quoted lines are only a guide to th
 > Claude reviews its own work, it spots most of the problems but marks them as less serious than they are. So the
 > last review in this pipeline comes from a different vendor. I'll show you where that matters."
 
-Point at the **Proof** box. It's a real run with the meter on: two models, $1.52, about 21 minutes. The mistake it
+Click the **Proof** box open. It's a run with the meter on: two models, $1.52, about 21 minutes. The mistake it
 caught there is small (a deadline 17 days away called "within 14 days"), so don't lean on it. Its use is that the
-whole transcript is downloadable: **Download the run record**. The box folds away when you press Play.
+whole transcript is downloadable: **Download the run record**. Fold it again when you're done with it.
 
 ## 2. Roles, not vendors (15 s)
 
