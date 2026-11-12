@@ -3,6 +3,7 @@ import { foreignRequest } from "@northwind/rcm";
 import { readFileSync } from "node:fs";
 import { createServer, type Server, type ServerResponse } from "node:http";
 import { join } from "node:path";
+import { networkIsolated } from "./isolate.ts";
 import { createDecider } from "./jev.ts";
 import { gatedFor } from "./record.ts";
 import { createLiveService, liveRunners } from "./live.ts";
@@ -38,8 +39,9 @@ export function createStudioServer(options: StudioOptions = {}): Server {
     createLiveService({
       passcode: process.env.LIVE_PASSCODE && process.env.ANTHROPIC_API_KEY && process.env.XAI_API_KEY ? process.env.LIVE_PASSCODE : "",
       dailyCapUsd: Number(process.env.LIVE_DAILY_CAP_USD ?? 2),
-      // Model-written code runs on this server, so a hosted server never switches the full build on, whatever the setting.
-      fullBuild: process.env.LIVE_BUILD === "1" && !options.hosted,
+      // Model-written code runs in an isolated child process (isolate.ts). A hosted server switches the full build on only
+      // where that process can also be cut off from the network, which the host has to allow. Otherwise it stays off.
+      fullBuild: process.env.LIVE_BUILD === "1" && (!options.hosted || networkIsolated()),
       fullBuildCapUsd: Number(process.env.LIVE_BUILD_CAP_USD ?? 0.75),
       runners: liveRunners(),
     });

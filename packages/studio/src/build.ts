@@ -1,9 +1,8 @@
 import { CLAUDE_MODEL, ClaudeModel, GROK_MODEL, GrokModel, type ModelProvider, type SeatSpec, callCost, repoRoot } from "@northwind/orchestrator";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-import { Worker } from "node:worker_threads";
 import * as z from "zod/v4";
+import { type TestOutcome, runIsolated } from "./isolate.ts";
 import { type RecordedCall, Review, renderReview } from "./record.ts";
 import type { WorkflowSpec } from "./workflows.ts";
 
@@ -60,40 +59,14 @@ export const BuildRecordingSchema = z.object({
 });
 export type BuildRecording = z.infer<typeof BuildRecordingSchema>;
 
-interface TestOutcome {
-  results: Array<{ name: string; pass: boolean; message: string | null }>;
-  error: string | null;
-}
-
 /**
- * Runs a test script against model-written code in a worker with a time and memory limit. The browser's
- * safety scan (public/tests.js) is applied first, so code that reaches for the network or globals never runs.
+ * Runs a test script against model-written code in an isolated child process (see isolate.ts): empty environment,
+ * no file, process or network access, and a time, memory and output limit. The browser's safety scan is not what
+ * protects the server, so a build never runs model code in this process.
  */
 export function sandboxRun(code: string, script: string, timeoutMs = 10_000): Promise<TestOutcome> {
-  const testsUrl = pathToFileURL(join(repoRoot(), "packages/studio/public/tests.js")).href;
-  const worker = new Worker(
-    `const { parentPort, workerData } = require("node:worker_threads");
-     import(workerData.testsUrl).then((m) => {
-       try { parentPort.postMessage({ results: m.runRecorded(workerData.code, workerData.script), error: null }); }
-       catch (error) { parentPort.postMessage({ results: [], error: String(error && error.message || error) }); }
-     });`,
-    { eval: true, workerData: { testsUrl, code, script }, resourceLimits: { maxOldGenerationSizeMb: 64 } },
-  );
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      void worker.terminate();
-      resolve({ results: [], error: `timed out after ${timeoutMs / 1000} s` });
-    }, timeoutMs);
-    worker.once("message", (message: TestOutcome) => {
-      clearTimeout(timer);
-      void worker.terminate();
-      resolve(message);
-    });
-    worker.once("error", (error) => {
-      clearTimeout(timer);
-      resolve({ results: [], error: error.message });
-    });
-  });
+  // On a hosted server the code never runs without a network namespace, whatever else is set.
+  return runIsolated(code, script, { timeoutMs, requireNetworkIsolation: process.env.STUDIO_HOSTED === "1" });
 }
 
 export function reportOf(outcome: TestOutcome): string {

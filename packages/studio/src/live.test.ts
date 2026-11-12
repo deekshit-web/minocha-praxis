@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { type BuildOptions, BuildLimitError, type BuildRecording } from "./build.ts";
+import { networkIsolated } from "./isolate.ts";
 import { createDecider } from "./jev.ts";
 import { type LiveRunners, createLiveService } from "./live.ts";
 import type { Recording } from "./record.ts";
@@ -175,7 +176,7 @@ test("A full build needs the whole cost limit free in the daily budget.", () => 
   assert.equal((live.submit(fullBrief) as { status: number }).status, 429);
 });
 
-test("A hosted server never switches the full build on.", async () => {
+test("A hosted server switches the full build on only when the sandbox can isolate the network.", async () => {
   const saved = process.env.LIVE_BUILD;
   process.env.LIVE_BUILD = "1";
   const server = createStudioServer({ hosted: true, decider: createDecider({ apiKey: "" }) });
@@ -183,7 +184,7 @@ test("A hosted server never switches the full build on.", async () => {
   const address = server.address();
   try {
     const status = (await (await fetch(`http://127.0.0.1:${typeof address === "object" && address ? address.port : 0}/api/live`)).json()) as { enabled: boolean; fullBuild?: boolean };
-    assert.notEqual(status.fullBuild, true);
+    assert.equal(status.fullBuild, networkIsolated());
   } finally {
     if (saved === undefined) delete process.env.LIVE_BUILD;
     else process.env.LIVE_BUILD = saved;
