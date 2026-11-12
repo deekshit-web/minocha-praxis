@@ -4,7 +4,7 @@ import { STAGE_METHODS, executionGate, mutationOracleIssues } from "./method.ts"
 import { reviewPanelIssues } from "./panel.ts";
 import { FEATURE_B_BRIEF, architecturePanel, panelCalls, prdPanel } from "@northwind/harness";
 
-test("quality outranks a second code generation", () => {
+test("Quality has a higher priority than a second code generation.", () => {
   assert.equal(STAGE_METHODS.prd.method, "analyze-critique-synthesize");
   assert.equal(STAGE_METHODS.architecture.method, "analyze-critique-synthesize");
   assert.equal(STAGE_METHODS.implementation.method, "plan-then-review-and-execute");
@@ -15,14 +15,14 @@ test("quality outranks a second code generation", () => {
   }
 });
 
-test("a PRD critique that skips security cannot open the gate", () => {
+test("A PRD critique that omits security cannot open the gate.", () => {
   const panel = prdPanel();
   panel.critiqueOfA.attributes = panel.critiqueOfA.attributes.filter((item) => item.attribute !== "security");
   const issues = reviewPanelIssues(panel, panelCalls(panel, FEATURE_B_BRIEF));
   assert.ok(issues.includes("quality-attribute-missing:critique-of-a:security"));
 });
 
-test("architecture synthesis has to meet accuracy, and the losing option records why it failed", () => {
+test("The architecture synthesis must meet the accuracy limit. The rejected option records the reason that it failed.", () => {
   const panel = architecturePanel();
   const issues = reviewPanelIssues(panel, panelCalls(panel, FEATURE_B_BRIEF));
   assert.deepEqual(issues, []);
@@ -31,7 +31,7 @@ test("architecture synthesis has to meet accuracy, and the losing option records
   assert.equal(panel.rationale.attributes.find((item) => item.attribute === "accuracy")?.met, true);
 });
 
-test("a review that calls a red test accurate is rejected, and a blind test is rejected", () => {
+test("The code rejects a review that calls a failed test accurate. It also rejects a blind test.", () => {
   const lie = executionGate("implementation", {
     sawDiff: true,
     attributes: [

@@ -3,7 +3,7 @@ import test from "node:test";
 import { createDecider } from "./jev.ts";
 import { createStudioServer } from "./server.ts";
 
-test("the studio serves its catalog and each simulated workflow, and refuses other sites", async () => {
+test("The studio serves its catalog and each simulated workflow. It rejects requests from other sites.", async () => {
   const server = createStudioServer({ decider: createDecider({ apiKey: "" }) });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
@@ -37,7 +37,7 @@ test("the studio serves its catalog and each simulated workflow, and refuses oth
   }
 });
 
-test("hosted, the studio answers any host name but stays read-only", async () => {
+test("On a hosted server, the studio answers to any host name. It stays read-only.", async () => {
   const server = createStudioServer({ hosted: true, decider: createDecider({ apiKey: "" }) });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
@@ -53,7 +53,7 @@ test("hosted, the studio answers any host name but stays read-only", async () =>
   }
 });
 
-test("the container image ships every folder the server reads at runtime", async () => {
+test("The container image includes each folder that the server reads at run time.", async () => {
   const { readFileSync } = await import("node:fs");
   const { join } = await import("node:path");
   const { repoRoot } = await import("@northwind/orchestrator");

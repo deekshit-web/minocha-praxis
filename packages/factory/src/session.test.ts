@@ -12,7 +12,7 @@ function fenceLines(blocks: Block[]): string {
   return blocks.find((block) => block.heading === "File fence")?.lines.join(" ") ?? "";
 }
 
-test("Feature B pauses at each human gate and records only after the P0 trace is green", async () => {
+test("Feature B stops at each human gate. It records the run only after the P0 trace passes.", async () => {
   const product = join(process.env.NORTHWIND_ROOT ?? "", "packages/domain/src/appealReady.ts");
   const before = readFileSync(product, "utf8");
   const session = new FactorySession("gate-path");
@@ -130,7 +130,7 @@ test("Feature B pauses at each human gate and records only after the P0 trace is
   assert.equal(view.approvals.every((item) => item.matches), true);
 });
 
-test("a change request returns to the same gate and leaves the document in place", async () => {
+test("A change request goes back to the same gate. The document stays unchanged.", async () => {
   const session = new FactorySession("changes");
   await session.act({ type: "begin" });
   await session.act({ type: "answers", choices: SUGGESTED });
@@ -142,7 +142,7 @@ test("a change request returns to the same gate and leaves the document in place
   assert.equal(view.approvals.find((item) => item.gate === "prd")?.matches, false);
 });
 
-test("rejecting the architecture suggestion keeps approve closed until the draft is restored", async () => {
+test("When a person rejects the architecture suggestion, the approve button stays closed until the draft is restored.", async () => {
   const session = new FactorySession("reject");
   await session.act({ type: "begin" });
   await session.act({ type: "answers", choices: SUGGESTED });
@@ -157,7 +157,7 @@ test("rejecting the architecture suggestion keeps approve closed until the draft
   assert.match(view.log.join("\n"), /Keep the domain fence/);
 });
 
-test("an SSN probe sets a banner and does not move the run", async () => {
+test("An SSN test input shows a banner. The run does not move.", async () => {
   const session = new FactorySession("probe");
   const view = await session.act({ type: "probe", brief: "Patient SSN 123-45-6789" });
   assert.equal(view.state, "intake");
@@ -166,7 +166,7 @@ test("an SSN probe sets a banner and does not move the run", async () => {
   assert.equal(session.run.state, "intake");
 });
 
-test("workbench links follow the configured workbench", () => {
+test("The workbench links use the workbench that is set in the configuration.", () => {
   const view = new FactorySession("workbench", "http://127.0.0.1:9999/").view();
   assert.equal(view.workbench, "http://127.0.0.1:9999/");
   const lines = view.tabs.flatMap((tab) => tab.blocks.flatMap((block) => block.lines));
@@ -174,7 +174,7 @@ test("workbench links follow the configured workbench", () => {
   assert.equal(lines.some((line) => line.includes("4173")), false);
 });
 
-test("a live run shows beside the recorded requirements, and a recorded run ends in the product", async () => {
+test("A live run shows next to the recorded requirements. A recorded run ends in the product.", async () => {
   const seat = (role: LiveShowcase["seats"][number]["role"], model: string, durationMs: number, costUsd: number) => ({
     role,
     model,

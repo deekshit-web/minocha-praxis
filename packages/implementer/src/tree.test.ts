@@ -21,7 +21,7 @@ function scratch(): { dir: string; tree: FeatureBTree; remove: () => void } {
   return { dir, tree, remove: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
-test("the seeded tree fails AC-CO50-NOTE, and one fenced patch makes node:test pass", () => {
+test("The seeded tree fails AC-CO50-NOTE. One patch inside the fence makes node:test pass.", () => {
   const scratchTree = scratch();
   try {
     const red = scratchTree.tree.test();
@@ -51,7 +51,7 @@ test("the seeded tree fails AC-CO50-NOTE, and one fenced patch makes node:test p
   }
 });
 
-test("a repeated failing patch stalls, and the fence refuses the factory and a deleted assertion", () => {
+test("A patch that fails again stops the run. The fence rejects a change to the factory. It rejects a deleted assertion.", () => {
   const scratchTree = scratch();
   try {
     const red = scratchTree.tree.test();

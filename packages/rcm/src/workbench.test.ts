@@ -17,7 +17,7 @@ async function withServer(run: (origin: string) => Promise<void>): Promise<void>
   }
 }
 
-test("the workqueue ranks by deadline and the class filter keeps PR-1 off the denial list", async () => {
+test("The workqueue sorts by deadline. The class filter removes PR-1 from the denial list.", async () => {
   await withServer(async (origin) => {
     const all = await (await fetch(`${origin}/`)).text();
     assert.equal(findPhi(all).length, 0);
@@ -37,7 +37,7 @@ test("the workqueue ranks by deadline and the class filter keeps PR-1 off the de
   });
 });
 
-test("CO-50 without a note stays blocked, PR-1 is not an appeal, and a complete denial can be marked ready", async () => {
+test("A CO-50 denial without a note stays blocked. PR-1 is not an appeal. A complete denial can be marked ready.", async () => {
   const seed = buildSeed();
   const blocked = seed.denials.find((item) => item.carc === "CO-50" && item.clinicalNoteRef === null && item.filingDeadline);
   const responsibility = seed.denials.find((item) => item.carc === "PR-1");
@@ -67,7 +67,7 @@ test("CO-50 without a note stays blocked, PR-1 is not an appeal, and a complete 
   });
 });
 
-test("eligibility cites the coverage decision and blocks only the last patient", async () => {
+test("The eligibility check cites the coverage decision. It blocks only the last patient.", async () => {
   const seed = buildSeed();
   await withServer(async (origin) => {
     const html = await (await fetch(`${origin}/eligibility`)).text();
@@ -90,7 +90,7 @@ test("eligibility cites the coverage decision and blocks only the last patient",
   });
 });
 
-test("reset clears an in-memory ready mark and leaves the seed denial blocked again", async () => {
+test("Reset removes the ready mark from memory. The seed denial is blocked again.", async () => {
   const open = buildSeed().denials.find((item) => item.carc === "CO-16");
   assert.ok(open);
   await withServer(async (origin) => {
@@ -116,7 +116,7 @@ function rawStatus(origin: string, method: string, path: string, headers: Record
   });
 }
 
-test("the workbench refuses a cross-site POST and a non-loopback Host", async () => {
+test("The workbench rejects a POST from another site. It rejects a Host that is not loopback.", async () => {
   const open = buildSeed().denials.find((item) => item.carc === "CO-16");
   assert.ok(open);
   await withServer(async (origin) => {

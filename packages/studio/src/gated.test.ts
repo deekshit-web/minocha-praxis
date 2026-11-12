@@ -33,7 +33,7 @@ function providers(answers: Record<string, number>): GatedProviders & { asked: s
   };
 }
 
-test("a confident decider skips the slow review and hands a simple merge to the cheaper model", async () => {
+test("When the decider is confident, it skips the slow review. It gives a simple merge to the cheaper model.", async () => {
   const p = providers({ complete: 0.9, mustFix: 0.9, simple: 0.85 });
   const result = await runGated(spec, recording, "medium", "FMCG", p);
   assert.equal(result.skippedReviewOfA, true);
@@ -44,7 +44,7 @@ test("a confident decider skips the slow review and hands a simple merge to the 
   assert.ok(result.judges, "different finals are judged");
 });
 
-test("an unsure decider falls back to the full path, and identical finals are not judged", async () => {
+test("When the decider is not sure, the full path runs. The judges do not compare two identical final versions.", async () => {
   const result = await runGated(spec, recording, "medium", "FMCG", providers({ complete: 0.6, mustFix: 0.62, simple: 0.55 }));
   assert.equal(result.skippedReviewOfA, false);
   assert.equal(result.mergePath, "full-merge");
@@ -52,7 +52,7 @@ test("an unsure decider falls back to the full path, and identical finals are no
   assert.equal(result.judges, null);
 });
 
-test("high-risk work never skips a review, and nothing to fix ships the better draft without a merge", async () => {
+test("High-risk work always gets a review. When there is nothing to fix, the better draft ships without a merge.", async () => {
   const p = providers({ complete: 0.99, mustFix: 0.1 });
   const result = await runGated(spec, recording, "high", "FMCG", p);
   assert.equal(result.skippedReviewOfA, false);

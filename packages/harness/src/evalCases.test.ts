@@ -3,12 +3,12 @@ import test from "node:test";
 import { intakeDecision } from "@northwind/orchestrator";
 import { basePrd, codeGateIssues, evalBriefs, plantDraft, plantedCases } from "./evalCases.ts";
 
-test("both base PRDs pass every code gate", () => {
+test("Both base PRDs pass each code gate.", () => {
   assert.deepEqual(codeGateIssues(basePrd("live-synthesis")), []);
   assert.deepEqual(codeGateIssues(basePrd("recorded")), []);
 });
 
-test("every planted defect slips past every code gate, so only a reviewer can catch it", () => {
+test("Each planted defect passes each code gate. Only a reviewer can find it.", () => {
   const cases = plantedCases();
   assert.equal(cases.filter((item) => item.kind === "seeded").length, 18);
   assert.equal(cases.filter((item) => item.kind === "clean").length, 4);
@@ -21,14 +21,14 @@ test("every planted defect slips past every code gate, so only a reviewer can ca
   }
 });
 
-test("an edit that no longer matches its base fails loudly", () => {
+test("An edit that does not match its base fails with an error.", () => {
   const [first] = plantedCases();
   assert.ok(first);
   const broken = { ...first, edits: [{ section: "requirements" as const, id: "REQ-1", field: "statement", find: "text that is not there", replace: "x" }] };
   assert.throws(() => plantDraft(broken), /matches 0 times/);
 });
 
-test("every new brief clears intake and carries answers and checks", () => {
+test("Each new brief passes intake. Each brief has answers and checks.", () => {
   const briefs = evalBriefs();
   assert.equal(briefs.length, 8);
   for (const brief of briefs) {

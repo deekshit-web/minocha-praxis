@@ -3,7 +3,7 @@ import test from "node:test";
 import { coverageSnapshot, schedulingDecision } from "./eligibility.ts";
 import { buildSeed } from "./seed.ts";
 
-test("inactive coverage tells the front desk not to schedule", () => {
+test("When coverage is not active, the front desk does not schedule the visit.", () => {
   const decision = schedulingDecision({
     patientId: "PAT-004",
     status: "inactive",
@@ -14,7 +14,7 @@ test("inactive coverage tells the front desk not to schedule", () => {
   assert.match(decision.banner ?? "", /Do not schedule/);
 });
 
-test("active coverage has no banner", () => {
+test("When coverage is active, the page shows no banner.", () => {
   const decision = schedulingDecision({
     patientId: "PAT-001",
     status: "active",
@@ -25,7 +25,7 @@ test("active coverage has no banner", () => {
   assert.equal(decision.banner, null);
 });
 
-test("the coverage snapshot reuses seed patient ids and leaves the last patient inactive", () => {
+test("The coverage snapshot uses the seed patient IDs. The last patient has no active coverage.", () => {
   const patients = buildSeed().patients;
   const coverage = coverageSnapshot(patients);
   assert.equal(coverage.length, patients.length);

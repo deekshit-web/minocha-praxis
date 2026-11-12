@@ -3,7 +3,7 @@ import test from "node:test";
 import { buildSeed } from "./seed.ts";
 import { filingDeadline } from "./filing.ts";
 
-test("the practice seed is synthetic, sized for the workbench, and covers the demo CARC set", () => {
+test("The practice seed data is synthetic. Its size is correct for the workbench. It includes the demo CARC codes.", () => {
   const seed = buildSeed();
   assert.equal(seed.patients.length, 12);
   assert.ok(seed.lines.length >= 40);

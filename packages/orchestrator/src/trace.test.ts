@@ -15,7 +15,7 @@ function results(failed: string[] = []) {
   }));
 }
 
-test("the trace ties every scenario to a requirement, a case, and a workbench page", () => {
+test("The trace links each scenario to a requirement, a case and a workbench page.", () => {
   const rows = traceMatrix({ prd, cases: testCasePanel().synthesis.cases, dropped: aligned.dropped, results: results(), workbench: "http://127.0.0.1:4173" });
   assert.deepEqual(
     rows.map((row) => row.scenarioId),
@@ -35,7 +35,7 @@ test("the trace ties every scenario to a requirement, a case, and a workbench pa
   assert.equal(rows.find((row) => row.scenarioId === "SCN-6")?.actualUrl, "http://127.0.0.1:4173/summary");
 });
 
-test("a failed priority case fails only its own row", () => {
+test("A priority case that fails changes only its own row.", () => {
   const rows = traceMatrix({ prd, cases: aligned.cases, dropped: [], results: results(["TC-2"]), workbench: "http://127.0.0.1:4173" });
   assert.equal(rows.find((row) => row.caseId === "TC-2")?.status, "failed");
   assert.equal(rows.find((row) => row.caseId === "TC-1")?.status, "passed");

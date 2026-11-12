@@ -21,7 +21,7 @@ function packages(): string[] {
 }
 
 /** A package is reached through its name and its index. A relative path into another package's src skips both. */
-test("no package reaches into another package by relative path", () => {
+test("No package uses a relative path to read another package.", () => {
   const escapes: string[] = [];
   for (const name of packages()) {
     for (const file of sources(join(repoRoot(), "packages", name, "src"))) {
@@ -34,7 +34,7 @@ test("no package reaches into another package by relative path", () => {
   assert.deepEqual(escapes, []);
 });
 
-test("every @northwind import is declared in the importing package", () => {
+test("Each @northwind import is declared in the package that imports it.", () => {
   const undeclared: string[] = [];
   for (const name of packages()) {
     const manifest = JSON.parse(readFileSync(join(repoRoot(), "packages", name, "package.json"), "utf8")) as {

@@ -6,7 +6,7 @@ import { loadSpecs } from "./workflows.ts";
 
 const spec = loadSpecs(undefined, { recordings: false }).find((item) => item.id === "fmcg-build")!;
 
-test("the sandbox runs model-written tests, refuses unsafe code, and stops a runaway loop", async () => {
+test("The sandbox runs the tests that the model wrote. It rejects unsafe code. It stops a loop that does not end.", async () => {
   const ok = await sandboxRun("({ add(a, b) { return a + b; } })", 'test("adds", () => assert.equal(code.add(2, 2), 4));');
   assert.deepEqual(ok.results.map((result) => result.pass), [true]);
   const unsafe = await sandboxRun('({ steal() { return fetch("https://example.com"); } })', 'test("x", () => assert.ok(true));');
@@ -15,7 +15,7 @@ test("the sandbox runs model-written tests, refuses unsafe code, and stops a run
   assert.match(loop.error ?? "", /timed out/);
 });
 
-test("a build recording runs the real tests, and a failing run gets a fix and a rerun", async () => {
+test("A build recording runs the real tests. When a run fails, the model fixes the code and the tests run again.", async () => {
   const fixed = "({ daysOfCover(stock, sellOut, weeks) { return sellOut === 0 ? Infinity : stock / (sellOut / (weeks * 7)); }, createAlerter() { return { check() { return null; } }; } })";
   const buggy = fixed.replace("weeks * 7", "weeks");
   const answers: Record<string, unknown> = {

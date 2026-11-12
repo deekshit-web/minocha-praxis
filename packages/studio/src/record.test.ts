@@ -18,14 +18,14 @@ function fake(answers: Record<string, unknown>, model: string): ModelProvider & 
   };
 }
 
-test("the panel context carries the facts, never the prepared drafts or reviews", () => {
+test("The panel context contains the facts. It does not contain the prepared drafts or reviews.", () => {
   const context = panelContext(spec, "FMCG");
   assert.match(context, /SKU-5502/);
   assert.match(context, /35%/);
   assert.doesNotMatch(context, /4\.20|Clinically proven|D-A1/);
 });
 
-test("a recording runs drafts, crossed reviews and a merge, renumbers findings, and prices every call", async () => {
+test("A recording runs the drafts, the crossed reviews and the merge. It renumbers the findings. It gives a price to each call.", async () => {
   const review = { findings: [{ id: "x", severity: "P0", title: "Breaks the floor", detail: "21.4% is below 35%.", quote: "30% off" }], strengths: "Clear." };
   const claude = fake({ analystA: { text: "A plan." }, critiqueOfB: { findings: [], strengths: "Fine." }, synthesizer: { document: "Final.", keptFromA: "a", keptFromB: "b", resolutions: [{ finding: "D-A1", outcome: "fixed", note: "15% off." }] } }, "claude-opus-5");
   const grok = fake({ analystB: { text: "B plan." }, critiqueOfA: review }, "grok-4.7");
@@ -40,7 +40,7 @@ test("a recording runs drafts, crossed reviews and a merge, renumbers findings, 
   assert.match(renderMerge(recording.merge, 1), /Fixed D-A1: 15% off\.\nDefects resolved: 1 of 1\./);
 });
 
-test("the final check: Model B reviews the merged document, and Model A fixes it only when something was raised", async () => {
+test("In the final check, Model B reviews the merged document. Model A makes a fix only when Model B raises a finding.", async () => {
   const merge = { document: "Final, with 18% less trial.", keptFromA: "a", keptFromB: "b", resolutions: [] };
   const claude = fake({ analystA: { text: "A plan." }, critiqueOfB: { findings: [], strengths: "Fine." }, synthesizer: merge }, "claude-opus-5");
   const raised = { findings: [{ id: "x", severity: "P0", title: "Wrong trial figure", detail: "It is 15.3%.", quote: "18% less trial" }], strengths: "Clear." };

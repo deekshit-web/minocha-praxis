@@ -38,7 +38,7 @@ function reply(content: string, finish = "stop") {
 
 const seats = { critiqueOfA: { instructions: "You are analyst B, reviewing analyst A.", schema: CritiqueSchema } };
 
-test("a Grok seat sends the context, its instructions, and a strict JSON schema, and reports what xAI billed", async () => {
+test("A Grok seat sends the context, its instructions and a strict JSON schema. It reports the cost that xAI billed.", async () => {
   const { fetch, requests } = fakeFetch(200, reply(JSON.stringify(critique)));
   const grok = new GrokModel("SHARED CONTEXT", seats, { apiKey: "xai-test", fetch });
   const answer = await grok.complete({ role: "critiqueOfA", prompt: "critiqueOfA\nthe brief" });
@@ -63,7 +63,7 @@ test("a Grok seat sends the context, its instructions, and a strict JSON schema,
   assert.equal(body.response_format.json_schema.schema.type, "object");
 });
 
-test("a malformed Grok answer is refused but its billed cost is kept, and an HTTP error names the status", async () => {
+test("A malformed Grok answer is rejected. The run keeps its billed cost. An HTTP error names the status.", async () => {
   const bad = new GrokModel("ctx", seats, { apiKey: "xai-test", fetch: fakeFetch(200, reply('{"of":"A"}')).fetch });
   const failure = await bad.complete({ role: "critiqueOfA", prompt: "p" }).catch((error: unknown) => error);
   assert.ok(failure instanceof CompletionError);
@@ -75,7 +75,7 @@ test("a malformed Grok answer is refused but its billed cost is kept, and an HTT
   await assert.rejects(denied.complete({ role: "critiqueOfA", prompt: "p" }), /xai-error 401: Incorrect API key/);
 });
 
-test("the seat router sends each seat to its own provider", async () => {
+test("The seat router sends each seat to its own provider.", async () => {
   const asked: string[] = [];
   const named = (name: string): ModelProvider => ({
     mode: "live",
@@ -91,7 +91,7 @@ test("the seat router sends each seat to its own provider", async () => {
   assert.deepEqual(asked, ["analystA->claude", "analystB->grok", "critiqueOfA->grok", "critiqueOfB->claude", "synthesizer->claude"]);
 });
 
-test("without a reported cost, Grok is priced from the table, and a long-context prompt is not guessed", () => {
+test("When no cost is reported, the price table gives the Grok price. The code does not guess the price of a long-context prompt.", () => {
   const usage = { inputTokens: 600, outputTokens: 2000, cacheReadTokens: 400, cacheWriteTokens: 0 };
   // 600 x $2 + 2000 x $6 + 400 x $0.50 per million tokens.
   assert.equal(callCost("grok-4.7", usage)?.toFixed(6), "0.013400");
@@ -99,7 +99,7 @@ test("without a reported cost, Grok is priced from the table, and a long-context
   assert.equal(callCost("some-other-model", usage), null);
 });
 
-test("the default xAI client waits on a slow server, and a network failure names its cause", async () => {
+test("The default xAI client waits for a slow server. A network failure names its cause.", async () => {
   const { createServer } = await import("node:http");
   const server = createServer((_request, response) => {
     setTimeout(() => {

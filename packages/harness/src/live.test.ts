@@ -57,7 +57,7 @@ function recordedReplies(): FakeReply[] {
   ];
 }
 
-test("each PRD seat asks Claude with the shared cached context, its own schema, and its seat prompt", async () => {
+test("Each PRD seat asks Claude. It sends the shared cached context, its own schema and its seat prompt.", async () => {
   const { client, requests } = fakeClient(recordedReplies());
   const model = new ClaudeModel(prdContext(FEATURE_B_BRIEF), livePrdSeats(), { client });
   const result = await runLivePrd(model);
@@ -97,7 +97,7 @@ test("each PRD seat asks Claude with the shared cached context, its own schema, 
   assert.equal(result.quality.synthesizer.verdict, "pass");
 });
 
-test("a refusal or a truncated answer stops the panel with the seat and the reason", async () => {
+test("A refusal or a cut-off answer stops the panel. The error names the seat and the reason.", async () => {
   const refused = new ClaudeModel(prdContext(FEATURE_B_BRIEF), livePrdSeats(), {
     client: fakeClient([{ stop_reason: "refusal", stop_details: { category: "cyber" } }]).client,
   });
@@ -108,7 +108,7 @@ test("a refusal or a truncated answer stops the panel with the seat and the reas
   await assert.rejects(runLivePrd(truncated), /model-truncated:analystA/);
 });
 
-test("the gates judge a live PRD: an ungrounded citation, an unflagged open question, and leaked PHI are refused", async () => {
+test("The gates check a live PRD. They reject a citation with no source. They reject an open question that is not flagged. They reject leaked PHI.", async () => {
   const lines = recordedLines(prdPanel());
   const wrapped = JSON.parse(lines[4] ?? "{}") as { synthesis: Prd; rationale: unknown };
   wrapped.synthesis.citations = [...wrapped.synthesis.citations, "pack/glossary.md"];
@@ -121,7 +121,7 @@ test("the gates judge a live PRD: an ungrounded citation, an unflagged open ques
   assert.deepEqual(result.issues, ["missing-citation:pack/glossary.md", "open-question-unflagged:OQ-1", "phi:phone:415-555-0134"]);
 });
 
-test("the synthesizer answers in plain JSON checked against its schema, since its compiled grammar is too large", async () => {
+test("The synthesizer answers in plain JSON. The code checks the JSON against its schema. The compiled grammar is too large.", async () => {
   const { client, requests } = fakeClient(recordedReplies());
   const result = await runLivePrd(new ClaudeModel(prdContext(FEATURE_B_BRIEF), livePrdSeats(), { client }));
   assert.deepEqual(result.issues, []);
@@ -131,7 +131,7 @@ test("the synthesizer answers in plain JSON checked against its schema, since it
   assert.ok((requests[0] as { output_config?: unknown }).output_config);
 });
 
-test("a malformed synthesis fails, keeps the four finished answers and every billed call, and the run resumes from them", async () => {
+test("A malformed synthesis fails. The run keeps the four finished answers and each billed call. The run then resumes from them.", async () => {
   const replies = recordedReplies();
   const broken = fakeClient([...replies.slice(0, 4), { text: "I could not produce the document." }]);
   const failure = await runLivePrd(new ClaudeModel(prdContext(FEATURE_B_BRIEF), livePrdSeats(), { client: broken.client })).then(
@@ -169,12 +169,12 @@ test("a malformed synthesis fails, keeps the four finished answers and every bil
   assert.deepEqual(summary.issues, ["model-unparsed:synthesizer"]);
 });
 
-test("a resumed seat whose prompt changed is refused rather than replayed", async () => {
+test("A resumed seat with a changed prompt is rejected. It is not replayed.", async () => {
   const provider = new ResumingProvider([{ role: "analystA", prompt: "an older brief", text: "{}" }], new FixturePlayer(recordedLines(prdPanel())));
   await assert.rejects(provider.complete({ role: "analystA", prompt: "a new brief" }), /resume-prompt-changed:analystA/);
 });
 
-test("a resumed or re-checked run reports what the whole chain of attempts cost and took", () => {
+test("A run that is resumed or checked again reports the cost and time of all attempts.", () => {
   const run = (file: string, kind: "live" | "resumed" | "recheck", resumedFrom: string | null, costUsd: number, durationMs: number) => ({
     file,
     kind,
@@ -199,7 +199,7 @@ test("a resumed or re-checked run reports what the whole chain of attempts cost 
   assert.equal(chained[3]?.chainCostUsd, 0.3);
 });
 
-test("the showcase takes each seat's time and cost from the attempt where it succeeded", async () => {
+test("The showcase takes the time and cost of each seat from the attempt that succeeded.", async () => {
   const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
   const { tmpdir } = await import("node:os");
   const { join } = await import("node:path");

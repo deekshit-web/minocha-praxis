@@ -4,7 +4,7 @@ import { findPhi } from "@northwind/orchestrator";
 import { buildSeed, daysRemaining } from "@northwind/domain";
 import { PROPOSED_SCREENS, renderProposedScreen } from "./proposed.ts";
 
-test("three proposed screens are watermarked and free of PHI", () => {
+test("The three proposed screens have a watermark. They contain no PHI.", () => {
   for (const id of PROPOSED_SCREENS) {
     const html = renderProposedScreen(id);
     assert.match(html, /Proposed/);
@@ -13,7 +13,7 @@ test("three proposed screens are watermarked and free of PHI", () => {
   }
 });
 
-test("the workqueue leads with the soonest deadline", () => {
+test("The workqueue shows the earliest deadline first.", () => {
   const seed = buildSeed();
   const html = renderProposedScreen("SCR-1", seed);
   const soonest = [...seed.denials].sort((a, b) => {
@@ -27,7 +27,7 @@ test("the workqueue leads with the soonest deadline", () => {
   for (const denial of seed.denials) assert.match(html, new RegExp(denial.id));
 });
 
-test("the detail screen names the missing clinical note and keeps ready off", () => {
+test("The detail screen names the missing clinical note. The ready button stays off.", () => {
   const html = renderProposedScreen("SCR-2");
   assert.match(html, /Clinical note reference: Missing/);
   assert.match(html, /Filing deadline: Present/);

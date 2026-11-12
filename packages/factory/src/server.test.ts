@@ -21,7 +21,7 @@ async function withServer(run: (port: number) => Promise<void>): Promise<void> {
   }
 }
 
-test("the factory page and one act are served over HTTP", async () => {
+test("The server sends the factory page and one act over HTTP.", async () => {
   await withServer(async (port) => {
     const origin = `http://127.0.0.1:${port}`;
     const page = await fetch(`${origin}/`);
@@ -88,7 +88,7 @@ function close(server: Server): Promise<void> {
   return new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
 }
 
-test("reset clears the factory session, its sandbox, and the workbench ready mark", async () => {
+test("Reset removes the factory session, its sandbox and the ready mark on the workbench.", async () => {
   const product = join(process.env.NORTHWIND_ROOT ?? "", "packages/domain/src/appealReady.ts");
   const before = readFileSync(product, "utf8");
   const sandboxRoot = await mkdtemp(join(tmpdir(), "northwind-reset-"));
@@ -126,7 +126,7 @@ test("reset clears the factory session, its sandbox, and the workbench ready mar
   }
 });
 
-test("reset still clears the factory when the workbench does not answer", async () => {
+test("Reset removes the factory session also when the workbench does not answer.", async () => {
   const sandboxRoot = await mkdtemp(join(tmpdir(), "northwind-reset-down-"));
   const factory = createFactoryServer({ workbench: "http://127.0.0.1:9", sandboxRoot });
   const port = await listen(factory);
@@ -146,7 +146,7 @@ test("reset still clears the factory when the workbench does not answer", async 
   }
 });
 
-test("a cross-site page cannot reset the factory", async () => {
+test("A page from another site cannot reset the factory.", async () => {
   await withServer(async (port) => {
     const origin = `http://127.0.0.1:${port}`;
     const session = await (await fetch(`${origin}/api/session`, { method: "POST" })).json();
@@ -156,7 +156,7 @@ test("a cross-site page cannot reset the factory", async () => {
   });
 });
 
-test("the page can read the saved real run without making a call", async () => {
+test("The page reads the saved real run. It makes no call.", async () => {
   await withServer(async (port) => {
     const response = await fetch(`http://127.0.0.1:${port}/api/showcase`);
     assert.equal(response.status, 200);

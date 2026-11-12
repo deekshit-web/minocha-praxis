@@ -8,7 +8,7 @@ const packRoot = process.env.NORTHWIND_ROOT
   ? join(process.env.NORTHWIND_ROOT, "packages/knowledge/pack")
   : join(dirname(fileURLToPath(import.meta.url)), "../pack");
 
-test("retrieval cites the CARC table, the payer rule, and the PHI policy for a CO-50 brief", () => {
+test("For a CO-50 brief, retrieval cites the CARC table, the payer rule and the PHI policy.", () => {
   const chunks = loadPack(packRoot);
   const found = retrieve(chunks, ["co-50", "phi", "timely-filing", "denial"]);
   const paths = found.map((chunk) => chunk.path);
@@ -19,7 +19,7 @@ test("retrieval cites the CARC table, the payer rule, and the PHI policy for a C
   assert.ok(found.every((chunk) => chunk.score > 0));
 });
 
-test("Feature A left a coverage decision Feature C can cite", () => {
+test("Feature A leaves a coverage decision. Feature C can cite it.", () => {
   const chunks = loadPack(packRoot);
   const decision = chunks.find((chunk) => chunk.path === "decisions/ADR-001-patient-and-coverage.md");
   assert.ok(decision);
@@ -27,7 +27,7 @@ test("Feature A left a coverage decision Feature C can cite", () => {
   assert.ok(decision.tags.includes("feature-a"));
 });
 
-test("a tag matches on its hyphenated parts and a brief's plural matches the singular tag", () => {
+test("A tag matches on its parts that have a hyphen. A plural word in a brief matches the singular tag.", () => {
   assert.deepEqual(matchTerms("denial-specialist"), ["denial-specialist", "denial", "specialist"]);
   assert.deepEqual(matchTerms("denials"), ["denials", "denial"]);
   assert.deepEqual(matchTerms("co-50"), ["co-50"]);
@@ -37,7 +37,7 @@ test("a tag matches on its hyphenated parts and a brief's plural matches the sin
   assert.ok(scoreChunk(roles, ["specialist"]) > 0);
 });
 
-test("an always-on policy is retrieved for any brief and leads a short list", () => {
+test("An always-on policy is retrieved for each brief. It is first in a short list.", () => {
   const chunks = loadPack(packRoot);
   assert.deepEqual(
     chunks.filter((chunk) => chunk.always).map((chunk) => chunk.path),

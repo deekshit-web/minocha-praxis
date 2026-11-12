@@ -7,7 +7,7 @@ import { LIVE_CHECKS, runChecks } from "../public/checks.js";
 import { LIVE_TESTS, fixDiff, mutationTest, report, runRecorded, runTests, sourceOf, unsafeNames } from "../public/tests.js";
 import { BUILD_STAGES, DOCUMENT_STAGES, DOMAINS, applyRecording, catalog, expand, loadSpecs, workflowIssues } from "./workflows.ts";
 
-test("every domain offers a feature build and a document workflow", () => {
+test("Each domain has one feature build and one document workflow.", () => {
   const specs = loadSpecs(undefined, { recordings: false });
   for (const domain of DOMAINS) {
     const kinds = specs.filter((spec) => spec.domain === domain.id).map((spec) => spec.kind).sort();
@@ -15,11 +15,11 @@ test("every domain offers a feature build and a document workflow", () => {
   }
 });
 
-test("every workflow is complete, laid out without overlaps, priced, and free of patient data", () => {
+test("Each workflow is complete. Its layout has no overlaps. It has a price. It contains no patient data.", () => {
   for (const spec of loadSpecs(undefined, { recordings: false })) assert.deepEqual(workflowIssues(spec), [], spec.id);
 });
 
-test("each workflow shows its model calls without making them, and estimates what a live run would cost", () => {
+test("Each workflow shows its model calls but does not make them. It estimates the cost of a live run.", () => {
   for (const spec of loadSpecs(undefined, { recordings: false })) {
     const flow = expand(spec);
     const calls = flow.steps.filter((step) => step.kind === "llm");
@@ -38,7 +38,7 @@ test("each workflow shows its model calls without making them, and estimates wha
   }
 });
 
-test("each workflow has a caught-it moment: a review flags a serious defect that the merge resolves", () => {
+test("Each workflow has a moment where a review finds a serious defect. The merge then resolves the defect.", () => {
   for (const spec of loadSpecs(undefined, { recordings: false })) {
     const flow = expand(spec);
     const flagged = flow.steps.filter((step) => step.id.startsWith("reviewOf") && step.verdict === "flagged");
@@ -47,7 +47,7 @@ test("each workflow has a caught-it moment: a review flags a serious defect that
   }
 });
 
-test("each workflow ends with a readable output that carries the fixes, not the defects", () => {
+test("Each workflow ends with a readable output. The output contains the fixes. It does not contain the defects.", () => {
   const caught: Record<string, RegExp> = {
     "healthcare-document": /diagnosis code/i,
     "education-document": /1\/6/,
@@ -65,7 +65,7 @@ test("each workflow ends with a readable output that carries the fixes, not the 
   }
 });
 
-test("a build's generated tests match its test run, and the code writer never sees them", () => {
+test("The generated tests of a build match its test run. The code writer does not see the tests.", () => {
   for (const spec of loadSpecs(undefined, { recordings: false }).filter((item) => item.kind === "build")) {
     const cases = (spec.testCases ?? "").split("\n").filter((line) => line.startsWith("TC-"));
     const passing = (spec.testsGreen ?? "").split("\n").filter((line) => line.startsWith("✓"));
@@ -80,7 +80,7 @@ test("a build's generated tests match its test run, and the code writer never se
   }
 });
 
-test("a build workflow goes red before it goes green", () => {
+test("A build workflow fails first. It then passes.", () => {
   for (const spec of loadSpecs(undefined, { recordings: false }).filter((item) => item.kind === "build")) {
     assert.match(spec.testsRed ?? "", /✗/, spec.id);
     assert.doesNotMatch(spec.testsGreen ?? "", /✗/, spec.id);
@@ -89,7 +89,7 @@ test("a build workflow goes red before it goes green", () => {
   }
 });
 
-test("the catalog lists every domain with its workflows and their estimates", () => {
+test("The catalog lists each domain with its workflows and their estimates.", () => {
   const entries = catalog();
   assert.equal(entries.length, DOMAINS.length);
   for (const entry of entries) {
@@ -98,7 +98,7 @@ test("the catalog lists every domain with its workflows and their estimates", ()
   }
 });
 
-test("the real-run evidence adds up and carries no patient data", () => {
+test("The totals of the real-run evidence are correct. The evidence contains no patient data.", () => {
   const run = JSON.parse(readFileSync(join(repoRoot(), "packages/studio/evidence/live-prd-2026-11-09.json"), "utf8")) as {
     calls: Array<{ costUsd: number; seconds: number; note?: string }>;
     totals: { calls: number; modelSeconds: number; costUsd: number; costIncludingRetryUsd: number };
@@ -113,7 +113,7 @@ test("the real-run evidence adds up and carries no patient data", () => {
   assert.deepEqual(findPhi(transcript), []);
 });
 
-test("each before-and-after quotes a flagged draft and the output that replaced it", () => {
+test("Each before-and-after view quotes a flagged draft and the output that replaced it.", () => {
   for (const spec of loadSpecs(undefined, { recordings: false })) {
     const flow = expand(spec);
     const contrast = spec.contrast;
@@ -126,7 +126,7 @@ test("each before-and-after quotes a flagged draft and the output that replaced 
   }
 });
 
-test("every workflow's live checks pass on the approved figures and fail on the flagged draft's", () => {
+test("The live checks of each workflow pass with the approved figures. They fail with the figures of the flagged draft.", () => {
   for (const spec of loadSpecs(undefined, { recordings: false })) {
     const live = LIVE_CHECKS[spec.id as keyof typeof LIVE_CHECKS];
     assert.ok(live, spec.id);
@@ -139,7 +139,7 @@ test("every workflow's live checks pass on the approved figures and fail on the 
   assert.equal(Object.keys(LIVE_CHECKS).length, loadSpecs(undefined, { recordings: false }).length);
 });
 
-test("each build's tests really run: one fails on the first version, all pass after the fix", () => {
+test("The tests of each build run for real. One test fails on the first version. All tests pass after the fix.", () => {
   const builds = loadSpecs(undefined, { recordings: false }).filter((spec) => spec.kind === "build");
   assert.deepEqual([...LIVE_TESTS].sort(), builds.map((spec) => spec.id).sort());
   const source = readFileSync(join(repoRoot(), "packages/studio/public/tests.js"), "utf8");
@@ -159,7 +159,7 @@ test("each build's tests really run: one fails on the first version, all pass af
   }
 });
 
-test("a build walks every stage of software development, in order, each with a person or a check at its end", () => {
+test("A build goes through each stage of software development in order. Each stage ends with a person or a check.", () => {
   for (const spec of loadSpecs(undefined, { recordings: false }).filter((item) => item.kind === "build")) {
     const flow = expand(spec);
     assert.deepEqual(flow.stages, BUILD_STAGES, spec.id);
@@ -174,7 +174,7 @@ test("a build walks every stage of software development, in order, each with a p
   }
 });
 
-test("a document walks its own stages in order", () => {
+test("A document goes through its own stages in order.", () => {
   for (const spec of loadSpecs(undefined, { recordings: false }).filter((item) => item.kind === "document")) {
     const flow = expand(spec);
     // The final check is there only when the panel was recorded with one.
@@ -185,7 +185,7 @@ test("a document walks its own stages in order", () => {
   }
 });
 
-test("the decision model routes every request, triages findings in line with what follows, and costs a fraction of a cent", () => {
+test("The decision model routes each request. Its triage of findings agrees with the next steps. Each call costs a fraction of a cent.", () => {
   for (const spec of loadSpecs(undefined, { recordings: false })) {
     const flow = expand(spec);
     const decisions = flow.steps.filter((item) => item.actor === "jev-1.14.0");
@@ -209,7 +209,7 @@ test("the decision model routes every request, triages findings in line with wha
   }
 });
 
-test("the code shown is the code tested: the first version is the fixed source with its one planted patch", () => {
+test("The code on the page is the code that is tested. The first version is the fixed source plus one planted patch.", () => {
   for (const spec of loadSpecs(undefined, { recordings: false }).filter((item) => item.kind === "build")) {
     assert.notEqual(sourceOf(spec.id, "first"), sourceOf(spec.id, "fixed"), spec.id);
     assert.match(fixDiff(spec.id), /^- /m, spec.id);
@@ -220,7 +220,7 @@ test("the code shown is the code tested: the first version is the fixed source w
   }
 });
 
-test("mutation testing: the tests catch most deliberately broken versions of each feature", () => {
+test("In mutation testing, the tests find most of the versions of each feature that were broken on purpose.", () => {
   for (const id of LIVE_TESTS) {
     const result = mutationTest(id);
     assert.ok(result.total >= 5, `${id}: only ${result.total} mutants`);
@@ -231,7 +231,7 @@ test("mutation testing: the tests catch most deliberately broken versions of eac
 /** The steps a panel recording fills: the drafts, the crossed reviews, the merge and the final check. */
 const PANEL_STEPS = ["draftA", "draftB", "reviewOfA", "reviewOfB", "merge", "finalCheck", "finalFix"];
 
-test("recorded runs replace the prepared panel faithfully: real text, real figures, an honest before-and-after", () => {
+test("A recorded run replaces the prepared panel without change. It has the real text and the real figures. Its before-and-after view is true.", () => {
   const recorded = loadSpecs().filter((spec) => spec.recording);
   for (const spec of recorded) {
     const recording = spec.recording!;
@@ -257,7 +257,7 @@ test("recorded runs replace the prepared panel faithfully: real text, real figur
   }
 });
 
-test("recorded build stages are real: the model-written tests, rerun on the model-written code, give the recorded results", () => {
+test("The recorded build stages are real. When the model-written tests run again on the model-written code, they give the recorded results.", () => {
   for (const spec of loadSpecs().filter((item) => item.buildRecording)) {
     const build = spec.buildRecording!;
     const flow = expand(spec);
@@ -280,7 +280,7 @@ test("recorded build stages are real: the model-written tests, rerun on the mode
   }
 });
 
-test("a recording with a final check adds the check and the fix, and the fix is what gets delivered", () => {
+test("A recording with a final check adds the check and the fix. The fix is the version that ships.", () => {
   const spec = loadSpecs(undefined, { recordings: false }).find((item) => item.id === "fmcg-document")!;
   const call = { model: "claude-opus-5-5", seconds: 1, inputTokens: 1, outputTokens: 1, costUsd: 0.01 };
   const recording = {

@@ -37,7 +37,7 @@ function models(judge: (prompt: string, seat: SeatSpec) => unknown, log: string[
   };
 }
 
-test("a planted case asks one reviewer, and the jury's share of yes votes is the detection grade", async () => {
+test("A planted case asks one reviewer. The share of yes votes from the jury is the detection grade.", async () => {
   const planted = plantedCases().find((item) => item.id === "A01");
   assert.ok(planted);
   const log: string[] = [];
@@ -55,7 +55,7 @@ test("a planted case asks one reviewer, and the jury's share of yes votes is the
   assert.match(graded.explanation.detected ?? "", /claude-sonnet-5: yes \(D-1\)[\s\S]*grok-4\.7: no/);
 });
 
-test("a clean control only counts the serious defects a reviewer raised, with no jury call", async () => {
+test("A clean control counts only the serious defects that a reviewer raises. It makes no jury call.", async () => {
   const clean = plantedCases().find((item) => item.kind === "clean");
   assert.ok(clean);
   const calls: EvalCall[] = [];
@@ -65,7 +65,7 @@ test("a clean control only counts the serious defects a reviewer raised, with no
   assert.equal(calls.length, 0);
 });
 
-test("each Part B setup makes the calls it claims to, on the models it claims to", async () => {
+test("Each Part B setup makes the calls that it states, on the models that it states.", async () => {
   const brief = evalBriefs()[0];
   assert.ok(brief);
   const expected: Record<string, string[]> = {
@@ -92,7 +92,7 @@ test("each Part B setup makes the calls it claims to, on the models it claims to
   }
 });
 
-test("Part B grading: checklist share averaged over the jury, code gates, and a blind win rate against the single draft", async () => {
+test("Part B grading uses three values. The first is the checklist share, averaged over the jury. The second is the code gates. The third is the blind win rate against the single draft.", async () => {
   const brief = evalBriefs()[0];
   assert.ok(brief);
   const prd = (wrapped as { synthesis: Prd }).synthesis;
@@ -113,7 +113,7 @@ test("Part B grading: checklist share averaged over the jury, code gates, and a 
   assert.equal(reference.grade.win_vs_single, 0.5);
 });
 
-test("a call served by a different model than it asked for fails the attempt as a substitution", () => {
+test("A call that a different model answers fails the attempt. The code treats it as a substitution.", () => {
   const call = (requested: string, served: string): EvalCall => ({
     label: "seat",
     requested,
@@ -126,7 +126,7 @@ test("a call served by a different model than it asked for fails the attempt as 
   );
 });
 
-test("v4 reviews strictly, and Claude revises only when the final Grok review raises a defect", async () => {
+test("Version 4 reviews with strict rules. Claude makes a revision only when the final Grok review raises a defect.", async () => {
   const brief = evalBriefs()[0];
   assert.ok(brief);
   const defect = { id: "D-A1", severity: "P0", code: "OTHER", point: "AC-2 uses 14 days where the brief says 10" };

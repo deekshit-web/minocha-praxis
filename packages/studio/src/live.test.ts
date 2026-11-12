@@ -37,7 +37,7 @@ function runners(low = false): LiveRunners & { panels: number } {
 const brief = { passcode: "booth-2026", domain: "fmcg", kind: "document", brief: "Plan a two-week promotion for a new shampoo that keeps margin above 35%." };
 const settle = () => new Promise((resolve) => setTimeout(resolve, 20));
 
-test("a visitor's brief runs the full panel live, reporting every call, its cost and the final version", async () => {
+test("The full panel runs live on the brief of a visitor. The page shows each call, its cost and the final version.", async () => {
   const fake = runners();
   const live = createLiveService({ passcode: "booth-2026", runners: fake });
   const started = live.submit(brief);
@@ -52,7 +52,7 @@ test("a visitor's brief runs the full panel live, reporting every call, its cost
   assert.equal(live.status().spentTodayUsd.toFixed(2), "0.10");
 });
 
-test("a request Model C rates low risk takes the cheap path: one model, no panel", async () => {
+test("Model C rates a request as low risk. The request goes to one model and not to the panel.", async () => {
   const fake = runners(true);
   const live = createLiveService({ passcode: "booth-2026", runners: fake });
   const started = live.submit(brief);
@@ -63,7 +63,7 @@ test("a request Model C rates low risk takes the cheap path: one model, no panel
   assert.equal(job.final, "Single draft.");
 });
 
-test("live runs refuse a wrong passcode, personal data, odd lengths, a second run at once, and a spent budget", async () => {
+test("A live run rejects a wrong passcode, personal data and a bad length. It rejects a second run at the same time. It rejects a run when the budget is spent.", async () => {
   const live = createLiveService({ passcode: "booth-2026", dailyCapUsd: 0.3, runEstimateUsd: 0.25, runners: runners() });
   assert.deepEqual(live.submit({ ...brief, passcode: "nope" }), { error: "That passcode is not right.", status: 403 });
   assert.equal((live.submit({ ...brief, brief: "Too short" }) as { status: number }).status, 400);
@@ -77,7 +77,7 @@ test("live runs refuse a wrong passcode, personal data, odd lengths, a second ru
   assert.equal(createLiveService({ runners: runners() }).enabled, false);
 });
 
-test("hosted, the server accepts exactly one write: same-origin JSON to the live run", async () => {
+test("On a hosted server, only one write is permitted. The write is JSON from the same origin to the live run.", async () => {
   const live = createLiveService({ passcode: "booth-2026", runners: runners() });
   const server = createStudioServer({ hosted: true, decider: createDecider({ apiKey: "" }), live });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));

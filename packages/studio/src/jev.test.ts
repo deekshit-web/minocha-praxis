@@ -25,7 +25,7 @@ const confident = (body: { model: string; questions: Record<string, { type: stri
   usage: { input_tokens: 2400 },
 });
 
-test("without a key, decisions replay and say why", async () => {
+test("Without a key, the decisions are replayed. The page gives the reason.", async () => {
   const decider = createDecider({ apiKey: "" });
   const result = await decider.decide(spec, "route");
   assert.equal(result?.live, false);
@@ -33,7 +33,7 @@ test("without a key, decisions replay and say why", async () => {
   assert.match(result?.text ?? "", /Decision: the full panel/);
 });
 
-test("a live decision sends fixed typed questions with the key, and shows the real answers, time and cost", async () => {
+test("A live decision sends fixed typed questions with the key. The page shows the real answers, the time and the cost.", async () => {
   const { calls, fetchImpl } = fakeJev(confident);
   const decider = createDecider({ apiKey: "test-key", fetchImpl });
   const result = await decider.decide(spec, "triage");
@@ -46,7 +46,7 @@ test("a live decision sends fixed typed questions with the key, and shows the re
   assert.ok((result?.costUsd ?? 1) > 0 && (result?.costUsd ?? 1) < 0.001);
 });
 
-test("live answers are cached, and a daily cap bounds the spend", async () => {
+test("Live answers are cached. A daily cap limits the spend.", async () => {
   const { calls, fetchImpl } = fakeJev(confident);
   const decider = createDecider({ apiKey: "test-key", fetchImpl, dailyCap: 2 });
   await decider.decide(spec, "route");
@@ -60,14 +60,14 @@ test("live answers are cached, and a daily cap bounds the spend", async () => {
   assert.equal(calls.length, 2);
 });
 
-test("an error or an unreadable answer falls back to the replay", async () => {
+test("After an error or an unreadable answer, the replay is used.", async () => {
   const failing = createDecider({ apiKey: "test-key", fetchImpl: fakeJev(() => ({}), 503).fetchImpl });
   assert.match((await failing.decide(spec, "route"))?.reason ?? "", /503/);
   const garbled = createDecider({ apiKey: "test-key", fetchImpl: fakeJev(() => ({ answers: {} })).fetchImpl });
   assert.match((await garbled.decide(spec, "route"))?.reason ?? "", /could not be read/);
 });
 
-test("a live answer that differs from what happens next is reported, not hidden", async () => {
+test("A live answer that is different from the next step is shown. It is not hidden.", async () => {
   const unsure = (body: { questions: Record<string, { type: string }> }) => ({
     answers: Object.fromEntries(Object.keys(body.questions).map((key) => [key, { type: "noul", noul: key === "CR_3" ? 0.54 : 0.95 }])),
     usage: { input_tokens: 500 },
