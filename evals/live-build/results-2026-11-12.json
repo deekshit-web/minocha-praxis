@@ -1,0 +1,278 @@
+{
+ "ran": "2026-11-12",
+ "how": "npm run live-dry-run: 10 live builds on 5 staging servers in parallel, two each, each with a $0.75 limit",
+ "models": {
+  "builder": "claude-opus-5-5",
+  "checker": "grok-4.7"
+ },
+ "totalCostUsd": 3.479,
+ "builds": [
+  {
+   "id": "01-claim-window",
+   "domain": "healthcare",
+   "note": "clear pure rule",
+   "status": "done",
+   "costUsd": 0.3549756,
+   "wallSeconds": 841,
+   "calls": 13,
+   "acceptanceTestsPassing": 7,
+   "unitTestsPassing": 4,
+   "fixRounds": 0,
+   "testRunFailures": [
+    0
+   ],
+   "findingsRaised": {
+    "requirementsPanel": "none",
+    "design": "none",
+    "code": "none"
+   },
+   "contractRevised": false,
+   "diagram": {
+    "boxes": 4,
+    "passedFirstTry": false,
+    "firstDrawingProblems": [
+     "The sub text of box caller must be 1 to 31 characters.",
+     "The sub text of box validate must be 1 to 31 characters."
+    ]
+   }
+  },
+  {
+   "id": "02-duplicate-claims",
+   "domain": "healthcare",
+   "note": "under-specified: what is a duplicate",
+   "status": "done",
+   "costUsd": 0.33355799999999997,
+   "wallSeconds": 916,
+   "calls": 12,
+   "acceptanceTestsPassing": 8,
+   "unitTestsPassing": 6,
+   "fixRounds": 0,
+   "testRunFailures": [
+    0
+   ],
+   "findingsRaised": {
+    "requirementsPanel": "2P1 1P2",
+    "design": "none",
+    "code": "none"
+   },
+   "contractRevised": false,
+   "diagram": {
+    "boxes": 5,
+    "passedFirstTry": true,
+    "firstDrawingProblems": []
+   }
+  },
+  {
+   "id": "03-grade-weights",
+   "domain": "education",
+   "note": "arithmetic and rounding",
+   "status": "done",
+   "costUsd": 0.401458,
+   "wallSeconds": 1337,
+   "calls": 13,
+   "acceptanceTestsPassing": 8,
+   "unitTestsPassing": 6,
+   "fixRounds": 0,
+   "testRunFailures": [
+    0
+   ],
+   "findingsRaised": {
+    "requirementsPanel": "3P2",
+    "design": "1P0",
+    "code": "none"
+   },
+   "contractRevised": true,
+   "diagram": {
+    "boxes": 5,
+    "passedFirstTry": true,
+    "firstDrawingProblems": []
+   }
+  },
+  {
+   "id": "04-attendance-streak",
+   "domain": "education",
+   "note": "streak logic",
+   "status": "done",
+   "costUsd": 0.30847340000000006,
+   "wallSeconds": 661,
+   "calls": 13,
+   "acceptanceTestsPassing": 8,
+   "unitTestsPassing": 6,
+   "fixRounds": 0,
+   "testRunFailures": [
+    0
+   ],
+   "findingsRaised": {
+    "requirementsPanel": "1P1 1P2",
+    "design": "1P0",
+    "code": "none"
+   },
+   "contractRevised": false,
+   "diagram": {
+    "boxes": 4,
+    "passedFirstTry": false,
+    "firstDrawingProblems": [
+     "The sub text of box days must be 1 to 31 characters."
+    ]
+   }
+  },
+  {
+   "id": "05-stacked-promo",
+   "domain": "fmcg",
+   "note": "under-specified: order of discounts",
+   "status": "done",
+   "costUsd": 0.42916100000000007,
+   "wallSeconds": 1322,
+   "calls": 12,
+   "acceptanceTestsPassing": 8,
+   "unitTestsPassing": 6,
+   "fixRounds": 0,
+   "testRunFailures": [
+    0
+   ],
+   "findingsRaised": {
+    "requirementsPanel": "1P0 2P1 1P2",
+    "design": "1P2",
+    "code": "1P0"
+   },
+   "contractRevised": false,
+   "diagram": {
+    "boxes": 5,
+    "passedFirstTry": true,
+    "firstDrawingProblems": []
+   }
+  },
+  {
+   "id": "06-reorder-point",
+   "domain": "fmcg",
+   "note": "clear formula",
+   "status": "done",
+   "costUsd": 0.24683239999999998,
+   "wallSeconds": 481,
+   "calls": 12,
+   "acceptanceTestsPassing": 6,
+   "unitTestsPassing": 6,
+   "fixRounds": 0,
+   "testRunFailures": [
+    0
+   ],
+   "findingsRaised": {
+    "requirementsPanel": "none",
+    "design": "none",
+    "code": "none"
+   },
+   "contractRevised": false,
+   "diagram": {
+    "boxes": 4,
+    "passedFirstTry": true,
+    "firstDrawingProblems": []
+   }
+  },
+  {
+   "id": "07-interest-days",
+   "domain": "finance",
+   "note": "day counts and leap years",
+   "status": "done",
+   "costUsd": 0.4049630000000001,
+   "wallSeconds": 856,
+   "calls": 13,
+   "acceptanceTestsPassing": 6,
+   "unitTestsPassing": 5,
+   "fixRounds": 0,
+   "testRunFailures": [
+    0
+   ],
+   "findingsRaised": {
+    "requirementsPanel": "none",
+    "design": "1P0 1P1",
+    "code": "none"
+   },
+   "contractRevised": false,
+   "diagram": {
+    "boxes": 7,
+    "passedFirstTry": false,
+    "firstDrawingProblems": [
+     "The edge from validate to caller needs a label of 1 to 30 characters."
+    ]
+   }
+  },
+  {
+   "id": "08-velocity-alert",
+   "domain": "finance",
+   "note": "rolling window",
+   "status": "done",
+   "costUsd": 0.307564,
+   "wallSeconds": 1021,
+   "calls": 12,
+   "acceptanceTestsPassing": 8,
+   "unitTestsPassing": 6,
+   "fixRounds": 0,
+   "testRunFailures": [
+    0
+   ],
+   "findingsRaised": {
+    "requirementsPanel": "1P1 1P2",
+    "design": "none",
+    "code": "none"
+   },
+   "contractRevised": false,
+   "diagram": {
+    "boxes": 4,
+    "passedFirstTry": true,
+    "firstDrawingProblems": []
+   }
+  },
+  {
+   "id": "09-window-overlap",
+   "domain": "logistics",
+   "note": "interval overlap",
+   "status": "done",
+   "costUsd": 0.24693119999999996,
+   "wallSeconds": 601,
+   "calls": 12,
+   "acceptanceTestsPassing": 6,
+   "unitTestsPassing": 6,
+   "fixRounds": 0,
+   "testRunFailures": [
+    0
+   ],
+   "findingsRaised": {
+    "requirementsPanel": "none",
+    "design": "none",
+    "code": "none"
+   },
+   "contractRevised": false,
+   "diagram": {
+    "boxes": 5,
+    "passedFirstTry": true,
+    "firstDrawingProblems": []
+   }
+  },
+  {
+   "id": "10-pallets-contradiction",
+   "domain": "logistics",
+   "note": "planted contradiction: the example is wrong",
+   "status": "done",
+   "costUsd": 0.44466399999999995,
+   "wallSeconds": 1952,
+   "calls": 12,
+   "acceptanceTestsPassing": 8,
+   "unitTestsPassing": 6,
+   "fixRounds": 0,
+   "testRunFailures": [
+    0
+   ],
+   "findingsRaised": {
+    "requirementsPanel": "3P0 1P1 2P2",
+    "design": "1P0 2P1",
+    "code": "none"
+   },
+   "contractRevised": false,
+   "diagram": {
+    "boxes": 6,
+    "passedFirstTry": true,
+    "firstDrawingProblems": []
+   }
+  }
+ ]
+}

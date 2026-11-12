@@ -17,7 +17,8 @@
     "compare-levers": "node scripts/compare-levers.mjs",
     "record-builds": "node scripts/record-builds.mjs",
     "eval-prd": "node scripts/eval-prd.mjs",
-    "self-review": "node scripts/self-review.mjs"
+    "self-review": "node scripts/self-review.mjs",
+    "live-dry-run": "node scripts/live-build-dry-run.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

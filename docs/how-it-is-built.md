@@ -120,15 +120,19 @@ Built in three phases. Committed on `main`, **not pushed or deployed** at the ti
    finding or an edge the design does not support. It allows one correction, then drops a drawing that still fails.
    A failed drawing never fails the build.
 
-Two real runs so far, both on made-up briefs, both on localhost:
+Twelve real runs so far, all on made-up briefs and all on a local machine: two tried by hand, then a ten-build dry
+run on 12 November. The write-up is `docs/live-build-dry-run.md`, and the records are in `evals/live-build/`.
 
-| Run | Cost | Time | Result |
+| Runs | Cost per build | Time | Result |
 | --- | --- | --- | --- |
-| Volume discount for distributor orders (FMCG) | $0.32 | 15.7 min | 8 of 8 tests passing first time, no fix round |
-| Late fee on a loan statement (finance), with the diagram step | $0.39 | 16.7 min | 11 of 11 tests passing first time, no fix round; the first diagram passed the check |
+| The first two, by hand | $0.32 and $0.39 | 16 to 17 min | All tests passed first time. |
+| The dry run: 10 briefs across five domains, five builds at once | $0.25 to $0.45 (mean $0.35) | 8 to 33 min | All 10 finished and all passed first time. 7 diagrams passed the check first time and 3 passed after the one correction. |
 
-Two runs say little about reliability. Both passed first time, so **the red-run and fix-round path has not been
-exercised live**, and neither had a diagram that needed the correction. More runs are planned.
+All twelve passed first time, so **the red-run and fix-round path has still not been exercised live**. That does not
+mean nothing went wrong upstream: reviewers raised a serious finding in 5 of the 10 dry-run builds before any code ran.
+Examples are a crash (a `BigInt` added to a string, which would have broken every valid input) and a design bug that
+would have kept a streak count from ever reaching 3. The brief with a wrong example was not followed: the pipeline said
+the example was wrong and built to the rules.
 
 What the second run showed. Model B's design review raised a real issue, not an arithmetic one: the brief's 50.00
 monthly cap did not say whether it applies per loan or per account, so a statement screen could show several loans
@@ -218,7 +222,7 @@ Full write-up: `docs/eval-results.md`. About $42 of real, metered calls.
 
 **Limits an expert will find.** Eight briefs is a small sample. Claude Code sorted the 16 findings, not a person.
 There is no false-alarm rate, because our clean control documents turned out to contain a real flaw. There is no
-score yet for the consistency problems the final review finds. Only two live builds have been measured, and neither needed a fix round.
+score yet for the consistency problems the final review finds. Twelve live builds have been measured. None needed a fix round, and all were small single-function features in made-up domains.
 
 ## Questions you will get
 
@@ -242,7 +246,7 @@ network, and with time, memory and output limits. This is defense in depth and w
 **Can I run it on my feature?** The PRD panel runs live on your brief with a passcode. A full live build exists
 but is switched off on the public site until the sandbox is confirmed on the host.
 
-**How much does it cost?** A document $0.09 to $0.22. A feature build about $0.30 to $0.50, and 15 to 40 minutes.
+**How much does it cost?** A document $0.09 to $0.22. A feature build about $0.25 to $0.45 on live models (measured over twelve runs), and 8 to 33 minutes.
 Each Model C decision costs about $0.00002.
 
 **How do you know the tests are good?** We run mutation testing: small deliberate breaks in the code, then the
@@ -258,7 +262,7 @@ too low, and a different-vendor final review found real faults that it passed.
 date. It does not find names, addresses or unlabelled dates. Use synthetic data only.
 
 **What is not done?** A real repository and CI path, real deployments, a faster Model B, a score for consistency
-problems, a false-alarm rate, real approvals in a live build, and several more live-build runs.
+problems, a false-alarm rate, real approvals in a live build, and a live build that fails its tests (to exercise the fix rounds).
 
 ## Where things are
 
@@ -270,6 +274,7 @@ problems, a false-alarm rate, real approvals in a live build, and several more l
 | The diagram generator | `packages/studio/src/diagramGen.ts` |
 | The demo page | `packages/studio/public/index.html` |
 | The evaluation write-up | `docs/eval-results.md` |
+| The live build dry run, with its data | `docs/live-build-dry-run.md`, `evals/live-build/` |
 | The booth walk-through | `docs/booth-script.md` |
 | The README's "what is recorded and what is enforced" | `README.md` |
 
