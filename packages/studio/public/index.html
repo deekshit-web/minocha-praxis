@@ -1473,7 +1473,7 @@
             "Model C " + (result.skippedReviewOfA ? "skipped Model B's review and " : "") + path + ". Full panel: $" + result.full.costUsd.toFixed(3) + " and " + Math.round(result.full.seconds) + " s. Gated: $" + result.gated.costUsd.toFixed(3) + " and " + Math.round(result.gated.seconds) + " s.",
           ),
         );
-        card.appendChild(add("p", "Measured on the earlier recordings, when Model A was Claude Opus 5. Model A has since moved to Opus 5.5, which a separate blind test found merges as well at about a third less cost and time.", "meta"));
+        card.appendChild(add("p", "Measured on the earlier recordings, when Model A was Claude Opus 5. Model A has since moved to Opus 5.5. A separate blind test on the four workflows recorded on Opus 5 found its merges as good or better at 23% less cost and 27% less time; on the six re-recorded on Opus 5.5 it matched itself.", "meta"));
         if (!result.judges) card.appendChild(add("p", "The gated pipeline produced the identical final version, so there was nothing to judge.", "meta"));
         else {
           const fullIs = result.judges.fullIsVersion;
