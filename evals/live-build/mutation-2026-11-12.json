@@ -1,0 +1,4332 @@
+{
+  "ranAt": "2026-11-12T17:39:32.703Z",
+  "networkNamespace": true,
+  "totals": {
+    "unit": {
+      "total": 208,
+      "killed": 139
+    },
+    "acceptance": {
+      "total": 208,
+      "killed": 131
+    },
+    "both": {
+      "total": 208,
+      "killed": 139
+    }
+  },
+  "builds": [
+    {
+      "build": "01-claim-window",
+      "seconds": 0.3,
+      "cleanFailures": {
+        "unit": [
+          {
+            "name": "rejects unknown field, missing field and impossible calendar date",
+            "message": "expected an error matching /^Error: unknown field: extra$/, received \"unknown field: extra\""
+          },
+          {
+            "name": "rejects a check date earlier than the denial date",
+            "message": "expected an error matching /^Error: checkDate is before denialDate$/, received \"checkDate is before denialDate\""
+          }
+        ],
+        "acceptance": []
+      },
+      "unit": {
+        "total": 38,
+        "killed": 19,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "const allowed = elapsedDays <= APPEAL_WINDOW_DAYS;",
+            "killed": true,
+            "by": "checked on day 120: still allowed with 0 days left"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (elapsedDays < 0) throw new Error(\"checkDate is before denialDate\");",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof value !== \"string\") throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "&& to ||",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const APPEAL_WINDOW_DAYS = 120;",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const y = Number(m[1]);",
+            "killed": true,
+            "by": "checked 59 days after denial: allowed with 61 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const mo = Number(m[2]);",
+            "killed": true,
+            "by": "checked 59 days after denial: allowed with 61 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const d = Number(m[3]);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const dt = new Date(0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCFullYear(y, mo - 1, d);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (elapsedDays < 0) throw new Error(\"checkDate is before denialDate\");",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const daysLeft = allowed ? APPEAL_WINDOW_DAYS - elapsedDays : 0;",
+            "killed": true,
+            "by": "checked on day 121: window closed with 0 days left"
+          }
+        ]
+      },
+      "acceptance": {
+        "total": 38,
+        "killed": 19,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "const allowed = elapsedDays <= APPEAL_WINDOW_DAYS;",
+            "killed": true,
+            "by": "Day 120 is still allowed and days left are 0"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (elapsedDays < 0) throw new Error(\"checkDate is before denialDate\");",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof value !== \"string\") throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "&& to ||",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const APPEAL_WINDOW_DAYS = 120;",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const y = Number(m[1]);",
+            "killed": true,
+            "by": "Inside the window, days left equal 120 minus elapsed days"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const mo = Number(m[2]);",
+            "killed": true,
+            "by": "Elapsed days are calendar days after the denial date, which counts as day 0"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const d = Number(m[3]);",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const dt = new Date(0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCFullYear(y, mo - 1, d);",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (elapsedDays < 0) throw new Error(\"checkDate is before denialDate\");",
+            "killed": true,
+            "by": "Denial date is day 0 and the appeal is allowed with days left equal to 120"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const daysLeft = allowed ? APPEAL_WINDOW_DAYS - elapsedDays : 0;",
+            "killed": true,
+            "by": "After day 120 the window is closed and days left are 0"
+          }
+        ]
+      },
+      "both": {
+        "total": 38,
+        "killed": 19,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "const allowed = elapsedDays <= APPEAL_WINDOW_DAYS;",
+            "killed": true,
+            "by": "checked on day 120: still allowed with 0 days left"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (elapsedDays < 0) throw new Error(\"checkDate is before denialDate\");",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof value !== \"string\") throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "&& to ||",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const APPEAL_WINDOW_DAYS = 120;",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const y = Number(m[1]);",
+            "killed": true,
+            "by": "checked 59 days after denial: allowed with 61 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const mo = Number(m[2]);",
+            "killed": true,
+            "by": "checked 59 days after denial: allowed with 61 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const d = Number(m[3]);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const dt = new Date(0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCFullYear(y, mo - 1, d);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (elapsedDays < 0) throw new Error(\"checkDate is before denialDate\");",
+            "killed": true,
+            "by": "denial date itself is day 0: allowed with 120 days left"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const daysLeft = allowed ? APPEAL_WINDOW_DAYS - elapsedDays : 0;",
+            "killed": true,
+            "by": "checked on day 121: window closed with 0 days left"
+          }
+        ]
+      },
+      "survivors": [
+        {
+          "operator": "< to <=",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);"
+        },
+        {
+          "operator": "> to >=",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);"
+        },
+        {
+          "operator": "> to >=",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);"
+        },
+        {
+          "operator": "&& to ||",
+          "line": "const obj = input !== null && typeof input === \"object\" ? input : {};"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const dt = new Date(0);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);"
+        }
+      ]
+    },
+    {
+      "build": "02-duplicate-claims",
+      "seconds": 0.2,
+      "cleanFailures": {
+        "unit": [],
+        "acceptance": []
+      },
+      "unit": {
+        "total": 2,
+        "killed": 2,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "if (entry.claimIds.length >= 2) {",
+            "killed": true,
+            "by": "two claims with same four fields but different claimIds form one group"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (entry.claimIds.length >= 2) {",
+            "killed": true,
+            "by": "two claims with same four fields but different claimIds form one group"
+          }
+        ]
+      },
+      "acceptance": {
+        "total": 2,
+        "killed": 2,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "if (entry.claimIds.length >= 2) {",
+            "killed": true,
+            "by": "exact match ignores claimId and flags one group with the matched values"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (entry.claimIds.length >= 2) {",
+            "killed": true,
+            "by": "exact match ignores claimId and flags one group with the matched values"
+          }
+        ]
+      },
+      "both": {
+        "total": 2,
+        "killed": 2,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "if (entry.claimIds.length >= 2) {",
+            "killed": true,
+            "by": "two claims with same four fields but different claimIds form one group"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (entry.claimIds.length >= 2) {",
+            "killed": true,
+            "by": "two claims with same four fields but different claimIds form one group"
+          }
+        ]
+      },
+      "survivors": []
+    },
+    {
+      "build": "03-grade-weights",
+      "seconds": 0.3,
+      "cleanFailures": {
+        "unit": [],
+        "acceptance": []
+      },
+      "unit": {
+        "total": 21,
+        "killed": 19,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "if (scores.length >= 4) {",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "> to >=",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "a tied lowest homework score drops only one copy and empty categories count as 0"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (scores.length === 0) return 0;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const WEIGHTS = { homework: 0.2, quizzes: 0.3, exam: 0.5 };",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const WEIGHTS = { homework: 0.2, quizzes: 0.3, exam: 0.5 };",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const WEIGHTS = { homework: 0.2, quizzes: 0.3, exam: 0.5 };",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scores.length === 0) return 0;",
+            "killed": true,
+            "by": "AC-3: missing quiz scores count as 0 and the display shows 48.0"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scores.length === 0) return 0;",
+            "killed": true,
+            "by": "AC-3: missing quiz scores count as 0 and the display shows 48.0"
+          },
+          {
+            "operator": "number + 1",
+            "line": "let sum = 0;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scores.length >= 4) {",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const rest = scores.slice(0, idx).concat(scores.slice(idx + 1));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const rest = scores.slice(0, idx).concat(scores.slice(idx + 1));",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Math.round(value * 10) / 10;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Math.round(value * 10) / 10;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return value.toFixed(1);",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "a tied lowest homework score drops only one copy and empty categories count as 0"
+          }
+        ]
+      },
+      "acceptance": {
+        "total": 21,
+        "killed": 19,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "if (scores.length >= 4) {",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "> to >=",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "counts an exam with no score as 0"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (scores.length === 0) return 0;",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const WEIGHTS = { homework: 0.2, quizzes: 0.3, exam: 0.5 };",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const WEIGHTS = { homework: 0.2, quizzes: 0.3, exam: 0.5 };",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const WEIGHTS = { homework: 0.2, quizzes: 0.3, exam: 0.5 };",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scores.length === 0) return 0;",
+            "killed": true,
+            "by": "counts a category with no scores as 0 and shows the final with 1 decimal"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scores.length === 0) return 0;",
+            "killed": true,
+            "by": "counts a category with no scores as 0 and shows the final with 1 decimal"
+          },
+          {
+            "operator": "number + 1",
+            "line": "let sum = 0;",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scores.length >= 4) {",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const rest = scores.slice(0, idx).concat(scores.slice(idx + 1));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const rest = scores.slice(0, idx).concat(scores.slice(idx + 1));",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Math.round(value * 10) / 10;",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Math.round(value * 10) / 10;",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return value.toFixed(1);",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "drops the lowest homework score when there are 4 or more and applies the category weights"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "counts an exam with no score as 0"
+          }
+        ]
+      },
+      "both": {
+        "total": 21,
+        "killed": 19,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "if (scores.length >= 4) {",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "> to >=",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "a tied lowest homework score drops only one copy and empty categories count as 0"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (scores.length === 0) return 0;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const WEIGHTS = { homework: 0.2, quizzes: 0.3, exam: 0.5 };",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const WEIGHTS = { homework: 0.2, quizzes: 0.3, exam: 0.5 };",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const WEIGHTS = { homework: 0.2, quizzes: 0.3, exam: 0.5 };",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scores.length === 0) return 0;",
+            "killed": true,
+            "by": "AC-3: missing quiz scores count as 0 and the display shows 48.0"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scores.length === 0) return 0;",
+            "killed": true,
+            "by": "AC-3: missing quiz scores count as 0 and the display shows 48.0"
+          },
+          {
+            "operator": "number + 1",
+            "line": "let sum = 0;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scores.length >= 4) {",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const rest = scores.slice(0, idx).concat(scores.slice(idx + 1));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const rest = scores.slice(0, idx).concat(scores.slice(idx + 1));",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Math.round(value * 10) / 10;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Math.round(value * 10) / 10;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return value.toFixed(1);",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "AC-1: four homework scores drop the lowest and the final grade is 70.5"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const examScore = exam.length > 0 ? exam[0] : 0;",
+            "killed": true,
+            "by": "a tied lowest homework score drops only one copy and empty categories count as 0"
+          }
+        ]
+      },
+      "survivors": [
+        {
+          "operator": "|| to &&",
+          "line": "if (input === null || typeof input !== \"object\") {"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const rest = scores.slice(0, idx).concat(scores.slice(idx + 1));"
+        }
+      ]
+    },
+    {
+      "build": "04-attendance-streak",
+      "seconds": 0.2,
+      "cleanFailures": {
+        "unit": [],
+        "acceptance": []
+      },
+      "unit": {
+        "total": 12,
+        "killed": 11,
+        "results": [
+          {
+            "operator": "< to <=",
+            "line": "for (let i = 0; i < days.length; i++) {",
+            "killed": true,
+            "by": "absent Thursday and Friday then present Monday returns null because the present day resets the count"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (entry === null || typeof entry !== \"object\") {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (status === \"present\") {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "} else if (status === \"absent\") {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (count === 3) {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (entry === null || typeof entry !== \"object\") {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (entry === null || typeof entry !== \"object\") {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "let count = 0;",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "number + 1",
+            "line": "for (let i = 0; i < days.length; i++) {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "number + 1",
+            "line": "count = 0;",
+            "killed": true,
+            "by": "empty list and a list with no run of three absences both return null"
+          },
+          {
+            "operator": "number + 1",
+            "line": "count += 1;",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (count === 3) {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          }
+        ]
+      },
+      "acceptance": {
+        "total": 12,
+        "killed": 11,
+        "results": [
+          {
+            "operator": "< to <=",
+            "line": "for (let i = 0; i < days.length; i++) {",
+            "killed": true,
+            "by": "a present day resets the count so two absences then a present day return nothing"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (entry === null || typeof entry !== \"object\") {",
+            "killed": true,
+            "by": "a weekend gap does not reset an absence streak and the third day date is returned"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (status === \"present\") {",
+            "killed": true,
+            "by": "a weekend gap does not reset an absence streak and the third day date is returned"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "} else if (status === \"absent\") {",
+            "killed": true,
+            "by": "a weekend gap does not reset an absence streak and the third day date is returned"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (count === 3) {",
+            "killed": true,
+            "by": "a weekend gap does not reset an absence streak and the third day date is returned"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (entry === null || typeof entry !== \"object\") {",
+            "killed": true,
+            "by": "a weekend gap does not reset an absence streak and the third day date is returned"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (entry === null || typeof entry !== \"object\") {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "let count = 0;",
+            "killed": true,
+            "by": "a weekend gap does not reset an absence streak and the third day date is returned"
+          },
+          {
+            "operator": "number + 1",
+            "line": "for (let i = 0; i < days.length; i++) {",
+            "killed": true,
+            "by": "a weekend gap does not reset an absence streak and the third day date is returned"
+          },
+          {
+            "operator": "number + 1",
+            "line": "count = 0;",
+            "killed": true,
+            "by": "a present day resets the count so earlier absences do not combine with later ones"
+          },
+          {
+            "operator": "number + 1",
+            "line": "count += 1;",
+            "killed": true,
+            "by": "a weekend gap does not reset an absence streak and the third day date is returned"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (count === 3) {",
+            "killed": true,
+            "by": "a weekend gap does not reset an absence streak and the third day date is returned"
+          }
+        ]
+      },
+      "both": {
+        "total": 12,
+        "killed": 11,
+        "results": [
+          {
+            "operator": "< to <=",
+            "line": "for (let i = 0; i < days.length; i++) {",
+            "killed": true,
+            "by": "absent Thursday and Friday then present Monday returns null because the present day resets the count"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (entry === null || typeof entry !== \"object\") {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (status === \"present\") {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "} else if (status === \"absent\") {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (count === 3) {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (entry === null || typeof entry !== \"object\") {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (entry === null || typeof entry !== \"object\") {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "let count = 0;",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "number + 1",
+            "line": "for (let i = 0; i < days.length; i++) {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "number + 1",
+            "line": "count = 0;",
+            "killed": true,
+            "by": "empty list and a list with no run of three absences both return null"
+          },
+          {
+            "operator": "number + 1",
+            "line": "count += 1;",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (count === 3) {",
+            "killed": true,
+            "by": "absent Thursday, Friday and next Monday returns Monday because the weekend does not break the streak"
+          }
+        ]
+      },
+      "survivors": [
+        {
+          "operator": "|| to &&",
+          "line": "if (entry === null || typeof entry !== \"object\") {"
+        }
+      ]
+    },
+    {
+      "build": "05-stacked-promo",
+      "seconds": 0.3,
+      "cleanFailures": {
+        "unit": [],
+        "acceptance": []
+      },
+      "unit": {
+        "total": 33,
+        "killed": 22,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "return 2n * r >= den ? q + 1n : q;",
+            "killed": true,
+            "by": "half-cent results round up once at the end: 1 at 0.05 gives 0.05 and 3 at 0.15 gives 0.41 (AC-5)"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (scale < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "0 units gives a 0.00 total and -1 units is rejected with an error (AC-4)"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const u = units === 0 ? 0 : units;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const price = unitPrice === 0 ? 0 : unitPrice;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "const frac = m[2] || \"\";",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "const { sku, units, unitPrice } = line || {};",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "a negative unit price or fractional units are rejected and name the field"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "0 units gives a 0.00 total and -1 units is rejected with an error (AC-4)"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": true,
+            "by": "a negative unit price or fractional units are rejected and name the field"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const DISCOUNT_RATE = 0.1;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const BUNDLE_SIZE = 4;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const FREE_PER_BUNDLE = 1;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const frac = m[2] || \"\";",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "let digits = BigInt(m[1] + frac);",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scale < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "scale = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const rest = String(cents % 100n).padStart(2, \"0\");",
+            "killed": true,
+            "by": "3 units at 5.00 get no free unit and only the 10% discount, 13.50 (AC-2)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "0 units gives a 0.00 total and -1 units is rejected with an error (AC-4)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": true,
+            "by": "half-cent results round up once at the end: 1 at 0.05 gives 0.05 and 3 at 0.15 gives 0.41 (AC-5)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const u = units === 0 ? 0 : units;",
+            "killed": true,
+            "by": "half-cent results round up once at the end: 1 at 0.05 gives 0.05 and 3 at 0.15 gives 0.41 (AC-5)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const u = units === 0 ? 0 : units;",
+            "killed": true,
+            "by": "0 units gives a 0.00 total and -1 units is rejected with an error (AC-4)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const price = unitPrice === 0 ? 0 : unitPrice;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const price = unitPrice === 0 ? 0 : unitPrice;",
+            "killed": false,
+            "by": null
+          }
+        ]
+      },
+      "acceptance": {
+        "total": 33,
+        "killed": 21,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "return 2n * r >= den ? q + 1n : q;",
+            "killed": true,
+            "by": "the line total is rounded once at the end half up to 2 decimals"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (scale < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "zero units is valid and the line total is zero"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const u = units === 0 ? 0 : units;",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const price = unitPrice === 0 ? 0 : unitPrice;",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "const frac = m[2] || \"\";",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "const { sku, units, unitPrice } = line || {};",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "negative units are rejected with an error and no total is returned"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": true,
+            "by": "a negative unit price is rejected with an error and no total is returned"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const DISCOUNT_RATE = 0.1;",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const BUNDLE_SIZE = 4;",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const FREE_PER_BUNDLE = 1;",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const frac = m[2] || \"\";",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "number + 1",
+            "line": "let digits = BigInt(m[1] + frac);",
+            "killed": true,
+            "by": "both offers apply and the 10 percent discount is only on paid units"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scale < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "scale = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const rest = String(cents % 100n).padStart(2, \"0\");",
+            "killed": true,
+            "by": "units under 4 get only the 10 percent discount"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "zero units is valid and the line total is zero"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": true,
+            "by": "the line total is rounded once at the end half up to 2 decimals"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const u = units === 0 ? 0 : units;",
+            "killed": true,
+            "by": "the line total is rounded once at the end half up to 2 decimals"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const u = units === 0 ? 0 : units;",
+            "killed": true,
+            "by": "zero units is valid and the line total is zero"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const price = unitPrice === 0 ? 0 : unitPrice;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const price = unitPrice === 0 ? 0 : unitPrice;",
+            "killed": false,
+            "by": null
+          }
+        ]
+      },
+      "both": {
+        "total": 33,
+        "killed": 22,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "return 2n * r >= den ? q + 1n : q;",
+            "killed": true,
+            "by": "half-cent results round up once at the end: 1 at 0.05 gives 0.05 and 3 at 0.15 gives 0.41 (AC-5)"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (scale < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "0 units gives a 0.00 total and -1 units is rejected with an error (AC-4)"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const u = units === 0 ? 0 : units;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const price = unitPrice === 0 ? 0 : unitPrice;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "const frac = m[2] || \"\";",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "const { sku, units, unitPrice } = line || {};",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "a negative unit price or fractional units are rejected and name the field"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "0 units gives a 0.00 total and -1 units is rejected with an error (AC-4)"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": true,
+            "by": "a negative unit price or fractional units are rejected and name the field"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const DISCOUNT_RATE = 0.1;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const BUNDLE_SIZE = 4;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const FREE_PER_BUNDLE = 1;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const frac = m[2] || \"\";",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "let digits = BigInt(m[1] + frac);",
+            "killed": true,
+            "by": "8 units at 5.00 gives 2 free, 6 paid and a 27.00 line total (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (scale < 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "scale = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const rest = String(cents % 100n).padStart(2, \"0\");",
+            "killed": true,
+            "by": "3 units at 5.00 get no free unit and only the 10% discount, 13.50 (AC-2)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+            "killed": true,
+            "by": "0 units gives a 0.00 total and -1 units is rejected with an error (AC-4)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+            "killed": true,
+            "by": "half-cent results round up once at the end: 1 at 0.05 gives 0.05 and 3 at 0.15 gives 0.41 (AC-5)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const u = units === 0 ? 0 : units;",
+            "killed": true,
+            "by": "half-cent results round up once at the end: 1 at 0.05 gives 0.05 and 3 at 0.15 gives 0.41 (AC-5)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const u = units === 0 ? 0 : units;",
+            "killed": true,
+            "by": "0 units gives a 0.00 total and -1 units is rejected with an error (AC-4)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const price = unitPrice === 0 ? 0 : unitPrice;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const price = unitPrice === 0 ? 0 : unitPrice;",
+            "killed": false,
+            "by": null
+          }
+        ]
+      },
+      "survivors": [
+        {
+          "operator": "< to <=",
+          "line": "if (scale < 0) {"
+        },
+        {
+          "operator": "< to <=",
+          "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;"
+        },
+        {
+          "operator": "number + 1",
+          "line": "if (scale < 0) {"
+        },
+        {
+          "operator": "number + 1",
+          "line": "scale = 0;"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const price = unitPrice === 0 ? 0 : unitPrice;"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const price = unitPrice === 0 ? 0 : unitPrice;"
+        }
+      ]
+    },
+    {
+      "build": "06-reorder-point",
+      "seconds": 0.2,
+      "cleanFailures": {
+        "unit": [],
+        "acceptance": []
+      },
+      "unit": {
+        "total": 2,
+        "killed": 2,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "const reorder = input.stockOnHand <= reorderPoint;",
+            "killed": true,
+            "by": "stock exactly at the reorder point of 360 recommends a reorder"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const safetyStock = 0.2 * leadTimeDemand;",
+            "killed": true,
+            "by": "sales 50 a day with 6 day lead time gives lead-time demand 300, safety stock 60, reorder point 360"
+          }
+        ]
+      },
+      "acceptance": {
+        "total": 2,
+        "killed": 2,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "const reorder = input.stockOnHand <= reorderPoint;",
+            "killed": true,
+            "by": "example with daily sales of 50 and a lead time of 6 days gives lead-time demand 300, safety stock 60 and reorder point 360"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const safetyStock = 0.2 * leadTimeDemand;",
+            "killed": true,
+            "by": "safety stock is 20 percent of lead-time demand"
+          }
+        ]
+      },
+      "both": {
+        "total": 2,
+        "killed": 2,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "const reorder = input.stockOnHand <= reorderPoint;",
+            "killed": true,
+            "by": "stock exactly at the reorder point of 360 recommends a reorder"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const safetyStock = 0.2 * leadTimeDemand;",
+            "killed": true,
+            "by": "sales 50 a day with 6 day lead time gives lead-time demand 300, safety stock 60, reorder point 360"
+          }
+        ]
+      },
+      "survivors": []
+    },
+    {
+      "build": "07-interest-days",
+      "seconds": 0.3,
+      "cleanFailures": {
+        "unit": [
+          {
+            "name": "an extra input field is rejected with unknown field and its name",
+            "message": "expected an error matching /^Error: unknown field: fee$/, received \"unknown field: fee\""
+          }
+        ],
+        "acceptance": []
+      },
+      "unit": {
+        "total": 37,
+        "killed": 18,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "if (principal <= 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "<= to <",
+            "line": "if (annualRate <= 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (end < start) {",
+            "killed": true,
+            "by": "same start and end date gives 0 days and 0 interest (AC-3)"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (Math.abs(scaled - Math.trunc(scaled)) === 0.5) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof principal !== \"number\" || !Number.isFinite(principal)) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof annualRate !== \"number\" || !Number.isFinite(annualRate)) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof principal !== \"number\" || !Number.isFinite(principal)) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof annualRate !== \"number\" || !Number.isFinite(annualRate)) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const y = Number(value.slice(0, 4));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const y = Number(value.slice(0, 4));",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const m = Number(value.slice(5, 7));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const m = Number(value.slice(5, 7));",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const d = Number(value.slice(8, 10));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const d = Number(value.slice(8, 10));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const dt = new Date(0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCFullYear(y, m - 1, d);",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const scaled = x * 100;",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (Math.abs(scaled - Math.trunc(scaled)) === 0.5) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Math.round(scaled) / 100;",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (principal <= 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (annualRate <= 0) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const interest = round2(principal * annualRate * days / 365);",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          }
+        ]
+      },
+      "acceptance": {
+        "total": 37,
+        "killed": 18,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "if (principal <= 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "<= to <",
+            "line": "if (annualRate <= 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (end < start) {",
+            "killed": true,
+            "by": "returns 0 days and interest 0.00 when the start date and end date are the same"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (Math.abs(scaled - Math.trunc(scaled)) === 0.5) {",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof principal !== \"number\" || !Number.isFinite(principal)) {",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof annualRate !== \"number\" || !Number.isFinite(annualRate)) {",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof principal !== \"number\" || !Number.isFinite(principal)) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof annualRate !== \"number\" || !Number.isFinite(annualRate)) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const y = Number(value.slice(0, 4));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const y = Number(value.slice(0, 4));",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const m = Number(value.slice(5, 7));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const m = Number(value.slice(5, 7));",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const d = Number(value.slice(8, 10));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const d = Number(value.slice(8, 10));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const dt = new Date(0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCFullYear(y, m - 1, d);",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const scaled = x * 100;",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (Math.abs(scaled - Math.trunc(scaled)) === 0.5) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Math.round(scaled) / 100;",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (principal <= 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (annualRate <= 0) {",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const interest = round2(principal * annualRate * days / 365);",
+            "killed": true,
+            "by": "returns interest 50.96 for principal 10000 at 6 percent from 2026-03-01 to 2026-04-01"
+          }
+        ]
+      },
+      "both": {
+        "total": 37,
+        "killed": 18,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "if (principal <= 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "<= to <",
+            "line": "if (annualRate <= 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (end < start) {",
+            "killed": true,
+            "by": "same start and end date gives 0 days and 0 interest (AC-3)"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (Math.abs(scaled - Math.trunc(scaled)) === 0.5) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof principal !== \"number\" || !Number.isFinite(principal)) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof annualRate !== \"number\" || !Number.isFinite(annualRate)) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (input === null || typeof input !== \"object\") {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof principal !== \"number\" || !Number.isFinite(principal)) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof annualRate !== \"number\" || !Number.isFinite(annualRate)) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const y = Number(value.slice(0, 4));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const y = Number(value.slice(0, 4));",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const m = Number(value.slice(5, 7));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const m = Number(value.slice(5, 7));",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const d = Number(value.slice(8, 10));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const d = Number(value.slice(8, 10));",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const dt = new Date(0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCFullYear(y, m - 1, d);",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "dt.setUTCHours(0, 0, 0, 0);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const scaled = x * 100;",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (Math.abs(scaled - Math.trunc(scaled)) === 0.5) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Math.round(scaled) / 100;",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (principal <= 0) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (annualRate <= 0) {",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const interest = round2(principal * annualRate * days / 365);",
+            "killed": true,
+            "by": "31 days from 2026-03-01 to 2026-04-01 on 10000 at 6% gives 50.96 (AC-1)"
+          }
+        ]
+      },
+      "survivors": [
+        {
+          "operator": "<= to <",
+          "line": "if (principal <= 0) {"
+        },
+        {
+          "operator": "<= to <",
+          "line": "if (annualRate <= 0) {"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (input === null || typeof input !== \"object\") {"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (typeof principal !== \"number\" || !Number.isFinite(principal)) {"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (typeof annualRate !== \"number\" || !Number.isFinite(annualRate)) {"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const y = Number(value.slice(0, 4));"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const m = Number(value.slice(5, 7));"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const d = Number(value.slice(8, 10));"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const d = Number(value.slice(8, 10));"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const dt = new Date(0);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "if (Math.abs(scaled - Math.trunc(scaled)) === 0.5) {"
+        },
+        {
+          "operator": "number + 1",
+          "line": "if (principal <= 0) {"
+        }
+      ]
+    },
+    {
+      "build": "08-velocity-alert",
+      "seconds": 0.2,
+      "cleanFailures": {
+        "unit": [],
+        "acceptance": []
+      },
+      "unit": {
+        "total": 10,
+        "killed": 9,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "while (times[i] - times[left] >= WINDOW_MS) {",
+            "killed": true,
+            "by": "payments exactly 10 minutes apart are in different periods so no alert (AC-2)"
+          },
+          {
+            "operator": "< to <=",
+            "line": "for (let i = 0; i < times.length; i++) {",
+            "killed": true,
+            "by": "payments exactly 10 minutes apart are in different periods so no alert (AC-2)"
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (i - left + 1 > MAX_IN_WINDOW) {",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (name !== \"paymentTimes\") {",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          },
+          {
+            "operator": "true to false",
+            "line": "return { alert: true, alertTime: paymentTimes[i] };",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          },
+          {
+            "operator": "false to true",
+            "line": "return { alert: false, alertTime: null };",
+            "killed": true,
+            "by": "payments exactly 10 minutes apart are in different periods so no alert (AC-2)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const MAX_IN_WINDOW = 5;",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "let left = 0;",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "for (let i = 0; i < times.length; i++) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (i - left + 1 > MAX_IN_WINDOW) {",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          }
+        ]
+      },
+      "acceptance": {
+        "total": 10,
+        "killed": 9,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "while (times[i] - times[left] >= WINDOW_MS) {",
+            "killed": true,
+            "by": "payments exactly ten minutes apart are not in the same period"
+          },
+          {
+            "operator": "< to <=",
+            "line": "for (let i = 0; i < times.length; i++) {",
+            "killed": true,
+            "by": "payments exactly ten minutes apart are not in the same period"
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (i - left + 1 > MAX_IN_WINDOW) {",
+            "killed": true,
+            "by": "six payments inside ten minutes alert at the sixth time"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (name !== \"paymentTimes\") {",
+            "killed": true,
+            "by": "six payments inside ten minutes alert at the sixth time"
+          },
+          {
+            "operator": "true to false",
+            "line": "return { alert: true, alertTime: paymentTimes[i] };",
+            "killed": true,
+            "by": "six payments inside ten minutes alert at the sixth time"
+          },
+          {
+            "operator": "false to true",
+            "line": "return { alert: false, alertTime: null };",
+            "killed": true,
+            "by": "payments exactly ten minutes apart are not in the same period"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const MAX_IN_WINDOW = 5;",
+            "killed": true,
+            "by": "six payments inside ten minutes alert at the sixth time"
+          },
+          {
+            "operator": "number + 1",
+            "line": "let left = 0;",
+            "killed": true,
+            "by": "six payments inside ten minutes alert at the sixth time"
+          },
+          {
+            "operator": "number + 1",
+            "line": "for (let i = 0; i < times.length; i++) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (i - left + 1 > MAX_IN_WINDOW) {",
+            "killed": true,
+            "by": "six payments inside ten minutes alert at the sixth time"
+          }
+        ]
+      },
+      "both": {
+        "total": 10,
+        "killed": 9,
+        "results": [
+          {
+            "operator": ">= to >",
+            "line": "while (times[i] - times[left] >= WINDOW_MS) {",
+            "killed": true,
+            "by": "payments exactly 10 minutes apart are in different periods so no alert (AC-2)"
+          },
+          {
+            "operator": "< to <=",
+            "line": "for (let i = 0; i < times.length; i++) {",
+            "killed": true,
+            "by": "payments exactly 10 minutes apart are in different periods so no alert (AC-2)"
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (i - left + 1 > MAX_IN_WINDOW) {",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (name !== \"paymentTimes\") {",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          },
+          {
+            "operator": "true to false",
+            "line": "return { alert: true, alertTime: paymentTimes[i] };",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          },
+          {
+            "operator": "false to true",
+            "line": "return { alert: false, alertTime: null };",
+            "killed": true,
+            "by": "payments exactly 10 minutes apart are in different periods so no alert (AC-2)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const MAX_IN_WINDOW = 5;",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "let left = 0;",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          },
+          {
+            "operator": "number + 1",
+            "line": "for (let i = 0; i < times.length; i++) {",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (i - left + 1 > MAX_IN_WINDOW) {",
+            "killed": true,
+            "by": "six payments within 9 minutes raise an alert at the sixth payment time (AC-1)"
+          }
+        ]
+      },
+      "survivors": [
+        {
+          "operator": "number + 1",
+          "line": "for (let i = 0; i < times.length; i++) {"
+        }
+      ]
+    },
+    {
+      "build": "09-window-overlap",
+      "seconds": 0.2,
+      "cleanFailures": {
+        "unit": [],
+        "acceptance": []
+      },
+      "unit": {
+        "total": 9,
+        "killed": 8,
+        "results": [
+          {
+            "operator": "> to >=",
+            "line": "return { overlaps: minutes > 0, minutes };",
+            "killed": true,
+            "by": "windows that only touch at 12:00 do not overlap and give 0 minutes"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (key !== \"start\" && key !== \"end\") {",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (key !== \"start\" && key !== \"end\") {",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "&& to ||",
+            "line": "if (key !== \"start\" && key !== \"end\") {",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Number(parts[0]) * 60 + Number(parts[1]);",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Number(parts[0]) * 60 + Number(parts[1]);",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Number(parts[0]) * 60 + Number(parts[1]);",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const minutes = Math.max(0, Math.min(e1, e2) - Math.max(s1, s2));",
+            "killed": true,
+            "by": "windows that only touch at 12:00 do not overlap and give 0 minutes"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return { overlaps: minutes > 0, minutes };",
+            "killed": false,
+            "by": null
+          }
+        ]
+      },
+      "acceptance": {
+        "total": 9,
+        "killed": 8,
+        "results": [
+          {
+            "operator": "> to >=",
+            "line": "return { overlaps: minutes > 0, minutes };",
+            "killed": true,
+            "by": "windows that only touch at an end do not overlap and the overlap is 0 minutes"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (key !== \"start\" && key !== \"end\") {",
+            "killed": true,
+            "by": "overlap minutes are 30 when 09:00 to 11:00 meets 10:30 to 12:00"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (key !== \"start\" && key !== \"end\") {",
+            "killed": true,
+            "by": "overlap minutes are 30 when 09:00 to 11:00 meets 10:30 to 12:00"
+          },
+          {
+            "operator": "&& to ||",
+            "line": "if (key !== \"start\" && key !== \"end\") {",
+            "killed": true,
+            "by": "overlap minutes are 30 when 09:00 to 11:00 meets 10:30 to 12:00"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Number(parts[0]) * 60 + Number(parts[1]);",
+            "killed": true,
+            "by": "overlap minutes are 30 when 09:00 to 11:00 meets 10:30 to 12:00"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Number(parts[0]) * 60 + Number(parts[1]);",
+            "killed": true,
+            "by": "overlap minutes are 30 when 09:00 to 11:00 meets 10:30 to 12:00"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Number(parts[0]) * 60 + Number(parts[1]);",
+            "killed": true,
+            "by": "overlap minutes are 30 when 09:00 to 11:00 meets 10:30 to 12:00"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const minutes = Math.max(0, Math.min(e1, e2) - Math.max(s1, s2));",
+            "killed": true,
+            "by": "windows that only touch at an end do not overlap and the overlap is 0 minutes"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return { overlaps: minutes > 0, minutes };",
+            "killed": false,
+            "by": null
+          }
+        ]
+      },
+      "both": {
+        "total": 9,
+        "killed": 8,
+        "results": [
+          {
+            "operator": "> to >=",
+            "line": "return { overlaps: minutes > 0, minutes };",
+            "killed": true,
+            "by": "windows that only touch at 12:00 do not overlap and give 0 minutes"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (key !== \"start\" && key !== \"end\") {",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (key !== \"start\" && key !== \"end\") {",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "&& to ||",
+            "line": "if (key !== \"start\" && key !== \"end\") {",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Number(parts[0]) * 60 + Number(parts[1]);",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Number(parts[0]) * 60 + Number(parts[1]);",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return Number(parts[0]) * 60 + Number(parts[1]);",
+            "killed": true,
+            "by": "overlapping windows 09:00-11:00 and 10:30-12:00 overlap by 30 minutes"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const minutes = Math.max(0, Math.min(e1, e2) - Math.max(s1, s2));",
+            "killed": true,
+            "by": "windows that only touch at 12:00 do not overlap and give 0 minutes"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return { overlaps: minutes > 0, minutes };",
+            "killed": false,
+            "by": null
+          }
+        ]
+      },
+      "survivors": [
+        {
+          "operator": "number + 1",
+          "line": "return { overlaps: minutes > 0, minutes };"
+        }
+      ]
+    },
+    {
+      "build": "10-pallets-contradiction",
+      "seconds": 0.3,
+      "cleanFailures": {
+        "unit": [],
+        "acceptance": []
+      },
+      "unit": {
+        "total": 44,
+        "killed": 29,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "return e <= 0;",
+            "killed": true,
+            "by": "weight limits a pallet to 40 cartons at 25 kg, so 90 cartons need 3 pallets"
+          },
+          {
+            "operator": "<= to <",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (p < MAX_KG) return true;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (!Number.isSafeInteger(n) || n < 0) throw new Error(\"invalid cartons\");",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (c < 0) c = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "while (c < MAX_CARTONS && fits(c + 1, w)) c++;",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (c < 1) throw new Error(\"carton too heavy for a pallet\");",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (p > MAX_KG) return false;",
+            "killed": true,
+            "by": "weight limits a pallet to 40 cartons at 25 kg, so 90 cartons need 3 pallets"
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (w > MAX_KG) throw new Error(\"carton too heavy for a pallet\");",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "> to >=",
+            "line": "while (c > 0 && !fits(c, w)) c--;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "> to >=",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const count = n === 0 ? 0 : n;",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "return { pallets: pallets === 0 ? 0 : pallets, cartonsPerPallet: c };",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "&& to ||",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "&& to ||",
+            "line": "while (c > 0 && !fits(c, w)) c--;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "&& to ||",
+            "line": "while (c < MAX_CARTONS && fits(c + 1, w)) c++;",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (!Number.isSafeInteger(n) || n < 0) throw new Error(\"invalid cartons\");",
+            "killed": true,
+            "by": "unknown, missing and invalid carton fields are rejected with the contract messages"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "true to false",
+            "line": "if (p < MAX_KG) return true;",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "false to true",
+            "line": "if (p > MAX_KG) return false;",
+            "killed": true,
+            "by": "weight limits a pallet to 40 cartons at 25 kg, so 90 cartons need 3 pallets"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const MAX_CARTONS = 48;",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const SPLITTER = 134217729;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "return e <= 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (!Number.isSafeInteger(n) || n < 0) throw new Error(\"invalid cartons\");",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (c < 0) c = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (c < 0) c = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "while (c > 0 && !fits(c, w)) c--;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "while (c < MAX_CARTONS && fits(c + 1, w)) c++;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (c < 1) throw new Error(\"carton too heavy for a pallet\");",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const count = n === 0 ? 0 : n;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const count = n === 0 ? 0 : n;",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "5 cartons at 400 kg fit 2 per pallet and need 3 pallets"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return { pallets: pallets === 0 ? 0 : pallets, cartonsPerPallet: c };",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return { pallets: pallets === 0 ? 0 : pallets, cartonsPerPallet: c };",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          }
+        ]
+      },
+      "acceptance": {
+        "total": 44,
+        "killed": 22,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "return e <= 0;",
+            "killed": true,
+            "by": "weight cap is tighter than 48 for 90 cartons of 25 kg"
+          },
+          {
+            "operator": "<= to <",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (p < MAX_KG) return true;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (!Number.isSafeInteger(n) || n < 0) throw new Error(\"invalid cartons\");",
+            "killed": true,
+            "by": "zero cartons needs zero pallets"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (c < 0) c = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "while (c < MAX_CARTONS && fits(c + 1, w)) c++;",
+            "killed": true,
+            "by": "carton cap binds and the count rounds up for 100 cartons of 8 kg"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (c < 1) throw new Error(\"carton too heavy for a pallet\");",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (p > MAX_KG) return false;",
+            "killed": true,
+            "by": "weight cap is tighter than 48 for 90 cartons of 25 kg"
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (w > MAX_KG) throw new Error(\"carton too heavy for a pallet\");",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "> to >=",
+            "line": "while (c > 0 && !fits(c, w)) c--;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "> to >=",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "an exact multiple needs no extra pallet for 96 cartons of 8 kg"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "carton cap binds and the count rounds up for 100 cartons of 8 kg"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);",
+            "killed": true,
+            "by": "carton cap binds and the count rounds up for 100 cartons of 8 kg"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const count = n === 0 ? 0 : n;",
+            "killed": true,
+            "by": "carton cap binds and the count rounds up for 100 cartons of 8 kg"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "return { pallets: pallets === 0 ? 0 : pallets, cartonsPerPallet: c };",
+            "killed": true,
+            "by": "carton cap binds and the count rounds up for 100 cartons of 8 kg"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "carton cap binds and the count rounds up for 100 cartons of 8 kg"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": true,
+            "by": "carton cap binds and the count rounds up for 100 cartons of 8 kg"
+          },
+          {
+            "operator": "&& to ||",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "&& to ||",
+            "line": "while (c > 0 && !fits(c, w)) c--;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "&& to ||",
+            "line": "while (c < MAX_CARTONS && fits(c + 1, w)) c++;",
+            "killed": true,
+            "by": "carton cap binds and the count rounds up for 100 cartons of 8 kg"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (!Number.isSafeInteger(n) || n < 0) throw new Error(\"invalid cartons\");",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "true to false",
+            "line": "if (p < MAX_KG) return true;",
+            "killed": true,
+            "by": "carton cap binds and the count rounds up for 100 cartons of 8 kg"
+          },
+          {
+            "operator": "false to true",
+            "line": "if (p > MAX_KG) return false;",
+            "killed": true,
+            "by": "weight cap is tighter than 48 for 90 cartons of 25 kg"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const MAX_CARTONS = 48;",
+            "killed": true,
+            "by": "carton cap binds and the count rounds up for 100 cartons of 8 kg"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const SPLITTER = 134217729;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "return e <= 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (!Number.isSafeInteger(n) || n < 0) throw new Error(\"invalid cartons\");",
+            "killed": true,
+            "by": "zero cartons needs zero pallets"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (c < 0) c = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (c < 0) c = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "while (c > 0 && !fits(c, w)) c--;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "while (c < MAX_CARTONS && fits(c + 1, w)) c++;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (c < 1) throw new Error(\"carton too heavy for a pallet\");",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const count = n === 0 ? 0 : n;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const count = n === 0 ? 0 : n;",
+            "killed": true,
+            "by": "zero cartons needs zero pallets"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "cartons are not split and total weight alone is not used for 5 cartons of 400 kg"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "carton cap binds and the count rounds up for 100 cartons of 8 kg"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "an exact multiple needs no extra pallet for 96 cartons of 8 kg"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return { pallets: pallets === 0 ? 0 : pallets, cartonsPerPallet: c };",
+            "killed": true,
+            "by": "48 cartons still under 1000 kg fit on one pallet at 20 kg"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return { pallets: pallets === 0 ? 0 : pallets, cartonsPerPallet: c };",
+            "killed": true,
+            "by": "zero cartons needs zero pallets"
+          }
+        ]
+      },
+      "both": {
+        "total": 44,
+        "killed": 29,
+        "results": [
+          {
+            "operator": "<= to <",
+            "line": "return e <= 0;",
+            "killed": true,
+            "by": "weight limits a pallet to 40 cartons at 25 kg, so 90 cartons need 3 pallets"
+          },
+          {
+            "operator": "<= to <",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (p < MAX_KG) return true;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (!Number.isSafeInteger(n) || n < 0) throw new Error(\"invalid cartons\");",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (c < 0) c = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "< to <=",
+            "line": "while (c < MAX_CARTONS && fits(c + 1, w)) c++;",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "< to <=",
+            "line": "if (c < 1) throw new Error(\"carton too heavy for a pallet\");",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (p > MAX_KG) return false;",
+            "killed": true,
+            "by": "weight limits a pallet to 40 cartons at 25 kg, so 90 cartons need 3 pallets"
+          },
+          {
+            "operator": "> to >=",
+            "line": "if (w > MAX_KG) throw new Error(\"carton too heavy for a pallet\");",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "> to >=",
+            "line": "while (c > 0 && !fits(c, w)) c--;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "> to >=",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "const count = n === 0 ? 0 : n;",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "=== to !==",
+            "line": "return { pallets: pallets === 0 ? 0 : pallets, cartonsPerPallet: c };",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "!== to ===",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "&& to ||",
+            "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "&& to ||",
+            "line": "while (c > 0 && !fits(c, w)) c--;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "&& to ||",
+            "line": "while (c < MAX_CARTONS && fits(c + 1, w)) c++;",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (!Number.isSafeInteger(n) || n < 0) throw new Error(\"invalid cartons\");",
+            "killed": true,
+            "by": "unknown, missing and invalid carton fields are rejected with the contract messages"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "|| to &&",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "true to false",
+            "line": "if (p < MAX_KG) return true;",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "false to true",
+            "line": "if (p > MAX_KG) return false;",
+            "killed": true,
+            "by": "weight limits a pallet to 40 cartons at 25 kg, so 90 cartons need 3 pallets"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const MAX_CARTONS = 48;",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const SPLITTER = 134217729;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "return e <= 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (!Number.isSafeInteger(n) || n < 0) throw new Error(\"invalid cartons\");",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (c < 0) c = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (c < 0) c = 0;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "while (c > 0 && !fits(c, w)) c--;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "while (c < MAX_CARTONS && fits(c + 1, w)) c++;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "if (c < 1) throw new Error(\"carton too heavy for a pallet\");",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const count = n === 0 ? 0 : n;",
+            "killed": false,
+            "by": null
+          },
+          {
+            "operator": "number + 1",
+            "line": "const count = n === 0 ? 0 : n;",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "5 cartons at 400 kg fit 2 per pallet and need 3 pallets"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "100 cartons at 8 kg need 3 pallets, not the 2 from the made-up example"
+          },
+          {
+            "operator": "number + 1",
+            "line": "const pallets = (count - r) / c + (r > 0 ? 1 : 0);",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return { pallets: pallets === 0 ? 0 : pallets, cartonsPerPallet: c };",
+            "killed": true,
+            "by": "exact fills and one carton over round correctly"
+          },
+          {
+            "operator": "number + 1",
+            "line": "return { pallets: pallets === 0 ? 0 : pallets, cartonsPerPallet: c };",
+            "killed": true,
+            "by": "zero cartons give 0 pallets and bad weights are rejected"
+          }
+        ]
+      },
+      "survivors": [
+        {
+          "operator": "< to <=",
+          "line": "if (p < MAX_KG) return true;"
+        },
+        {
+          "operator": "< to <=",
+          "line": "if (c < 0) c = 0;"
+        },
+        {
+          "operator": "> to >=",
+          "line": "while (c > 0 && !fits(c, w)) c--;"
+        },
+        {
+          "operator": "&& to ||",
+          "line": "const obj = input !== null && typeof input === \"object\" ? input : {};"
+        },
+        {
+          "operator": "&& to ||",
+          "line": "while (c > 0 && !fits(c, w)) c--;"
+        },
+        {
+          "operator": "|| to &&",
+          "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const SPLITTER = 134217729;"
+        },
+        {
+          "operator": "number + 1",
+          "line": "return e <= 0;"
+        },
+        {
+          "operator": "number + 1",
+          "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);"
+        },
+        {
+          "operator": "number + 1",
+          "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");"
+        },
+        {
+          "operator": "number + 1",
+          "line": "if (c < 0) c = 0;"
+        },
+        {
+          "operator": "number + 1",
+          "line": "if (c < 0) c = 0;"
+        },
+        {
+          "operator": "number + 1",
+          "line": "while (c > 0 && !fits(c, w)) c--;"
+        },
+        {
+          "operator": "number + 1",
+          "line": "while (c < MAX_CARTONS && fits(c + 1, w)) c++;"
+        },
+        {
+          "operator": "number + 1",
+          "line": "const count = n === 0 ? 0 : n;"
+        }
+      ]
+    }
+  ]
+}

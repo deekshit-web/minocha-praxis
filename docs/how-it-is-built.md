@@ -126,7 +126,7 @@ run on 12 November. The write-up is `docs/live-build-dry-run.md`, and the record
 | Runs | Cost per build | Time | Result |
 | --- | --- | --- | --- |
 | The first two, by hand | $0.32 and $0.39 | 16 to 17 min | All tests passed first time. |
-| The dry run: 10 briefs across five domains, five builds at once | $0.25 to $0.45 (mean $0.35) | 8 to 33 min | All 10 finished and all passed first time. 7 diagrams passed the check first time and 3 passed after the one correction. |
+| The dry run: 10 briefs across five domains, five builds at once | $0.25 to $0.45 (mean $0.35) | 8 to 33 min | All 10 finished and all passed their acceptance tests first time (3 of Model A's unit tests failed in two builds, uncounted). The tests caught 67% of 208 mutants. 7 diagrams passed the check first time and 3 passed after the one correction. |
 
 All twelve passed first time, so **the red-run and fix-round path has still not been exercised live**. That does not
 mean nothing went wrong upstream: reviewers raised a P0 in 5 of the 10 dry-run builds before any code ran. Read by hand,

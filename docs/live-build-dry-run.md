@@ -9,8 +9,11 @@ tried by hand. Everything below comes from the records in `evals/live-build/reco
 - All 10 builds finished. None failed, none stopped at its limit, and five at once caused no rate-limit errors.
 - **Cost $0.25 to $0.45 a build, $3.48 in all** (mean $0.35). Each build had a hard limit of $0.75 and none came near it.
 - **Time 8 to 33 minutes** with five running at once. A single build on its own took 16 to 17 minutes earlier.
-- **Every build passed its tests on the first run.** No build needed a fix round, so the fix path has still not run
-  live.
+- **Every build passed its acceptance tests on the first run.** No build needed a fix round, so the fix path has
+  still not run live. Model A's own unit tests did not all pass: 3 failed in two builds (01 and 07), and the pipeline
+  does not count unit tests (see "How strong the tests are").
+- **Mutation testing: the tests caught 67% of 208 small breaks** in the final code (50% to 100% per build). Most
+  survivors are in input checks, but some are real gaps, such as a pallet exactly at the weight limit.
 - **Reviewers raised a P0 in 5 of the 10 builds**, before any code was run. Three builds had no finding at all.
   Read by hand, **3 of the 9 P0s were serious, 5 were real but rated too high, and 1 was a false alarm** that the
   builder correctly declined (see "What the reviews caught").
@@ -101,6 +104,45 @@ cutting long text, would save the extra call, which costs about $0.04.
   answer of 2 is wrong, because 2 pallets hold at most 96 cartons", and the acceptance tests expect 3. This was the
   slowest and most expensive build, with 9 findings across the panel and the design.
 
+## How strong the tests are
+
+`npm run live-build-mutation` (run on 12 November 2026, no model calls) breaks each build's final code in small,
+systematic ways, with the operators the page uses: `<=` to `<`, `&&` to `||`, a number plus one, and so on. It then
+re-runs the tests. A mutant that no test notices "survives". It runs Model A's unit tests and Model B's acceptance tests
+separately and together, in a child process with no environment, no file access and its own network namespace.
+
+| Build | Mutants | Unit tests (A) | Acceptance tests (B) | Both |
+| --- | --- | --- | --- | --- |
+| 01 claim window | 38 | 50% | 50% | 50% |
+| 02 duplicate claims | 2 | 100% | 100% | 100% |
+| 03 grade weights | 21 | 90% | 90% | 90% |
+| 04 attendance streak | 12 | 92% | 92% | 92% |
+| 05 stacked promo | 33 | 67% | 64% | 67% |
+| 06 reorder point | 2 | 100% | 100% | 100% |
+| 07 interest days | 37 | 49% | 49% | 49% |
+| 08 velocity alert | 10 | 90% | 90% | 90% |
+| 09 window overlap | 9 | 89% | 89% | 89% |
+| 10 pallets | 44 | 66% | 50% | 66% |
+| **All** | **208** | **67%** | **63%** | **67%** |
+
+- **Model B's acceptance tests, written without seeing the code, added nothing.** Every mutant they caught, Model A's
+  unit tests caught too. Model A's tests caught more in three builds (01, 07, 10).
+- **Most of the 69 survivors (50) are in input checks and date parsing**, for example `||` turned into `&&` in "is this
+  a number". The tests try few bad inputs, one at a time.
+- **19 survivors are in the calculation.** Some make no difference (equivalent mutants), such as changing a constant
+  that is only used to split a float. Others are real gaps: in 10 a pallet exactly at the weight limit is never tested
+  (`p < MAX_KG` to `p <= MAX_KG` survives); in 08 the loop can skip the first timestamp; in 09 an overlap of exactly one
+  minute is never tested; in 07 the exact-half rounding rule can change unnoticed.
+- **Two scores of 2 mutants (02, 06) say little.** That code has almost no comparisons or numbers to break.
+
+**Three of Model A's unit tests failed, and the build did not notice.** In 01 (2 tests) and 07 (1 test), Model A wrote
+`assert.throws(fn, /^Error: unknown field: extra$/)`, as Node's `assert.throws` would read it: there the pattern is
+tested against `"Error: <message>"`. The test runner in `public/tests.js` tests it against the message alone, so the
+tests fail although the code is right. The build records show these failures, but `build.ts` counts only acceptance
+tests when it decides whether a run passed or needs a fix round, so the builds were reported as fully passing. The
+mutation run leaves tests that fail on the real code out of the scores; otherwise each one would "catch" every mutant
+and 01 and 07 would score 100%.
+
 ## What this does not show
 
 - **No build failed.** The red-run and fix-round path has never run on live output. To test it I would need briefs
@@ -117,7 +159,8 @@ cutting long text, would save the extra call, which costs about $0.04.
 - **It tests the pipeline, not the hosted site.** The builds ran on a local machine. A later check showed Railway cannot
   reliably isolate the network: `unshare -rn` was denied as the `node` user on every run, so the hosted site refuses
   to run model-written code (see `docs/how-it-is-built.md`).
-- **No mutation testing** was run on these builds.
+- **A mutation score is not a bug count.** It shows where the tests are thin, not whether the code is wrong. The
+  operators are simple ones, and nobody has yet sorted the survivors into equivalent mutants and real gaps one by one.
 
 ## Files
 
@@ -127,6 +170,7 @@ cutting long text, would save the extra call, which costs about $0.04.
 | One full record per build: the panel, every build stage, every call's cost | `evals/live-build/records/` |
 | The results in one file | `evals/live-build/results-2026-11-12.json` |
 | The runner | `scripts/live-build-dry-run.mjs` |
+| Mutation testing on the ten builds: every mutant, which test caught it, the survivors | `evals/live-build/mutation-2026-11-12.json` (`npm run live-build-mutation`, free) |
 | The rating kit: 29 findings, a blind sheet for each of two raters, a page per build, and the key | `evals/live-build/judging/` (`npm run judging-prepare`, then `npm run judging-analyze`) |
 
 The runner in the repository is a tidied copy of the script that produced these results. It has not been run since, and

@@ -20,7 +20,8 @@
     "self-review": "node scripts/self-review.mjs",
     "live-dry-run": "node scripts/live-build-dry-run.mjs",
     "judging-prepare": "node scripts/judging.mjs prepare",
-    "judging-analyze": "node scripts/judging.mjs analyze"
+    "judging-analyze": "node scripts/judging.mjs analyze",
+    "live-build-mutation": "node scripts/live-build-mutation.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
