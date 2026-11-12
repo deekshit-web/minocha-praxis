@@ -2035,7 +2035,8 @@
         );
         const quote = add("blockquote");
         quote.append(add("span", "Model B (Grok 4.7), reviewing Model A's (Claude Opus 5) draft · " + run.highlight.severity, "who"), document.createTextNode(run.highlight.point));
-        const plainly = add("p", "In plain words: in this run Model A was Claude Opus 5 and Model B was Grok 4.7. Model A's draft called a deadline 17 days away \"within 14 days\", which would have marked it urgent by mistake. Model B caught it, and the error never reached a person.");
+        const measured = add("p", "What we measured separately, on 8 requirements documents that a strict all-Claude panel had already passed: a final review by the other vendor raised 16 serious findings. Sorted one by one, 7 were serious (requirements that contradict each other, an acceptance criterion that cannot decide pass or fail), 6 were real but minor and 3 were wrong. Claude reviewing its own work found most of the problems but rated 4 of 5 lower than the other model did. Claude Code did the sorting, not a person, so it needs a spot-check.");
+        const plainly = add("p", "The catch in this run is a small one. Model A (Claude Opus 5) called a deadline 17 days away \"within 14 days\", which would have marked it urgent by mistake. Model B (Grok 4.7) caught it, and the error never reached a person.");
         const why = add("ul", undefined, "why");
         ["Two vendors' models, not one", "Drafts written apart", "Each reviews the other", "Checks run as code, not AI", "Tests written apart from the code", "Nothing ships without a person"].forEach((item) => why.appendChild(add("li", item)));
         const details = add("details", undefined, "tech");
@@ -2055,7 +2056,7 @@
         transcript.href = "/api/evidence/transcript";
         const transcriptLine = add("p");
         transcriptLine.appendChild(transcript);
-        card.append(row, summary, plainly, quote, why, candour, transcriptLine, details);
+        card.append(row, summary, measured, plainly, quote, why, candour, transcriptLine, details);
         proofRecordings();
         card.hidden = false;
       }
