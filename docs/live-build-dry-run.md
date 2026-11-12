@@ -114,8 +114,9 @@ cutting long text, would save the extra call, which costs about $0.04.
 - **The findings have not been independently judged.** My read of the nine P0s is one reader, and I made a mistake
   on one of them. The 20 non-P0 findings have not been read for accuracy at all. The rating sheets for two people are
   in `evals/live-build/judging/`.
-- **It tests the pipeline, not the hosted site.** The builds ran on a local machine. Whether Railway can isolate the
-  network is still unknown.
+- **It tests the pipeline, not the hosted site.** The builds ran on a local machine. A later check showed Railway cannot
+  reliably isolate the network: `unshare -rn` was denied as the `node` user on every run, so the hosted site refuses
+  to run model-written code (see `docs/how-it-is-built.md`).
 - **No mutation testing** was run on these builds.
 
 ## Files

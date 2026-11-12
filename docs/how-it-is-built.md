@@ -168,7 +168,13 @@ The current sandbox (`studio/src/isolate.ts`) runs the code in a child process w
 - a time limit, a memory limit and an output cap, and a random per-run marker so the code cannot print a fake result.
 
 17 hostile-code tests attack each protection. It is defense in depth, not a proof. A hosted server enables the full
-build only if the host allows a network namespace. Whether Railway does is **not yet known**.
+build only if the host allows a network namespace. **Railway does not, reliably.** On 12 November 2026 we deployed the
+same `unshare -rn` check to a throwaway Railway project five times, from the production base image. As the `node` user,
+which the Dockerfile uses, it was denied every time. As root, it worked once, on an older host (kernel 6.12), where
+network calls from inside were blocked, and was denied on a newer one (kernel 6.18). The kernel allows user namespaces,
+but a seccomp filter on the newer hosts blocks `unshare`, and Railway chooses the host. So the hosted site does not run
+model-written code: `networkIsolated()` is false there, and the server refuses to run the code rather than run it
+without the namespace. Running live builds in public needs a host we control, such as a small VM.
 
 ## Why these choices
 
