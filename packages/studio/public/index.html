@@ -984,7 +984,7 @@
       }
 
       // The architecture diagram. Written by hand from the recorded design (packages/studio/src/diagrams.ts), not by a model.
-      const DIAGRAM = { w: 1124, h: 354, nodeW: 200, nodeH: 78, colX: 300, rowY: 120, left: 12, top: 18 };
+      const DIAGRAM = { nodeW: 200, nodeH: 78, colX: 290, rowY: 116, left: 22, top: 26, bottom: 18 };
       function svgEl(tag, attrs, content) {
         const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
         for (const key of Object.keys(attrs || {})) node.setAttribute(key, attrs[key]);
@@ -1033,7 +1033,14 @@
                 ? "Model B's review, pinned to the draft. A red tag shows where a finding lands."
                 : "Model B's review found no defects in this design, so nothing is pinned."
               : "The approved design. Its file fence allows changes only in the gold area. Nothing else may change.";
-        const svg = svgEl("svg", { viewBox: "0 0 " + DIAGRAM.w + " " + DIAGRAM.h, role: "img", "aria-label": d.summary });
+        // The picture is as big as the boxes it holds, so a design with few rows has no empty band below it.
+        const maxCol = Math.max(...nodes.map((node) => node.col));
+        const maxRow = Math.max(...nodes.map((node) => node.row));
+        const width = DIAGRAM.left * 2 + maxCol * DIAGRAM.colX + DIAGRAM.nodeW;
+        const height = DIAGRAM.top + maxRow * DIAGRAM.rowY + DIAGRAM.nodeH + DIAGRAM.bottom;
+        const svg = svgEl("svg", { viewBox: "0 0 " + width + " " + height, role: "img", "aria-label": d.summary });
+        // A design with few columns must not stretch to the full width: the text would grow with it.
+        svg.style.maxWidth = Math.round(width * 1.25) + "px";
         svg.appendChild(svgEl("title", {}, d.summary));
         const defs = svgEl("defs");
         const marker = svgEl("marker", { id: "arch-arrow", viewBox: "0 0 10 10", refX: "9", refY: "5", markerWidth: "7", markerHeight: "7", orient: "auto-start-reverse" });
