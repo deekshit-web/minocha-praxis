@@ -23,7 +23,7 @@ await Promise.all(
       const recording = await recordBuild(spec, spec.recording!.merge.document, liveBuildSeats(panelContext(spec, domain)));
       writeFileSync(path, `${JSON.stringify(recording, null, 2)}\n`);
       const cost = recording.calls.reduce((total, call) => total + call.costUsd, 0);
-      console.log(`${spec.id}: ${Math.round((Date.now() - started) / 1000)} s, $${cost.toFixed(3)}, ${recording.calls.length} calls; runs: ${recording.runs.map((run) => `round ${run.round} ${run.failing} failing`).join(", ")}.`);
+      console.log(`${spec.id}: ${Math.round((Date.now() - started) / 1000)} s, $${cost.toFixed(3)}, ${recording.calls.length} calls; runs: ${recording.runs.map((run) => `round ${run.round} ${run.failing} acceptance and ${run.unitFailing ?? 0} unit failing`).join(", ")}.`);
     } catch (error) {
       console.log(`${spec.id}: FAILED ${error instanceof Error ? error.message : String(error)}`);
     }

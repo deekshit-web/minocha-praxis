@@ -42,7 +42,7 @@ const Code = z.object({ code: z.string(), summary: z.string() });
 const CodeRevision = z.object({ code: z.string(), resolutions: z.array(z.object({ finding: z.string(), outcome: z.enum(["applied", "declined"]), note: z.string() })) });
 const Script = z.object({ script: z.string() });
 const Cases = z.object({ cases: z.array(z.string()) });
-const Fix = z.object({ code: z.string(), change: z.string() });
+const Fix = z.object({ code: z.string(), change: z.string(), unitScript: z.string().optional() });
 
 export const BuildRecordingSchema = z.object({
   id: z.string(),
@@ -54,8 +54,10 @@ export const BuildRecordingSchema = z.object({
   unitScript: z.string(),
   testCases: z.array(z.string()),
   testScript: z.string(),
-  runs: z.array(z.object({ round: z.number(), code: z.string(), acceptance: z.string(), unit: z.string(), failing: z.number() })),
-  fixes: z.array(z.object({ round: z.number(), change: z.string() })),
+  /** `failing` counts acceptance tests; `unitFailing` counts Model A's unit tests (absent in older recordings). */
+  runs: z.array(z.object({ round: z.number(), code: z.string(), acceptance: z.string(), unit: z.string(), failing: z.number(), unitFailing: z.number().optional() })),
+  /** `unitScriptChanged`: Model A judged one of its own unit tests wrong and rewrote the unit tests in this round. */
+  fixes: z.array(z.object({ round: z.number(), change: z.string(), unitScriptChanged: z.boolean().optional() })),
   finalCode: z.string(),
   /** Drawn by Model A and checked against the design, for a build that has no hand-drawn diagram. */
   diagram: ArchDiagramSchema.optional(),
@@ -253,7 +255,9 @@ export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildS
   ]);
   const script = await ask(seats.b(`Write the test script for these cases. You have never seen the code; work from the contract. ${TEST_RULES}`, Script), "testScript", `${PRD}\n\nThe test cases:\n${cases.cases.join("\n")}`, Script, B);
 
-  // Run, and let Model A fix failures from the acceptance tests, up to two rounds.
+  // Run, and let Model A fix failures from either suite, up to two rounds. Model A wrote the unit tests, so a failing
+  // one may be the test's fault: the fix may rewrite them, and the record says so. The acceptance tests are never
+  // rewritten; they are the independent check.
   first.code = pretty(first.code, true);
   revised.code = pretty(revised.code, true);
   unit.script = pretty(unit.script, false);
@@ -263,18 +267,27 @@ export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildS
   const fixes: BuildRecording["fixes"] = [];
   for (let round = 1; round <= 3; round += 1) {
     const [acceptance, unitRun] = await Promise.all([seats.run(code, script.script), seats.run(code, unit.script)]);
-    runs.push({ round, code, acceptance: reportOf(acceptance), unit: reportOf(unitRun), failing: failingOf(acceptance) });
+    const failing = failingOf(acceptance);
+    const unitFailing = failingOf(unitRun);
+    runs.push({ round, code, acceptance: reportOf(acceptance), unit: reportOf(unitRun), failing, unitFailing });
     options.onProgress?.({ role: `run${round}`, call: null, text: `Acceptance tests:\n${reportOf(acceptance)}\n\nModel A's unit tests:\n${reportOf(unitRun)}` });
-    if (!failingOf(acceptance) || round === 3) break;
+    if ((!failing && !unitFailing) || round === 3) break;
     const fix = await ask(
-      seats.a(`The acceptance tests below were written from the PRD by someone who never saw your code. Fix the code so it meets the PRD. If a test contradicts the PRD, keep the code and say so. Return the full module. ${CODE_RULES}`, Fix),
+      seats.a(
+        "The acceptance tests below were written from the PRD by someone who never saw your code; the unit tests are your own. Fix the code so it meets the PRD. " +
+          "If an acceptance test contradicts the PRD, keep the code and say so. If one of your own unit tests is wrong rather than the code, return the full corrected unit test script as unitScript and say why; otherwise leave unitScript out. " +
+          `Return the full module. ${CODE_RULES} For unitScript: ${TEST_RULES}`,
+        Fix,
+      ),
       `fix${round}`,
-      `${PRD}\n\nYour code:\n${code}\n\nThe test script:\n${script.script}\n\nThe test run:\n${reportOf(acceptance)}`,
+      `${PRD}\n\nYour code:\n${code}\n\nThe acceptance test script:\n${script.script}\n\nThe acceptance test run:\n${reportOf(acceptance)}\n\nYour unit test script:\n${unit.script}\n\nThe unit test run:\n${reportOf(unitRun)}`,
       Fix,
       A,
     );
-    fixes.push({ round, change: fix.change });
+    const unitScriptChanged = Boolean(fix.unitScript && fix.unitScript.trim());
+    fixes.push({ round, change: fix.change, ...(unitScriptChanged ? { unitScriptChanged } : {}) });
     code = pretty(fix.code, true);
+    if (unitScriptChanged) unit.script = pretty(fix.unitScript!, false);
   }
 
   // Models sometimes return a whole module on one line. Reprint it readably (same meaning) before storing; the

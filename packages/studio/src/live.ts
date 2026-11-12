@@ -206,7 +206,7 @@ export function createLiveService(options: LiveOptions) {
           job.build = build;
           const last = build.runs[build.runs.length - 1];
           job.findings += (build.architecture.review.match(/^AR-\d/gm) ?? []).length + (build.code.review.match(/^CR-\d/gm) ?? []).length;
-          job.final = `Requirements and design, approved\n\nThe module contract:\n${build.contract}\n\nThe code, after review and ${build.fixes.length} fix round${build.fixes.length === 1 ? "" : "s"}:\n${build.finalCode}\n\nThe last test run (${last?.failing ? `${last.failing} failing` : "all passing"}):\n${last?.acceptance ?? ""}`;
+          job.final = `Requirements and design, approved\n\nThe module contract:\n${build.contract}\n\nThe code, after review and ${build.fixes.length} fix round${build.fixes.length === 1 ? "" : "s"}:\n${build.finalCode}\n\nThe last test run (${last?.failing || last?.unitFailing ? [last.failing ? `${last.failing} acceptance` : "", last.unitFailing ? `${last.unitFailing} unit` : ""].filter(Boolean).join(" and ") + " failing" : "all passing"}):\n${last?.acceptance ?? ""}\n\nModel A's unit tests:\n${last?.unit ?? ""}`;
         }
       }
       job.status = "done";

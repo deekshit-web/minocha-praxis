@@ -24,8 +24,11 @@ const assert = {
     try {
       run();
     } catch (error) {
-      if (pattern.test(error.message)) return;
-      throw new AssertionError(`expected an error matching ${pattern}, received ${show(error.message)}`);
+      // Node's assert.throws tests the pattern against String(error), "Error: <message>"; tests here have used the
+      // bare message. Models write it either way, so either passes.
+      const message = error instanceof Error ? error.message : String(error);
+      if (pattern.test(message) || (error instanceof Error && pattern.test(String(error)))) return;
+      throw new AssertionError(`expected an error matching ${pattern}, received ${show(message)}`);
     }
     throw new AssertionError(`expected an error matching ${pattern}, received none`);
   },

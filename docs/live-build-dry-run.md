@@ -11,7 +11,7 @@ tried by hand. Everything below comes from the records in `evals/live-build/reco
 - **Time 8 to 33 minutes** with five running at once. A single build on its own took 16 to 17 minutes earlier.
 - **Every build passed its acceptance tests on the first run.** No build needed a fix round, so the fix path has
   still not run live. Model A's own unit tests did not all pass: 3 failed in two builds (01 and 07), and the pipeline
-  does not count unit tests (see "How strong the tests are").
+  did not count unit tests. Both causes are now fixed (see "How strong the tests are").
 - **Mutation testing: the tests caught 67% of 208 small breaks** in the final code (50% to 100% per build). Most
   survivors are in input checks, but some are real gaps, such as a pallet exactly at the weight limit.
 - **Reviewers raised a P0 in 5 of the 10 builds**, before any code was run. Three builds had no finding at all.
@@ -139,9 +139,15 @@ separately and together, in a child process with no environment, no file access 
 `assert.throws(fn, /^Error: unknown field: extra$/)`, as Node's `assert.throws` would read it: there the pattern is
 tested against `"Error: <message>"`. The test runner in `public/tests.js` tests it against the message alone, so the
 tests fail although the code is right. The build records show these failures, but `build.ts` counts only acceptance
-tests when it decides whether a run passed or needs a fix round, so the builds were reported as fully passing. The
-mutation run leaves tests that fail on the real code out of the scores; otherwise each one would "catch" every mutant
-and 01 and 07 would score 100%.
+tests when it decides whether a run passed or needs a fix round, so the builds were reported as fully passing.
+
+Both are now fixed. `assert.throws` accepts a pattern for either form, so all three tests pass on the recorded code.
+A failing unit test now starts a fix round like a failing acceptance test, and the record counts both
+(`runs[].unitFailing`). Model A wrote the unit tests, so in a fix round it may rewrite them if it judges one wrong;
+the record marks that (`fixes[].unitScriptChanged`), and the acceptance tests are never rewritten. The table above was
+re-run after the fix and did not change: the three tests now pass but catch no extra mutants. The mutation run still
+leaves out any test that fails on the real code, since such a test would "catch" every mutant (with the old assert,
+01 and 07 scored 100%).
 
 ## What this does not show
 

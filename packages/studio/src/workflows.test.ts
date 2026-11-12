@@ -257,6 +257,18 @@ test("A recorded run replaces the prepared panel without change. It has the real
   }
 });
 
+test("assert.throws accepts a pattern for the bare message or for Node's form, \"Error: <message>\", and still fails a wrong one.", () => {
+  const code = '({ check(x) { if (x < 0) throw new Error("negative: " + x); return x; } })';
+  const results = runRecorded(code, [
+    'test("bare", () => assert.throws(() => code.check(-1), /^negative: -1$/));',
+    'test("node form", () => assert.throws(() => code.check(-1), /^Error: negative: -1$/));',
+    'test("wrong", () => assert.throws(() => code.check(-1), /^positive/));',
+    'test("none", () => assert.throws(() => code.check(1), /negative/));',
+  ].join("\n"));
+  assert.deepEqual(results.map((result) => [result.name, result.pass]), [["bare", true], ["node form", true], ["wrong", false], ["none", false]]);
+  assert.match(results[2]!.message ?? "", /received "negative: -1"/);
+});
+
 test("The recorded build stages are real. When the model-written tests run again on the model-written code, they give the recorded results.", () => {
   for (const spec of loadSpecs().filter((item) => item.buildRecording)) {
     const build = spec.buildRecording!;

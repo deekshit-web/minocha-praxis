@@ -1,5 +1,5 @@
 {
-  "ranAt": "2026-11-12T17:39:32.703Z",
+  "ranAt": "2026-11-12T18:21:05.616Z",
   "networkNamespace": true,
   "totals": {
     "unit": {
@@ -20,16 +20,7 @@
       "build": "01-claim-window",
       "seconds": 0.3,
       "cleanFailures": {
-        "unit": [
-          {
-            "name": "rejects unknown field, missing field and impossible calendar date",
-            "message": "expected an error matching /^Error: unknown field: extra$/, received \"unknown field: extra\""
-          },
-          {
-            "name": "rejects a check date earlier than the denial date",
-            "message": "expected an error matching /^Error: checkDate is before denialDate$/, received \"checkDate is before denialDate\""
-          }
-        ],
+        "unit": [],
         "acceptance": []
       },
       "unit": {
@@ -2271,12 +2262,7 @@
       "build": "07-interest-days",
       "seconds": 0.3,
       "cleanFailures": {
-        "unit": [
-          {
-            "name": "an extra input field is rejected with unknown field and its name",
-            "message": "expected an error matching /^Error: unknown field: fee$/, received \"unknown field: fee\""
-          }
-        ],
+        "unit": [],
         "acceptance": []
       },
       "unit": {

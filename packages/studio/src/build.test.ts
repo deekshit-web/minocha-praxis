@@ -46,6 +46,30 @@ test("A build recording runs the real tests. When a run fails, the model fixes t
   assert.ok(recording.calls.every((call) => call.costUsd > 0));
 });
 
+test("A failing unit test also starts a fix round. When Model A judges its own test wrong, it rewrites the test and the record says so.", async () => {
+  const code = "({ orderTotal(items) { return items.reduce((sum, item) => sum + item, 0); } })";
+  const answers = {
+    arch: { text: "Components." },
+    archReview: { findings: [], strengths: "Clear." },
+    archFinal: { text: "Components, revised.", resolutions: [] },
+    code: { code, summary: "The module." },
+    codeReview: { findings: [], strengths: "Fine." },
+    codeRevise: { code, resolutions: [] },
+    unit: { script: 'test("empty order", () => assert.equal(code.orderTotal([]), 1));' },
+    cases: { cases: ["TC-1 · REQ-1 · [2, 3] → 5"] },
+    script: { script: 'test("adds the items", () => assert.equal(code.orderTotal([2, 3]), 5));' },
+    fix: { code, change: "The code is right; my unit test expected 1 for an empty order, and the PRD says 0.", unitScript: 'test("empty order", () => assert.equal(code.orderTotal([]), 0));' },
+  };
+  const order = { a: ["arch", "archFinal", "code", "codeRevise", "unit", "fix"], b: ["archReview", "codeReview", "cases", "script"] };
+  const recording = await recordBuild(spec, "REQ-1 The order total is the sum of the items; an empty order is 0.", scripted(order, answers));
+  assert.equal(recording.runs.length, 2);
+  assert.deepEqual([recording.runs[0]?.failing, recording.runs[0]?.unitFailing], [0, 1]);
+  assert.deepEqual([recording.runs[1]?.failing, recording.runs[1]?.unitFailing], [0, 0]);
+  assert.equal(recording.fixes[0]?.unitScriptChanged, true);
+  assert.match(recording.unitScript, /orderTotal\(\[\]\), 0\)/);
+  assert.equal(recording.finalCode, recording.runs[0]?.code);
+});
+
 /** Seats that answer from a script, in the order each side is asked. */
 function scripted(order: { a: string[]; b: string[] }, answers: Record<string, unknown>, costUsd = 0.01): BuildSeats {
   const seat = (side: "a" | "b", model: string) => (): ModelProvider => {
