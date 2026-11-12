@@ -2333,6 +2333,13 @@
         .then((status) => {
           if (!status || !status.enabled) return;
           byId("livebrief").hidden = false;
+          // The full build runs model-written code on the server, so it appears only where the server switched it on.
+          if (status.fullBuild) {
+            const option = document.createElement("option");
+            option.value = "fullbuild";
+            option.textContent = "A feature, built end to end (about $0.40, 20 to 40 minutes)";
+            document.querySelector('#liveform select[name="kind"]').appendChild(option);
+          }
           const select = byId("livedomain");
           fetch("/api/catalog")
             .then((response) => response.json())
@@ -2371,7 +2378,13 @@
           out.appendChild(route);
         } else if (job.status === "running" && !job.events.length) out.appendChild(add("p", "Model C is judging how risky this is…", "meta"));
         const list = add("ol", undefined, "events");
-        const steps = job.route && job.route.path === "single" ? [["single", "Model A writes it (one model, routed as low risk)"]] : LIVE_STEPS;
+        let steps = job.route && job.route.path === "single" ? [["single", "Model A writes it (one model, routed as low risk)"]] : LIVE_STEPS;
+        // A full build has a different number of steps each time (a contract review that finds nothing, a fix round), so its
+        // list is the steps that have happened, with one line for the step under way.
+        if (job.kind === "fullbuild") {
+          steps = job.events.map((item) => [item.role, item.label]);
+          if (job.status === "running") steps.push(["next", "Working on the next step"]);
+        }
         for (const [role, label] of steps) {
           const event = job.events.find((item) => item.role === role);
           const item = add("li", undefined, event ? "" : "pending");

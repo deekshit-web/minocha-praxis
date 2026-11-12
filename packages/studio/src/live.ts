@@ -1,7 +1,8 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { callCost, findPhi } from "@northwind/orchestrator";
+import { type BuildOptions, type BuildRecording, liveBuildSeats, recordBuild } from "./build.ts";
 import { askJev } from "./jev.ts";
-import { type PanelProgress, type Recording, livePanel, recordPanel } from "./record.ts";
+import { type PanelProgress, type Recording, livePanel, panelContext, recordPanel } from "./record.ts";
 import { DOMAINS, type DomainId, type WorkflowSpec, decisionFor, formatDecision } from "./workflows.ts";
 
 /**
@@ -32,11 +33,14 @@ export interface LiveJob {
   status: "running" | "done" | "failed";
   startedAt: string;
   domain: string;
-  kind: "build" | "document";
+  /** "fullbuild" runs the requirements panel and then every build stage on live models. */
+  kind: "build" | "document" | "fullbuild";
   brief: string;
   route: { text: string; live: boolean; path: "panel" | "single" } | null;
   events: LiveEvent[];
   final: string | null;
+  /** For a full build: every recorded stage, to be replayed in the stage view. */
+  build: BuildRecording | null;
   findings: number;
   costUsd: number;
   seconds: number;
@@ -48,6 +52,8 @@ export interface LiveRunners {
   panel(spec: WorkflowSpec, onProgress: PanelProgress): Promise<Recording>;
   /** Runs the cheap path: one model drafts. */
   single(spec: WorkflowSpec): Promise<LiveEvent>;
+  /** Runs every build stage on the approved requirements, reporting each call and each test run. */
+  build(spec: WorkflowSpec, prd: string, options: BuildOptions): Promise<BuildRecording>;
   /** Asks Model C the routing questions; null when the decision model is unavailable. */
   route(spec: WorkflowSpec): Promise<{ text: string; low: boolean } | null>;
 }
@@ -58,6 +64,12 @@ export interface LiveOptions {
   /** What one run is assumed to cost before it starts, for the cap check. */
   runEstimateUsd?: number;
   runsPerHour?: number;
+  /** Switches on the full build. Off by default: model-written code runs on this server, so only trusted staging enables it. */
+  fullBuild?: boolean;
+  /** The most one full build may cost, the requirements panel included. */
+  fullBuildCapUsd?: number;
+  /** The longest one full build may run. */
+  fullBuildMaxSeconds?: number;
   runners: LiveRunners;
   now?: () => number;
 }
@@ -71,6 +83,23 @@ const LABELS: Record<string, string> = {
   finalReview: "Model B checks the final document",
   finalFix: "Model A fixes what the final check found",
   single: "Model A writes it (one model, routed as low risk)",
+  contractDraft: "Model A drafts the module contract",
+  contractReview: "Model B checks the contract can be tested",
+  contractFinal: "Model A revises the contract",
+  archDraft: "Model A designs the architecture",
+  archReview: "Model B reviews the design",
+  archFinal: "Model A revises the design",
+  code: "Model A writes the code",
+  codeReview: "Model B reviews the code",
+  codeRevise: "Model A applies the review",
+  unitTests: "Model A writes unit tests for its own code",
+  testCases: "Model B writes test cases from the PRD",
+  testScript: "Model B writes the test script, without seeing the code",
+  run1: "Tests run on the code",
+  run2: "Tests run again after a fix",
+  run3: "Tests run a third time after a fix",
+  fix1: "Model A fixes the failing tests",
+  fix2: "Model A fixes the failing tests again",
 };
 
 const digest = (text: string) => createHash("sha256").update(text).digest();
@@ -105,6 +134,8 @@ export function createLiveService(options: LiveOptions) {
   const cap = options.dailyCapUsd ?? 2;
   const estimate = options.runEstimateUsd ?? 0.25;
   const perHour = options.runsPerHour ?? 6;
+  const buildCap = options.fullBuildCapUsd ?? 0.75;
+  const buildSeconds = options.fullBuildMaxSeconds ?? 60 * 60;
   const now = options.now ?? Date.now;
   const jobs = new Map<string, LiveJob>();
   let day = "";
@@ -124,18 +155,33 @@ export function createLiveService(options: LiveOptions) {
     const started = now();
     try {
       const route = await options.runners.route(spec);
-      job.route = route ? { text: route.text, live: true, path: route.low ? "single" : "panel" } : null;
-      if (route?.low) {
+      const full = job.kind === "fullbuild";
+      // A full build always runs the whole panel: the router still reports its risk, but it cannot send a feature to one model.
+      job.route = route ? { text: route.text, live: true, path: route.low && !full ? "single" : "panel" } : null;
+      const record = (role: string, call: { model: string; seconds: number; costUsd: number } | null, text: string) => {
+        job.events.push({ role, label: LABELS[role] ?? role, model: call?.model ?? "sandbox", seconds: call?.seconds ?? 0, costUsd: call?.costUsd ?? 0, text });
+        job.costUsd = job.events.reduce((total, event) => total + event.costUsd, 0);
+      };
+      if (route?.low && !full) {
         const event = await options.runners.single(spec);
         job.events.push(event);
         job.final = event.text;
       } else {
-        const recording = await options.runners.panel(spec, ({ role, call, text }) => {
-          job.events.push({ role, label: LABELS[role] ?? role, model: call.model, seconds: call.seconds, costUsd: call.costUsd, text });
-          job.costUsd = job.events.reduce((total, event) => total + event.costUsd, 0);
-        });
+        const recording = await options.runners.panel(spec, ({ role, call, text }) => record(role, call, text));
         job.final = recording.finalFix?.document ?? recording.merge.document;
         job.findings = recording.reviewOfA.findings.length + recording.reviewOfB.findings.length + (recording.finalReview?.findings.length ?? 0);
+        if (full) {
+          // The approved requirements go on to design, code, review, tests and runs, inside one cost and time limit.
+          const build = await options.runners.build(spec, job.final, {
+            maxCostUsd: Math.max(0, buildCap - job.costUsd),
+            maxSeconds: buildSeconds,
+            onProgress: ({ role, call, text }) => record(role, call, text),
+          });
+          job.build = build;
+          const last = build.runs[build.runs.length - 1];
+          job.findings += (build.architecture.review.match(/^AR-\d/gm) ?? []).length + (build.code.review.match(/^CR-\d/gm) ?? []).length;
+          job.final = `Requirements and design, approved\n\nThe module contract:\n${build.contract}\n\nThe code, after review and ${build.fixes.length} fix round${build.fixes.length === 1 ? "" : "s"}:\n${build.finalCode}\n\nThe last test run (${last?.failing ? `${last.failing} failing` : "all passing"}):\n${last?.acceptance ?? ""}`;
+        }
       }
       job.status = "done";
     } catch (error) {
@@ -154,7 +200,7 @@ export function createLiveService(options: LiveOptions) {
     enabled: Boolean(passcode),
     status() {
       today();
-      return { enabled: Boolean(passcode), busy, spentTodayUsd: spent, capUsd: cap };
+      return { enabled: Boolean(passcode), busy, spentTodayUsd: spent, capUsd: cap, fullBuild: Boolean(options.fullBuild), fullBuildCapUsd: buildCap };
     },
     job(id: string): LiveJob | null {
       return jobs.get(id) ?? null;
@@ -165,7 +211,8 @@ export function createLiveService(options: LiveOptions) {
       if (typeof input.passcode !== "string" || !timingSafeEqual(digest(input.passcode), digest(passcode))) return { error: "That passcode is not right.", status: 403 };
       const domain = DOMAINS.find((item) => item.id === input.domain);
       if (!domain) return { error: "Pick a domain.", status: 400 };
-      if (input.kind !== "build" && input.kind !== "document") return { error: "Pick build a feature or produce a document.", status: 400 };
+      if (input.kind !== "build" && input.kind !== "document" && input.kind !== "fullbuild") return { error: "Pick build a feature or produce a document.", status: 400 };
+      if (input.kind === "fullbuild" && !options.fullBuild) return { error: "Full builds are not switched on here.", status: 404 };
       const brief = String(input.brief ?? "").trim();
       const facts = String(input.facts ?? "").trim();
       if (brief.length < 20) return { error: "Write a brief of at least a sentence.", status: 400 };
@@ -175,7 +222,7 @@ export function createLiveService(options: LiveOptions) {
       if (busy) return { error: "Another live run is in progress. Try again in a few minutes.", status: 429 };
       starts = starts.filter((at) => now() - at < 60 * 60 * 1000);
       if (starts.length >= perHour) return { error: "The hourly limit on live runs is reached. Try again later.", status: 429 };
-      if (spent + estimate > cap) return { error: "Today's budget for live runs is used up.", status: 429 };
+      if (spent + (input.kind === "fullbuild" ? buildCap : estimate) > cap) return { error: "Today's budget for live runs is used up.", status: 429 };
       busy = true;
       starts.push(now());
       const id = randomUUID().slice(0, 8);
@@ -189,6 +236,7 @@ export function createLiveService(options: LiveOptions) {
         route: null,
         events: [],
         final: null,
+        build: null,
         findings: 0,
         costUsd: 0,
         seconds: 0,
@@ -196,7 +244,7 @@ export function createLiveService(options: LiveOptions) {
       };
       jobs.set(id, job);
       if (jobs.size > 20) jobs.delete(jobs.keys().next().value as string);
-      void run(job, specFor({ domain: domain.id, kind: input.kind, brief, facts }, `live-${id}`));
+      void run(job, specFor({ domain: domain.id, kind: input.kind === "fullbuild" ? "build" : input.kind, brief, facts }, `live-${id}`));
       return { jobId: id };
     },
   };
@@ -222,6 +270,7 @@ export function liveRunners(): LiveRunners {
         text: (JSON.parse(answer.text) as { text: string }).text,
       };
     },
+    build: (spec, prd, options) => recordBuild(spec, prd, liveBuildSeats(panelContext(spec, domainName(spec))), undefined, options),
     async route(spec) {
       const decision = decisionFor(spec, "route");
       if (!decision || !process.env.JEV_API_KEY) return null;

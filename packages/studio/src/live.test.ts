@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { type BuildOptions, BuildLimitError, type BuildRecording } from "./build.ts";
 import { createDecider } from "./jev.ts";
 import { type LiveRunners, createLiveService } from "./live.ts";
 import type { Recording } from "./record.ts";
@@ -17,9 +18,26 @@ const recording: Recording = {
   merge: { document: "Final document.", keptFromA: "a", keptFromB: "b", resolutions: [] },
 };
 
-function runners(low = false): LiveRunners & { panels: number } {
-  const state = { panels: 0 };
+const builtModule = {
+  contract: "daysLeft(order) returns a whole number.",
+  architecture: { draft: "d", review: "AR-1 · P1 · Gap\n  Missing.", final: "f", resolutions: "" },
+  code: { first: "c", summary: "s", review: "CR-1 · P1 · Gap\n  Missing.\nCR-2 · P2 · Style\n  Minor.", revised: "c", resolutions: "" },
+  runs: [{ round: 1, code: "c", acceptance: "3 passing", unit: "1 passing", failing: 0 }],
+  fixes: [],
+  finalCode: "({ daysLeft() { return 5; } })",
+} as unknown as BuildRecording;
+
+function runners(low = false, stopBuild = false): LiveRunners & { panels: number; builds: number; limits: Array<number | undefined> } {
+  const state = { panels: 0, builds: 0, limits: [] as Array<number | undefined> };
   return Object.assign(state, {
+    async build(_spec: unknown, _prd: string, options: BuildOptions) {
+      state.builds += 1;
+      state.limits.push(options.maxCostUsd);
+      for (const role of ["archDraft", "archReview", "archFinal", "code"]) options.onProgress?.({ role, call: call(role, "claude-opus-5-5", 0.03), text: `${role} text` });
+      if (stopBuild) throw new BuildLimitError("The build stopped before \"codeReview\": its calls so far cost $0.20, which is the limit of $0.20.");
+      options.onProgress?.({ role: "run1", call: null, text: "3 passing" });
+      return builtModule;
+    },
     async route() {
       return { text: low ? "Decision: one model and a person." : "Decision: the full panel.", low };
     },
@@ -97,6 +115,78 @@ test("On a hosted server, only one write is permitted. The write is JSON from th
     assert.equal((await fetch(`${origin}/api/catalog`, { method: "POST" })).status, 405);
     assert.equal(((await (await fetch(`${origin}/api/live`)).json()) as { enabled: boolean }).enabled, true);
   } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+
+const fullBrief = { ...brief, kind: "fullbuild" };
+
+test("A full build is off unless the server switches it on.", () => {
+  const fake = runners();
+  const live = createLiveService({ passcode: "booth-2026", runners: fake });
+  assert.deepEqual(live.submit(fullBrief), { error: "Full builds are not switched on here.", status: 404 });
+  assert.equal(live.status().fullBuild, false);
+  assert.equal(fake.panels, 0);
+});
+
+test("A full build runs the panel, then every build stage. The page shows each call and each test run.", async () => {
+  const fake = runners();
+  const live = createLiveService({ passcode: "booth-2026", fullBuild: true, fullBuildCapUsd: 0.75, dailyCapUsd: 2, runners: fake });
+  const started = live.submit(fullBrief);
+  assert.ok("jobId" in started);
+  await settle();
+  const job = live.job(started.jobId)!;
+  assert.equal(job.status, "done");
+  assert.equal(job.kind, "fullbuild");
+  assert.deepEqual(job.events.map((event) => event.role), ["analystA", "analystB", "critiqueOfB", "critiqueOfA", "synthesizer", "archDraft", "archReview", "archFinal", "code", "run1"]);
+  assert.equal(job.events.at(-1)?.model, "sandbox");
+  assert.equal(job.events.at(-1)?.costUsd, 0);
+  assert.equal(job.build, builtModule);
+  assert.match(job.final ?? "", /The module contract:\ndaysLeft/);
+  assert.match(job.final ?? "", /all passing/);
+  assert.equal(job.findings, 1 + 1 + 2);
+  assert.equal(fake.builds, 1);
+});
+
+test("A full build gets what is left of its cost limit. The panel cost comes off first.", async () => {
+  const fake = runners();
+  const live = createLiveService({ passcode: "booth-2026", fullBuild: true, fullBuildCapUsd: 0.75, dailyCapUsd: 2, runners: fake });
+  live.submit(fullBrief);
+  await settle();
+  assert.equal(fake.limits.length, 1);
+  assert.ok(Math.abs((fake.limits[0] ?? 0) - 0.65) < 1e-9, "0.75 minus the 0.10 that the panel cost");
+});
+
+test("A build that reaches its limit stops. The run keeps the calls it made, and the page shows the reason.", async () => {
+  const fake = runners(false, true);
+  const live = createLiveService({ passcode: "booth-2026", fullBuild: true, dailyCapUsd: 2, runners: fake });
+  const started = live.submit(fullBrief);
+  await settle();
+  const job = live.job("jobId" in started ? started.jobId : "")!;
+  assert.equal(job.status, "failed");
+  assert.match(job.error ?? "", /The build stopped before "codeReview"/);
+  assert.equal(job.events.length, 9);
+  assert.ok(job.costUsd > 0 && live.status().spentTodayUsd > 0, "the calls that were made are charged");
+  assert.equal(job.build, null);
+});
+
+test("A full build needs the whole cost limit free in the daily budget.", () => {
+  const live = createLiveService({ passcode: "booth-2026", fullBuild: true, fullBuildCapUsd: 0.75, dailyCapUsd: 0.5, runners: runners() });
+  assert.equal((live.submit(fullBrief) as { status: number }).status, 429);
+});
+
+test("A hosted server never switches the full build on.", async () => {
+  const saved = process.env.LIVE_BUILD;
+  process.env.LIVE_BUILD = "1";
+  const server = createStudioServer({ hosted: true, decider: createDecider({ apiKey: "" }) });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  try {
+    const status = (await (await fetch(`http://127.0.0.1:${typeof address === "object" && address ? address.port : 0}/api/live`)).json()) as { enabled: boolean; fullBuild?: boolean };
+    assert.notEqual(status.fullBuild, true);
+  } finally {
+    if (saved === undefined) delete process.env.LIVE_BUILD;
+    else process.env.LIVE_BUILD = saved;
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });

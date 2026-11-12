@@ -106,6 +106,41 @@ export function reportOf(outcome: TestOutcome): string {
 
 const failingOf = (outcome: TestOutcome) => (outcome.error && !outcome.results.length ? 1 : outcome.results.filter((result) => !result.pass).length);
 
+/** One step of a running build, for a page that shows each call as it lands. `call` is null for a sandbox run. */
+export interface BuildProgress {
+  role: string;
+  call: RecordedCall | null;
+  text: string;
+}
+
+export interface BuildOptions {
+  /** The module contract. Without one (and without a prepared one for the workflow) the contract is drafted and checked first. */
+  contract?: string;
+  onProgress?: (event: BuildProgress) => void;
+  /** Stops the build before the next call once the calls so far cost this much. */
+  maxCostUsd?: number;
+  /** Stops the build before the next call once it has run this long. */
+  maxSeconds?: number;
+}
+
+/** A build stopped by its own cost or time limit. The calls made so far are billed and reported. */
+export class BuildLimitError extends Error {}
+
+const Contract = z.object({ contract: z.string() });
+const ContractRevision = z.object({ contract: z.string(), resolutions: z.array(z.object({ finding: z.string(), outcome: z.enum(["applied", "declined"]), note: z.string() })) });
+
+/** The text a person reads for one answer. */
+const REVIEW_PREFIX: Record<string, string> = { archReview: "AR-", codeReview: "CR-", contractReview: "K-" };
+function describe(value: unknown, role: string): string {
+  const item = value as Record<string, unknown>;
+  const parts: string[] = [];
+  for (const key of ["text", "contract", "summary", "code", "script", "change"]) if (typeof item[key] === "string") parts.push(item[key] as string);
+  if (Array.isArray(item.cases)) parts.push((item.cases as string[]).join("\n"));
+  if (Array.isArray(item.findings)) parts.push(renderReview(item as ReviewAnswer, "D-A").replace(/^D-A(\d+)/gm, `${REVIEW_PREFIX[role] ?? "F-"}$1`));
+  if (Array.isArray(item.resolutions)) parts.push((item.resolutions as Array<{ finding: string; outcome: string; note: string }>).map((entry) => `${entry.finding} ${entry.outcome}: ${entry.note}`).join("\n"));
+  return parts.join("\n\n");
+}
+
 export interface BuildSeats {
   /** Model A for one task, given instructions and an answer schema. */
   a(instructions: string, schema: z.ZodType<unknown>): ModelProvider;
@@ -124,11 +159,13 @@ export function liveBuildSeats(context: string): BuildSeats {
 }
 
 /** Records the real build stages for one workflow, on top of its recorded PRD (the panel's merged document). */
-export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildSeats, now = () => new Date()): Promise<BuildRecording> {
-  const contract = CONTRACTS[spec.id];
-  if (!contract) throw new Error(`no contract for ${spec.id}`);
+export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildSeats, now = () => new Date(), options: BuildOptions = {}): Promise<BuildRecording> {
+  const startedAt = Date.now();
   const calls: RecordedCall[] = [];
   const ask = async <T>(seat: ModelProvider, role: string, prompt: string, schema: z.ZodType<T>, model: string): Promise<T> => {
+    const spent = calls.reduce((total, call) => total + call.costUsd, 0);
+    if (options.maxCostUsd !== undefined && spent >= options.maxCostUsd) throw new BuildLimitError(`The build stopped before "${role}": its calls so far cost $${spent.toFixed(2)}, which is the limit of $${options.maxCostUsd.toFixed(2)}.`);
+    if (options.maxSeconds !== undefined && (Date.now() - startedAt) / 1000 >= options.maxSeconds) throw new BuildLimitError(`The build stopped before "${role}": it ran for more than ${Math.round(options.maxSeconds / 60)} minutes.`);
     const started = Date.now();
     const answer = await seat.complete({ role: "analystA", prompt });
     const usage = answer.usage ?? { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
@@ -141,7 +178,9 @@ export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildS
       outputTokens: usage.outputTokens,
       costUsd: answer.costUsd ?? callCost(answered.startsWith("grok") ? GROK_MODEL : CLAUDE_MODEL, usage) ?? 0,
     });
-    return schema.parse(JSON.parse(answer.text));
+    const value = schema.parse(JSON.parse(answer.text));
+    options.onProgress?.({ role, call: calls[calls.length - 1]!, text: describe(value, role) });
+    return value;
   };
   // Models sometimes return a whole module on one line. Reprint code readably (same meaning) before it is run
   // and stored; the recorder runs where esbuild is installed, and the server never loads this path.
@@ -161,9 +200,36 @@ export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildS
   }
   const A = CLAUDE_MODEL;
   const B = GROK_MODEL;
-  const PRD = `The approved PRD:\n${prd}\n\nThe module contract:\n${contract}`;
   const REVIEW = "Rate each finding P0 (would cause a wrong result, a broken rule or a security problem), P1 (should be fixed) or P2 (optional). Title in at most six words, explain in at most 50, quote the exact text at fault. At most four findings; return none rather than invent one. Name one strength.";
   const resolutionsText = (items: Array<{ finding: string; outcome: string; note: string }>) => items.map((item) => `${item.finding} ${item.outcome}: ${item.note}`).join("\n");
+
+  // A request with no prepared contract (a visitor's) gets one first: Model A drafts it from the PRD, Model B checks that
+  // every requirement can be tested through it, and Model A revises it only if Model B raised a finding.
+  const draftContract = async (): Promise<string> => {
+    const brief = `The approved PRD:\n${prd}`;
+    const first = await ask(
+      seats.a(
+        `Write the module contract for this feature: the exact function names, and the data shapes of their inputs and results, in one short paragraph. Describe no behaviour, because the PRD gives it. The module is plain JavaScript functions with no input or output, so every requirement can be tested through them. Match the style of this example: ${CONTRACTS["finance-build"]}`,
+        Contract,
+      ),
+      "contractDraft",
+      brief,
+      Contract,
+      A,
+    );
+    const review = renumberAs(await ask(seats.b(`Check this contract against the PRD. Can every requirement and acceptance criterion be tested through these functions and data shapes alone? ${REVIEW} Use ids K-1, K-2, ...`, Review), "contractReview", `${brief}\n\nThe contract:\n${first.contract}`, Review, B), "K-");
+    if (!review.findings.length) return first.contract;
+    const final = await ask(
+      seats.a("Revise the contract to resolve every finding: apply it, or decline it with a reason. Return the full contract.", ContractRevision),
+      "contractFinal",
+      `${brief}\n\nYour contract:\n${first.contract}\n\nThe review:\n${renderReviewAs(review, "K-")}`,
+      ContractRevision,
+      A,
+    );
+    return final.contract;
+  };
+  const contract = options.contract ?? CONTRACTS[spec.id] ?? (await draftContract());
+  const PRD = `The approved PRD:\n${prd}\n\nThe module contract:\n${contract}`;
 
   // Architecture: Model A designs, Model B reviews, Model A revises.
   const draft = await ask(seats.a("Design how to build this: the components, the data, and the exact files that may change (the file fence). Plain text, at most 10 lines.", Architecture), "archDraft", PRD, Architecture, A);
@@ -193,6 +259,7 @@ export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildS
   for (let round = 1; round <= 3; round += 1) {
     const [acceptance, unitRun] = await Promise.all([seats.run(code, script.script), seats.run(code, unit.script)]);
     runs.push({ round, code, acceptance: reportOf(acceptance), unit: reportOf(unitRun), failing: failingOf(acceptance) });
+    options.onProgress?.({ role: `run${round}`, call: null, text: `Acceptance tests:\n${reportOf(acceptance)}\n\nModel A's unit tests:\n${reportOf(unitRun)}` });
     if (!failingOf(acceptance) || round === 3) break;
     const fix = await ask(
       seats.a(`The acceptance tests below were written from the PRD by someone who never saw your code. Fix the code so it meets the PRD. If a test contradicts the PRD, keep the code and say so. Return the full module. ${CODE_RULES}`, Fix),

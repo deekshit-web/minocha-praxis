@@ -38,6 +38,9 @@ export function createStudioServer(options: StudioOptions = {}): Server {
     createLiveService({
       passcode: process.env.LIVE_PASSCODE && process.env.ANTHROPIC_API_KEY && process.env.XAI_API_KEY ? process.env.LIVE_PASSCODE : "",
       dailyCapUsd: Number(process.env.LIVE_DAILY_CAP_USD ?? 2),
+      // Model-written code runs on this server, so a hosted server never switches the full build on, whatever the setting.
+      fullBuild: process.env.LIVE_BUILD === "1" && !options.hosted,
+      fullBuildCapUsd: Number(process.env.LIVE_BUILD_CAP_USD ?? 0.75),
       runners: liveRunners(),
     });
   return createServer((req, res) => {
