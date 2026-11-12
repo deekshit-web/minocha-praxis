@@ -115,7 +115,15 @@ export function calibration(): Record<string, { cost: number; seconds: number; i
 }
 
 /** A workflow as authored, plus the real recording of its panel when one has been made. */
-export type WorkflowSpec = z.infer<typeof SpecSchema> & { recording?: Recording; buildRecording?: BuildRecording };
+/** What a finished live build adds to its workflow: when it ran, what Model C said, and what the whole run cost. */
+export interface LiveInfo {
+  startedAt: string;
+  route: string | null;
+  costUsd: number;
+  seconds: number;
+}
+
+export type WorkflowSpec = z.infer<typeof SpecSchema> & { recording?: Recording; buildRecording?: BuildRecording; live?: LiveInfo };
 
 export type StepKind = "input" | "llm" | "tool" | "check" | "human";
 
@@ -190,6 +198,8 @@ export interface Workflow {
   walls: Array<{ phase: number; col: number; span: number; label: string }>;
   /** For a build: a data-flow diagram of the design, with the area that will change marked. */
   diagram: ArchDiagram | null;
+  /** For a finished live build: when it ran and what it cost. Such a workflow has only the steps that ran. */
+  live: { startedAt: string; costUsd: number; seconds: number } | null;
   steps: Step[];
   estimatedCostUsd: number;
   estimatedSeconds: number;
@@ -496,13 +506,74 @@ function buildOutput(spec: WorkflowSpec): string {
     `## Generated test cases\n${bullets(spec.testCases ?? "")}`,
     `## Generated test script\n${fence(spec.testScript ?? "")}`,
     `## Test run\n${fence(spec.testsGreen ?? "")}`,
-    `## Deployment\n${bullets(spec.deploy?.production ?? "")}`,
+    ...(spec.live ? [] : [`## Deployment\n${bullets(spec.deploy?.production ?? "")}`]),
   ].join("\n");
 }
 
 /** The uncalibrated estimate for each step, used to measure how far estimates are from recorded reality. */
 function expandEstimates(spec: WorkflowSpec): Step[] {
   return expand(spec, { raw: true }).steps;
+}
+
+/** The steps a live build really runs. It asks no clarifying questions, has no approval gates, and does not deploy. */
+const LIVE_RAN = new Set(["brief", "route", "draftA", "draftB", "reviewOfB", "reviewOfA", "merge", "finalCheck", "finalFix", "archDraft", "archReview", "archFinal", "code", "codeReview", "codeRevise", "unitTests", "unitRun", "testCases", "testScript", "testsRed"]);
+
+/**
+ * Cuts a build workflow down to what a live run did, so the replay claims nothing that did not happen: no questions,
+ * no triage, no PRD checks, no approvals, no deployment. Adds the contract step, and packs the columns again.
+ */
+function shapeLive(all: Step[], spec: WorkflowSpec): { steps: Step[]; phases: string[]; walls: Workflow["walls"] } {
+  const built = spec.buildRecording!;
+  const fixed = built.fixes.length > 0;
+  let steps = all.filter((item) => LIVE_RAN.has(item.id) || (fixed && (item.id === "fix" || item.id === "testsGreen")));
+  steps = steps.map((item) =>
+    item.id === "route"
+      ? step({
+          id: "route",
+          kind: "tool",
+          phase: 0,
+          col: 1,
+          row: 1,
+          title: "Route",
+          actor: "Model C (live)",
+          caption: "Model C judged how risky the request is, live, before anything else ran.",
+          given: "The brief.",
+          output: spec.live?.route ?? "No routing decision was recorded: the decision model was not available.",
+          after: ["brief"],
+          seconds: 0,
+          // The page reads the token counts of every recorded step.
+          tokens: { input: 0, output: 0 },
+          recorded: true,
+          stage: "PRD",
+        })
+      : item,
+  );
+  const lastPrd = ["finalFix", "finalCheck", "merge"].find((id) => steps.some((item) => item.id === id)) ?? "merge";
+  const contract: Step = {
+    ...llm(
+      { id: "contract", phase: 1, col: -1, row: 1, title: "Contract", caption: "Model A drafts the function names and data shapes the module must have, and Model B checks that every requirement can be tested through them.", given: "The approved PRD.", output: built.contract, after: [lastPrd], verdict: "pass" },
+      CLAUDE,
+      SIZE.archDraft,
+    ),
+    stage: "Architecture",
+  };
+  steps.splice(steps.findIndex((item) => item.id === "archDraft"), 0, contract);
+  steps = steps.map((item) => (item.id === "archDraft" ? { ...item, after: ["contract"] } : item));
+  // Each phase keeps its steps in order, with no gap where a step was cut.
+  const slots = new Map<number, Map<number, number>>();
+  for (const item of steps) {
+    const columns = slots.get(item.phase) ?? new Map<number, number>();
+    columns.set(item.col, 0);
+    slots.set(item.phase, columns);
+  }
+  for (const columns of slots.values()) [...columns.keys()].sort((a, b) => a - b).forEach((col, at) => columns.set(col, at));
+  const present = new Set(steps.map((item) => item.id));
+  steps = steps.map((item) => ({ ...item, col: slots.get(item.phase)!.get(item.col)!, after: item.after.filter((id) => present.has(id)) }));
+  return {
+    steps,
+    phases: ["PRD", "Architecture", "Code and review", "Test"],
+    walls: [{ phase: 0, col: slots.get(0)!.get(4)!, span: 1, label: "cannot see each other" }],
+  };
 }
 
 export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Workflow {
@@ -568,6 +639,7 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
       release: "Deployment", staging: "Deployment", smoke: "Deployment", goNoGo: "Deployment", deployApprove: "Deployment", production: "Deployment",
     };
     steps = steps.map((item) => ({ ...item, stage: stageOf[item.id] ?? "PRD" }));
+    if (spec.live && spec.buildRecording) ({ steps, phases, walls } = shapeLive(steps, spec));
   } else {
     phases = ["Draft, review and approve"];
     walls = [{ phase: 0, col: 3, span: 1, label: "cannot see each other" }];
@@ -603,7 +675,7 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
   });
   const built = options.raw ? undefined : spec.buildRecording;
   if (built) {
-    const stepOf: Record<string, string> = { archDraft: "archDraft", archReview: "archReview", archFinal: "archFinal", code: "code", codeReview: "codeReview", codeRevise: "codeRevise", unitTests: "unitTests", testCases: "testCases", testScript: "testScript" };
+    const stepOf: Record<string, string> = { archDraft: "archDraft", archReview: "archReview", archFinal: "archFinal", code: "code", codeReview: "codeReview", codeRevise: "codeRevise", unitTests: "unitTests", testCases: "testCases", testScript: "testScript", contractDraft: "contract", contractReview: "contract", contractFinal: "contract" };
     const fixCalls = built.calls.filter((entry) => entry.role.startsWith("fix"));
     steps = steps.map((item) => {
       const calls = item.id === "fix" ? fixCalls : built.calls.filter((entry) => stepOf[entry.role] === item.id);
@@ -634,7 +706,8 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
     deliverable: spec.deliverable,
     contrast: spec.contrast,
     build:
-      !options.raw && spec.buildRecording
+      // A live build's code comes from a stranger's brief, so it is never run in a visitor's browser.
+      !options.raw && spec.buildRecording && !spec.live
         ? {
             firstCode: spec.buildRecording.runs[0]?.code ?? spec.buildRecording.code.revised,
             finalCode: spec.buildRecording.finalCode,
@@ -643,7 +716,9 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
             contract: spec.buildRecording.contract,
           }
         : null,
-    recording: recording
+    recording: spec.live
+      ? { recordedAt: spec.live.startedAt, finalCheckedAt: null, costUsd: spec.live.costUsd, seconds: spec.live.seconds, calls: (recording?.calls.length ?? 0) + (spec.buildRecording?.calls.length ?? 0) }
+      : recording
       ? {
           recordedAt: recording.recordedAt,
           finalCheckedAt: recording.finalCheckedAt ?? null,
@@ -663,6 +738,7 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
     walls,
     // A hand-drawn diagram for the five demo builds, or the one Model A drew for a live build and the check accepted.
     diagram: spec.kind === "build" ? (ARCH_DIAGRAMS[spec.id] ?? spec.buildRecording?.diagram ?? null) : null,
+    live: spec.live ? { startedAt: spec.live.startedAt, costUsd: spec.live.costUsd, seconds: spec.live.seconds } : null,
     steps,
     estimatedCostUsd: models.reduce((total, item) => total + (item.estimatedCostUsd ?? 0), 0),
     estimatedSeconds: steps.reduce((total, item) => total + item.seconds, 0),

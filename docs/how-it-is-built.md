@@ -138,8 +138,14 @@ unchanged. One gap: the module Model A wrote still includes a statement-level he
 code is wider than the design's deferral. Nothing checks code scope against the design yet. That would be a good
 next check.
 
-Not done: the finished live build is not yet replayed in the stage-by-stage view, and approvals in a live build are
-not real pauses for a person.
+**The replay.** A finished live build opens in the same stage-by-stage view as the recorded workflows, with its real
+times and costs, its diagram, and a downloadable JSON record of every stage. The replay contains only the steps that
+ran: no clarifying questions, no triage, no PRD checks, no approval gates and no deployment, and its text says so.
+The code is never run in a visitor's browser, because it comes from a stranger's brief and a shared link would run it
+in someone else's browser. The replay is kept in server memory (the last 20 runs), so the record is what to keep.
+
+Not done: approvals in a live build are not real pauses for a person, and the test lab and mutation testing are not
+yet offered for a live build (they would have to run in the isolated sandbox, not the browser).
 
 ## The sandbox
 

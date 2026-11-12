@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { type BuildOptions, BuildLimitError, type BuildRecording } from "./build.ts";
+import { type BuildOptions, BuildLimitError, type BuildRecording, BuildRecordingSchema } from "./build.ts";
 import { networkIsolated } from "./isolate.ts";
 import { createDecider } from "./jev.ts";
 import { type LiveRunners, createLiveService } from "./live.ts";
@@ -197,6 +197,136 @@ test("A hosted server switches the full build on only when the sandbox can isola
   } finally {
     if (saved === undefined) delete process.env.LIVE_BUILD;
     else process.env.LIVE_BUILD = saved;
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+
+const callOf = (role: string, model: string, seconds: number, costUsd: number) => ({ role, model, seconds, inputTokens: 900, outputTokens: 400, costUsd });
+const wholeBuild = BuildRecordingSchema.parse({
+  id: "live-x",
+  recordedAt: "2026-11-12T10:00:00Z",
+  contract: "orderTotal(items) returns a number.",
+  calls: [
+    callOf("contractDraft", "claude-opus-5-5", 8, 0.02),
+    callOf("contractReview", "grok-4.7", 100, 0.004),
+    callOf("archDraft", "claude-opus-5-5", 10, 0.03),
+    callOf("archReview", "grok-4.7", 120, 0.005),
+    callOf("archFinal", "claude-opus-5-5", 12, 0.03),
+    callOf("code", "claude-opus-5-5", 15, 0.04),
+    callOf("codeReview", "grok-4.7", 200, 0.004),
+    callOf("codeRevise", "claude-opus-5-5", 12, 0.04),
+    callOf("unitTests", "claude-opus-5-5", 14, 0.04),
+    callOf("testCases", "grok-4.7", 60, 0.005),
+    callOf("testScript", "grok-4.7", 90, 0.01),
+  ],
+  architecture: { draft: "Draft design.", review: "No defects found.", final: "Final design.", resolutions: "" },
+  code: { first: "({ total() { return 1; } })", summary: "The module.", review: "No defects found.", revised: "({ total() { return 1; } })", resolutions: "" },
+  unitScript: 'test("unit", () => assert.equal(code.total(), 1));',
+  testCases: ["TC-1 · REQ-1 · [] → 1"],
+  testScript: 'test("one", () => assert.equal(code.total(), 1));',
+  runs: [{ round: 1, code: "({ total() { return 1; } })", acceptance: "1 passing", unit: "1 passing", failing: 0 }],
+  fixes: [],
+  finalCode: "({ total() { return 1; } })",
+});
+
+async function finishedBuild(fixRound = false) {
+  const fake = runners();
+  const build = fixRound ? { ...wholeBuild, fixes: [{ round: 1, change: "Fixed the total." }], runs: [{ ...wholeBuild.runs[0]!, failing: 1, acceptance: "✗ one\n  expected 1, received 2" }, { ...wholeBuild.runs[0]!, round: 2 }], calls: [...wholeBuild.calls, callOf("fix1", "claude-opus-5-5", 9, 0.03)] } : wholeBuild;
+  fake.build = async (_spec, _prd, options) => {
+    options.onProgress?.({ role: "archDraft", call: callOf("archDraft", "claude-opus-5-5", 10, 0.03), text: "d" });
+    return build;
+  };
+  const live = createLiveService({ passcode: "booth-2026", fullBuild: true, dailyCapUsd: 2, runners: fake });
+  const started = live.submit(fullBrief);
+  assert.ok("jobId" in started);
+  await settle();
+  return { live, id: (started as { jobId: string }).jobId };
+}
+
+test("A finished full build is a workflow that has only the steps that ran.", async () => {
+  const { live, id } = await finishedBuild();
+  const flow = live.workflow(`live-${id}`)!;
+  assert.deepEqual(flow.steps.map((item) => item.id), ["brief", "route", "draftA", "draftB", "reviewOfB", "reviewOfA", "merge", "contract", "archDraft", "archReview", "archFinal", "code", "codeReview", "codeRevise", "unitTests", "unitRun", "testCases", "testScript", "testsRed"]);
+  assert.ok(flow.steps.every((item) => item.kind !== "human"), "a live build has no approval gate");
+  assert.ok(!flow.steps.some((item) => item.actor === "jev-1.14.0"), "no decision is replayed that did not run");
+  assert.equal(flow.build, null, "the code of a stranger's brief never runs in a browser");
+  assert.equal(flow.phases.length, 4);
+  assert.ok(!flow.stages.includes("Deployment"));
+  assert.match(flow.title, /^Your request:/);
+  assert.ok(!flow.output.includes("## Deployment"));
+  assert.equal(flow.live?.costUsd, live.job(id)!.costUsd);
+});
+
+test("Each recorded step of a live workflow carries its token counts, because the page reads them.", async () => {
+  const { live, id } = await finishedBuild();
+  for (const item of live.workflow(`live-${id}`)!.steps.filter((entry) => entry.recorded)) assert.ok(item.tokens && Number.isFinite(item.tokens.input), `${item.id} has no token counts`);
+});
+
+test("The steps of a live workflow have no gap in their columns. Each step follows a step that exists.", async () => {
+  const { live, id } = await finishedBuild();
+  const flow = live.workflow(`live-${id}`)!;
+  const ids = new Set(flow.steps.map((item) => item.id));
+  for (const phase of [0, 1, 2, 3]) {
+    const columns = [...new Set(flow.steps.filter((item) => item.phase === phase).map((item) => item.col))].sort((a, b) => a - b);
+    assert.deepEqual(columns, columns.map((_, at) => at), `phase ${phase} has a gap`);
+  }
+  for (const item of flow.steps) for (const before of item.after) assert.ok(ids.has(before), `${item.id} follows ${before}, which did not run`);
+  assert.equal(flow.walls[0]?.col, flow.steps.find((item) => item.id === "draftA")!.col);
+});
+
+test("The contract step carries the real contract and the real cost of its calls.", async () => {
+  const { live, id } = await finishedBuild();
+  const contract = live.workflow(`live-${id}`)!.steps.find((item) => item.id === "contract")!;
+  assert.equal(contract.output, "orderTotal(items) returns a number.");
+  assert.equal(contract.recorded, true);
+  assert.equal(contract.seconds, 108);
+  assert.ok(Math.abs((contract.estimatedCostUsd ?? 0) - 0.024) < 1e-9);
+});
+
+test("A live workflow keeps the fix round when the build needed one.", async () => {
+  const { live, id } = await finishedBuild(true);
+  const flow = live.workflow(`live-${id}`)!;
+  assert.deepEqual(flow.steps.slice(-3).map((item) => item.id), ["testsRed", "fix", "testsGreen"]);
+  assert.equal(flow.steps.find((item) => item.id === "testsRed")!.verdict, "flagged");
+});
+
+test("A workflow is served only for a finished full build.", async () => {
+  const { live } = await finishedBuild();
+  assert.equal(live.workflow("live-nope"), null);
+  const plain = createLiveService({ passcode: "booth-2026", runners: runners() });
+  const started = plain.submit(brief);
+  await settle();
+  assert.equal(plain.workflow(`live-${(started as { jobId: string }).jobId}`), null);
+  const stopped = createLiveService({ passcode: "booth-2026", fullBuild: true, dailyCapUsd: 2, runners: runners(false, true) });
+  const failed = stopped.submit(fullBrief);
+  await settle();
+  assert.equal(stopped.workflow(`live-${(failed as { jobId: string }).jobId}`), null);
+  assert.equal(stopped.record((failed as { jobId: string }).jobId), null);
+});
+
+test("The server serves a finished live build as a workflow and as a record. The poll leaves out the heavy copy.", async () => {
+  const { live, id } = await finishedBuild();
+  const server = createStudioServer({ hosted: true, decider: createDecider({ apiKey: "" }), live });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  const origin = `http://127.0.0.1:${typeof address === "object" && address ? address.port : 0}`;
+  try {
+    const flow = (await (await fetch(`${origin}/api/workflows/live-${id}`)).json()) as { steps: Array<{ id: string }>; build: unknown };
+    assert.ok(flow.steps.some((item) => item.id === "contract"));
+    assert.equal(flow.build, null);
+    assert.equal((await fetch(`${origin}/api/workflows/live-nope`)).status, 404);
+    const polled = (await (await fetch(`${origin}/api/live/jobs/${id}`)).json()) as Record<string, unknown>;
+    assert.ok(!("recording" in polled), "the poll does not carry the requirements panel");
+    assert.ok(polled.build, "the poll still carries the build, for the diagram");
+    const record = await fetch(`${origin}/api/live/jobs/${id}/record?download=1`);
+    assert.match(record.headers.get("content-disposition") ?? "", /attachment; filename="kodiflex-live-build-[a-f0-9]+\.json"/);
+    const body = (await record.json()) as { panel: { merge: unknown }; build: { contract: string }; events: unknown[]; passcode?: string };
+    assert.ok(body.panel.merge);
+    assert.equal(body.build.contract, "orderTotal(items) returns a number.");
+    assert.ok(body.events.length > 0);
+    assert.ok(!JSON.stringify(body).includes("booth-2026"), "the passcode is never in the record");
+    assert.equal((await fetch(`${origin}/api/live/jobs/deadbeef/record`)).status, 404);
+  } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });

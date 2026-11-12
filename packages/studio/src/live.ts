@@ -3,7 +3,7 @@ import { callCost, findPhi } from "@northwind/orchestrator";
 import { type BuildOptions, type BuildRecording, liveBuildSeats, recordBuild } from "./build.ts";
 import { askJev } from "./jev.ts";
 import { type PanelProgress, type Recording, livePanel, panelContext, recordPanel } from "./record.ts";
-import { DOMAINS, type DomainId, type WorkflowSpec, decisionFor, formatDecision } from "./workflows.ts";
+import { DOMAINS, type DomainId, type Workflow, type WorkflowSpec, applyBuildRecording, applyRecording, decisionFor, expand, formatDecision } from "./workflows.ts";
 
 /**
  * "Bring your own brief": a visitor with the passcode runs the real panel on their own request. Model C routes
@@ -41,6 +41,10 @@ export interface LiveJob {
   final: string | null;
   /** For a full build: every recorded stage, to be replayed in the stage view. */
   build: BuildRecording | null;
+  /** The requirements panel of a full build, kept to replay and to download. It is not sent while the page polls. */
+  recording?: Recording | null;
+  domainId?: string;
+  facts?: string;
   findings: number;
   costUsd: number;
   seconds: number;
@@ -132,6 +136,23 @@ export function specFor(input: { domain: DomainId; kind: "build" | "document"; b
   } as WorkflowSpec;
 }
 
+/** The workflow spec of a finished full build: the visitor's request with the real panel and build stages in place. */
+export function liveSpec(job: LiveJob): WorkflowSpec | null {
+  if (job.status !== "done" || job.kind !== "fullbuild" || !job.build || !job.recording || !job.domainId) return null;
+  const base = specFor({ domain: job.domainId as DomainId, kind: "build", brief: job.brief, facts: job.facts }, `live-${job.id}`);
+  const spec: WorkflowSpec = {
+    ...base,
+    title: `Your request: ${job.brief.slice(0, 70)}${job.brief.length > 70 ? "…" : ""}`,
+    summary: "Your live run, replayed from its real calls. It has no clarifying questions, no approvals and no deployment, because the live build does not run them.",
+    deliverable: "A feature, built end to end",
+    project: "Your live run",
+    requester: "You",
+    output: "## Approved requirements\n-\n## Built in this run\n- A module, its design, its tests and their run.",
+    live: { startedAt: job.startedAt, route: job.route?.text ?? null, costUsd: job.costUsd, seconds: job.seconds },
+  };
+  return applyBuildRecording(applyRecording(spec, job.recording), job.build);
+}
+
 export function createLiveService(options: LiveOptions) {
   const passcode = options.passcode ?? "";
   const cap = options.dailyCapUsd ?? 2;
@@ -172,6 +193,7 @@ export function createLiveService(options: LiveOptions) {
       } else {
         const recording = await options.runners.panel(spec, ({ role, call, text }) => record(role, call, text));
         job.final = recording.finalFix?.document ?? recording.merge.document;
+        if (full) job.recording = recording;
         job.findings = recording.reviewOfA.findings.length + recording.reviewOfB.findings.length + (recording.finalReview?.findings.length ?? 0);
         if (full) {
           // The approved requirements go on to design, code, review, tests and runs, inside one cost and time limit.
@@ -209,6 +231,38 @@ export function createLiveService(options: LiveOptions) {
     job(id: string): LiveJob | null {
       return jobs.get(id) ?? null;
     },
+    /** The job as the page polls it: without the heavy copy of the requirements panel. */
+    publicJob(id: string): Omit<LiveJob, "recording"> | null {
+      const job = jobs.get(id);
+      if (!job) return null;
+      const { recording: _kept, ...rest } = job;
+      return rest;
+    },
+    /** A finished full build as a workflow the stage view can replay. Null until the build is done. */
+    workflow(workflowId: string): Workflow | null {
+      const job = jobs.get(workflowId.replace(/^live-/, ""));
+      const spec = job ? liveSpec(job) : null;
+      return spec ? expand(spec) : null;
+    },
+    /** Everything a finished full build produced, to download: the panel, every build stage, the diagram and each call's cost. */
+    record(id: string) {
+      const job = jobs.get(id);
+      if (!job || job.status !== "done" || !job.build) return null;
+      return {
+        note: "A live end-to-end build: the requirements panel, then every build stage, on real models. All text was written by models.",
+        id: job.id,
+        startedAt: job.startedAt,
+        domain: job.domain,
+        brief: job.brief,
+        facts: job.facts ?? "",
+        route: job.route,
+        costUsd: job.costUsd,
+        seconds: job.seconds,
+        events: job.events.map(({ role, label, model, seconds, costUsd }) => ({ role, label, model, seconds, costUsd })),
+        panel: job.recording ?? null,
+        build: job.build,
+      };
+    },
     /** Starts a run, or says why not. The run continues in the background; poll job(id). */
     submit(input: LiveInput): { jobId: string } | { error: string; status: number } {
       if (!passcode) return { error: "Live runs are not switched on here.", status: 404 };
@@ -235,6 +289,8 @@ export function createLiveService(options: LiveOptions) {
         status: "running",
         startedAt: new Date(now()).toISOString(),
         domain: domain.name,
+        domainId: domain.id,
+        facts,
         kind: input.kind,
         brief,
         route: null,

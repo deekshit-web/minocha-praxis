@@ -702,7 +702,8 @@
         play.blocked = false;
         history.replaceState(null, "", "#" + flow.id);
         text("title", flow.title);
-        text("lede", flow.brief);
+        // A live build says what it leaves out, so the replay claims nothing that did not run.
+        text("lede", flow.live ? flow.summary + " Your brief: " + flow.brief : flow.brief);
         byId("run").hidden = false;
         renderDomains();
         buildPipe();
@@ -893,7 +894,8 @@
         const spent = live.reduce((total, result) => total + (result.costUsd || 0), 0);
         const tokens = live.reduce((total, result) => total + (result.inputTokens || 0), 0);
         text("spent-value", spent > 0 ? "$" + spent.toFixed(6) : "$0");
-        text("spent-sub", live.length ? live.length + " live Model C decision" + (live.length === 1 ? "" : "s") + " · " + tokens.toLocaleString() + " tokens. Everything else is replayed." : decisionsLive ? "Model C answers live when reached. Everything else is replayed." : "Replayed run: no model is called");
+        if (flow.live) text("spent-sub", "Your live run cost $" + flow.live.costUsd.toFixed(2) + " when it ran. Replaying it is free.");
+        else text("spent-sub", live.length ? live.length + " live Model C decision" + (live.length === 1 ? "" : "s") + " · " + tokens.toLocaleString() + " tokens. Everything else is replayed." : decisionsLive ? "Model C answers live when reached. Everything else is replayed." : "Replayed run: no model is called");
         text("cost-sub", "of about " + money(flow.estimatedCostUsd) + " · this page spends $0");
         const checks = flow.steps.filter((step) => step.kind === "check");
         const run = checks.filter((step) => flow.steps.indexOf(step) < play.index);
@@ -940,7 +942,9 @@
         if (play.index >= total) {
           text(
             "caption",
-            flow.stages && flow.stages.length
+            flow.live
+              ? "Done. Every step of your live build ran, from the requirements to the test run. Nobody approved it and nothing was deployed. The output is below."
+              : flow.stages && flow.stages.length
               ? "Done. All eight stages are complete, from PRD to production: " + flow.deliverable.toLowerCase() + ". The output is below."
               : "Done. Two models drafted and reviewed, code checks passed, and a person approved: " + flow.deliverable.toLowerCase() + ". The output is below.",
           );
@@ -1459,12 +1463,13 @@
         const count = (text, pattern) => (text.match(pattern) || []).length;
         if (name === "PRD") {
           const fixed = out("merge").match(/Defects resolved: (\d+)/);
-          return "Approved · " + (fixed ? fixed[1] + " defects fixed" : "checked");
+          return (flow.live ? "Merged, checked" : "Approved") + " · " + (fixed ? fixed[1] + " defects fixed" : "checked");
         }
         if (name === "Architecture") {
           const found = count(out("archReview"), /^AR-\d/gm);
-          return "Approved · " + (found ? found + " finding" + (found === 1 ? "" : "s") + " resolved" : "no findings");
+          return (flow.live ? "Revised" : "Approved") + " · " + (found ? found + " finding" + (found === 1 ? "" : "s") + " resolved" : "no findings");
         }
+        if (name === "Code" && flow.live) return "written to the contract";
         if (name === "Code" && flow.build) return flow.build.firstCode.split("\n").length + " lines of real code";
         if (name === "Code") {
           const files = new Set(out("code").match(/(?:src|packages|migrations)\/[\w./*-]+\.(?:ts|tsx|sql)/g) || []).size;
@@ -1481,7 +1486,7 @@
         if (name === "Test cases") return count(out("testCases"), /^TC-/gm) + " cases, from the PRD";
         if (name === "Testing") {
           const failing = (out("testsRed").match(/(\d+) failing/) || [0, 0])[1];
-          const passing = (out("testsGreen").match(/(\d+) passing/) || [0, 0])[1];
+          const passing = ((out("testsGreen") || out("testsRed")).match(/(\d+) passing/) || [0, 0])[1];
           return Number(failing) ? failing + " failed → fixed → " + passing + " passing" : passing + " passing, first run";
         }
         if (name === "Deployment") return "Live in production";
@@ -1575,6 +1580,29 @@
         const caught = serious(out("reviewOfA") + "\n" + out("reviewOfB"));
         const raised = (out("reviewOfA") + "\n" + out("reviewOfB")).match(/^D-[AB]\d+ · P\d/gm) || [];
         const fixed = (out("merge").match(/Defects resolved: (\d+)/) || [0, "all"])[1];
+        // A live build did not ask questions, triage, run PRD checks, get approved or deploy, so its story says only what happened.
+        if (flow.live) {
+          const plural = (count, word) => count + " " + word + (count === 1 ? "" : "s");
+          if (name === "PRD") return "Model A and Model B each wrote the requirements without seeing the other's, reviewed each other's draft, and Model A merged them: " + fixed + " defects resolved. " + (out("finalCheck") ? finalStory() : "");
+          if (name === "Architecture") {
+            const found = titles(out("archReview"));
+            return "Model A drafted the module contract and Model B checked it. Model A then designed the components, the data and the files it may change. Model B's review found " + plural(found.length, "issue") + (found.length ? " (" + listOf(found) + ")" : "") + ", and Model A revised the design.";
+          }
+          if (name === "Code") return "Model A wrote the module to the contract.";
+          if (name === "Code review") {
+            const found = titles(out("codeReview"));
+            const revise = out("codeRevise");
+            return "Model B reviewed the code and raised " + plural(found.length, "point") + (found.length ? " (" + listOf(found) + ")" : "") + ". Model A applied " + (revise.match(/ applied/g) || []).length + " and declined " + (revise.match(/ declined/g) || []).length + ".";
+          }
+          if (name === "Unit tests") return "Model A wrote unit tests for its own code. " + (out("unitRun").match(/^✓/gm) || []).length + " passed in the isolated sandbox.";
+          if (name === "Test cases") return "Model B wrote " + plural((out("testCases").match(/^TC-/gm) || []).length, "test case") + " from the PRD, without seeing the code, then turned them into a runnable test script.";
+          if (name === "Testing") {
+            const red = out("testsRed");
+            if (!/^✗/m.test(red)) return "Model B's " + ((red.match(/(\d+) passing/) || [0, "all"])[1]) + " tests ran in the isolated sandbox against Model A's code. All passed on the first run.";
+            const failed = (red.match(/^✗ (.+)$/m) || [0, "a test"])[1];
+            return "Model B's tests ran in the isolated sandbox against Model A's code, and one failed: \"" + failed + "\". Model A fixed it and the tests ran again.";
+          }
+        }
         if (name === "PRD")
           return "Model C routed the request to the full panel in a fraction of a second. Model A asked " + questionsAndAnswers().length + " questions, then Model A and Model B each wrote the requirements without seeing the other's and reviewed each other's. " + (caught.length ? "The review caught a serious problem: " + listOf(caught) + ". " : raised.length ? "Their reviews raised " + raised.length + " point" + (raised.length === 1 ? "" : "s") + ", none of them serious. " : "Neither review found a defect. ") + "Model C triaged the findings, and Model A merged both and fixed " + fixed + " defects. " + finalStory() + "Code checks passed. " + out("approve");
         if (name === "Architecture") {
@@ -1944,7 +1972,8 @@
           title.textContent = flow.deliverable;
           const meta = document.createElement("p");
           meta.className = "meta";
-          meta.textContent = "What this run hands over, after both reviews, " + (flow.steps.some((step) => step.id === "finalCheck") ? "the final check, " : "") + "the code checks and a person's approval. " + (flow.recording ? "The models wrote it in a recorded real run on " + new Date(flow.recording.recordedAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + "; it is replayed here, so nothing is billed now." : "It was prepared in advance to show how the workflow behaves; no model produced it just now.");
+          if (flow.live) meta.textContent = "What your live run produced: the requirements after both reviews and the final check, the design, the code and the test results. The models wrote it on " + new Date(flow.live.startedAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + ". No person approved it and it was not deployed.";
+          else meta.textContent = "What this run hands over, after both reviews, " + (flow.steps.some((step) => step.id === "finalCheck") ? "the final check, " : "") + "the code checks and a person's approval. " + (flow.recording ? "The models wrote it in a recorded real run on " + new Date(flow.recording.recordedAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + "; it is replayed here, so nothing is billed now." : "It was prepared in advance to show how the workflow behaves; no model produced it just now.");
           const doc = document.createElement("div");
           doc.className = "doc";
           let list = null;
@@ -1990,6 +2019,7 @@
             none.textContent = "In this recorded run, neither review found a defect worth putting side by side. That happens with real models: the panel is there for the times one model gets it wrong.";
             card.append(eyebrow, title, meta, none);
           }
+          // With no flagged draft to put side by side (the usual case for a live build), there is no contrast to build.
           const vs = document.createElement("div");
           vs.className = "vs";
           const side = (className, heading, quote, sub) => {
@@ -2008,7 +2038,7 @@
             box.append(h, p, note);
             return box;
           };
-          vs.append(
+          if (contrast) vs.append(
             contrast.draft === "merged"
               ? side("before", "Two reviews and a merge would have handed you", contrast.before, "From the merged document, before the final check.")
               : side("before", "One AI alone would have handed you", contrast.before, "From draft " + contrast.draft + " (Model " + contrast.draft + "), before review."),
@@ -2016,7 +2046,7 @@
           );
           const why = document.createElement("p");
           why.className = "why";
-          why.textContent = "Why it matters: " + contrast.why;
+          why.textContent = contrast ? "Why it matters: " + contrast.why : "";
           const full = document.createElement("p");
           full.className = "label";
           full.textContent = "The full output";
@@ -2410,6 +2440,17 @@
             const cap = drawn.querySelector(".cap");
             if (cap) cap.textContent = "The design, drawn by Model A and checked against it. The gold area is the code that changes. Grey stays as it is.";
             out.appendChild(drawn);
+          }
+          if (job.kind === "fullbuild" && job.build) {
+            const next = add("div", undefined, "yourturn");
+            const replay = add("button", "Replay it stage by stage");
+            replay.type = "button";
+            replay.addEventListener("click", () => chooseWorkflow("live-" + job.id));
+            const record = add("a", "Download the record (JSON)");
+            record.href = "/api/live/jobs/" + encodeURIComponent(job.id) + "/record?download=1";
+            record.style.marginLeft = "14px";
+            next.append(replay, record);
+            out.append(next, add("p", "The replay is kept while the server runs, and the oldest of the last 20 runs is dropped first. Download the record to keep it.", "meta"));
           }
         }
         if (job.status === "failed") out.appendChild(add("p", "The run stopped: " + (job.error || "an error") + ". Nothing more was charged.", "meta"));

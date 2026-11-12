@@ -117,8 +117,20 @@ export function createStudioServer(options: StudioOptions = {}): Server {
       }
       const liveJob = url.pathname.match(/^\/api\/live\/jobs\/([a-f0-9-]+)$/);
       if (req.method === "GET" && liveJob) {
-        const job = live.job(liveJob[1] ?? "");
+        const job = live.publicJob(liveJob[1] ?? "");
         send(res, job ? 200 : 404, job ?? { error: "unknown-job" });
+        return;
+      }
+      const liveRecord = url.pathname.match(/^\/api\/live\/jobs\/([a-f0-9-]+)\/record$/);
+      if (req.method === "GET" && liveRecord) {
+        const record = live.record(liveRecord[1] ?? "");
+        if (!record) return send(res, 404, { error: "no-record" });
+        if (url.searchParams.has("download")) {
+          res.writeHead(200, { "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="kodiflex-live-build-${liveRecord[1]}.json"`, "x-content-type-options": "nosniff", "cache-control": "no-store" });
+          res.end(JSON.stringify(record, null, 2));
+          return;
+        }
+        send(res, 200, record);
         return;
       }
       if (req.method === "GET" && url.pathname === "/api/status") {
@@ -161,6 +173,12 @@ export function createStudioServer(options: StudioOptions = {}): Server {
       }
       const match = url.pathname.match(/^\/api\/workflows\/([a-z0-9-]+)$/);
       if (req.method === "GET" && match) {
+        // A finished live build is a workflow too, built from the job rather than from a file.
+        if (match[1]?.startsWith("live-")) {
+          const flow = live.workflow(match[1]);
+          send(res, flow ? 200 : 404, flow ?? { error: "unknown-workflow" });
+          return;
+        }
         const spec = loadSpecs().find((item) => item.id === match[1]);
         if (!spec) {
           send(res, 404, { error: "unknown-workflow" });
