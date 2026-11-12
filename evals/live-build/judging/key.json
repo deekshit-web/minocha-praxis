@@ -1,0 +1,205 @@
+{
+ "F01": {
+  "build": "02-duplicate-claims",
+  "stage": "panel-B",
+  "findingId": "D-B1",
+  "severity": "P1",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F02": {
+  "build": "02-duplicate-claims",
+  "stage": "panel-B",
+  "findingId": "D-B2",
+  "severity": "P1",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F03": {
+  "build": "02-duplicate-claims",
+  "stage": "panel-B",
+  "findingId": "D-B3",
+  "severity": "P2",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F04": {
+  "build": "03-grade-weights",
+  "stage": "panel-B",
+  "findingId": "D-B1",
+  "severity": "P2",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F05": {
+  "build": "03-grade-weights",
+  "stage": "panel-B",
+  "findingId": "D-B2",
+  "severity": "P2",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F06": {
+  "build": "03-grade-weights",
+  "stage": "panel-B",
+  "findingId": "D-B3",
+  "severity": "P2",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F07": {
+  "build": "03-grade-weights",
+  "stage": "design",
+  "findingId": "AR-1",
+  "severity": "P0",
+  "reviewer": "grok-4.7"
+ },
+ "F08": {
+  "build": "04-attendance-streak",
+  "stage": "panel-B",
+  "findingId": "D-B1",
+  "severity": "P1",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F09": {
+  "build": "04-attendance-streak",
+  "stage": "panel-B",
+  "findingId": "D-B2",
+  "severity": "P2",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F10": {
+  "build": "04-attendance-streak",
+  "stage": "design",
+  "findingId": "AR-1",
+  "severity": "P0",
+  "reviewer": "grok-4.7"
+ },
+ "F11": {
+  "build": "05-stacked-promo",
+  "stage": "panel-A",
+  "findingId": "D-A1",
+  "severity": "P1",
+  "reviewer": "grok-4.7"
+ },
+ "F12": {
+  "build": "05-stacked-promo",
+  "stage": "panel-B",
+  "findingId": "D-B1",
+  "severity": "P1",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F13": {
+  "build": "05-stacked-promo",
+  "stage": "panel-B",
+  "findingId": "D-B2",
+  "severity": "P2",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F14": {
+  "build": "05-stacked-promo",
+  "stage": "panel-final",
+  "findingId": "D-F1",
+  "severity": "P0",
+  "reviewer": "grok-4.7"
+ },
+ "F15": {
+  "build": "05-stacked-promo",
+  "stage": "design",
+  "findingId": "AR-1",
+  "severity": "P2",
+  "reviewer": "grok-4.7"
+ },
+ "F16": {
+  "build": "05-stacked-promo",
+  "stage": "code",
+  "findingId": "CR-1",
+  "severity": "P0",
+  "reviewer": "grok-4.7"
+ },
+ "F17": {
+  "build": "07-interest-days",
+  "stage": "design",
+  "findingId": "AR-1",
+  "severity": "P0",
+  "reviewer": "grok-4.7"
+ },
+ "F18": {
+  "build": "07-interest-days",
+  "stage": "design",
+  "findingId": "AR-2",
+  "severity": "P1",
+  "reviewer": "grok-4.7"
+ },
+ "F19": {
+  "build": "08-velocity-alert",
+  "stage": "panel-B",
+  "findingId": "D-B1",
+  "severity": "P1",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F20": {
+  "build": "08-velocity-alert",
+  "stage": "panel-B",
+  "findingId": "D-B2",
+  "severity": "P2",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F21": {
+  "build": "10-pallets-contradiction",
+  "stage": "panel-A",
+  "findingId": "D-A1",
+  "severity": "P0",
+  "reviewer": "grok-4.7"
+ },
+ "F22": {
+  "build": "10-pallets-contradiction",
+  "stage": "panel-A",
+  "findingId": "D-A2",
+  "severity": "P2",
+  "reviewer": "grok-4.7"
+ },
+ "F23": {
+  "build": "10-pallets-contradiction",
+  "stage": "panel-B",
+  "findingId": "D-B1",
+  "severity": "P0",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F24": {
+  "build": "10-pallets-contradiction",
+  "stage": "panel-B",
+  "findingId": "D-B2",
+  "severity": "P1",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F25": {
+  "build": "10-pallets-contradiction",
+  "stage": "panel-B",
+  "findingId": "D-B3",
+  "severity": "P2",
+  "reviewer": "claude-opus-5-5"
+ },
+ "F26": {
+  "build": "10-pallets-contradiction",
+  "stage": "panel-final",
+  "findingId": "D-F1",
+  "severity": "P0",
+  "reviewer": "grok-4.7"
+ },
+ "F27": {
+  "build": "10-pallets-contradiction",
+  "stage": "design",
+  "findingId": "AR-1",
+  "severity": "P0",
+  "reviewer": "grok-4.7"
+ },
+ "F28": {
+  "build": "10-pallets-contradiction",
+  "stage": "design",
+  "findingId": "AR-2",
+  "severity": "P1",
+  "reviewer": "grok-4.7"
+ },
+ "F29": {
+  "build": "10-pallets-contradiction",
+  "stage": "design",
+  "findingId": "AR-3",
+  "severity": "P1",
+  "reviewer": "grok-4.7"
+ }
+}

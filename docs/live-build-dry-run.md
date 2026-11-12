@@ -11,8 +11,9 @@ tried by hand. Everything below comes from the records in `evals/live-build/reco
 - **Time 8 to 33 minutes** with five running at once. A single build on its own took 16 to 17 minutes earlier.
 - **Every build passed its tests on the first run.** No build needed a fix round, so the fix path has still not run
   live.
-- **Reviewers raised a serious (P0) finding in 5 of the 10 builds**, before any code was run. Three builds had no
-  finding at all.
+- **Reviewers raised a P0 in 5 of the 10 builds**, before any code was run. Three builds had no finding at all.
+  Read by hand, **3 of the 9 P0s were serious, 5 were real but rated too high, and 1 was a false alarm** that the
+  builder correctly declined (see "What the reviews caught").
 - **The diagram step worked.** 7 drawings passed the check first time. 3 needed the one correction and passed after
   it. None was dropped.
 - **The brief with a wrong example** ("100 cartons needs 2 pallets" when it needs 3) was not followed. The pipeline
@@ -47,22 +48,39 @@ and Model B was Grok 4.7. The code ran in the isolated sandbox (`packages/studio
 "Panel" is the requirements panel, including the final check. Times are wall-clock with five builds running at the same
 time. The same numbers are in `evals/live-build/results-2026-11-12.json`.
 
-## What the reviews caught
+## What the reviews caught, and what they got wrong
 
-These are real defects in what the models wrote, found by the other model before any test ran. None is an arithmetic
-slip.
+The ten builds raised 29 findings in all: 20 on the requirements, 8 on designs and 1 on code. Nine were rated P0. I read
+all nine against the text they point at. **This is one reader's check, not the independent rating planned in
+`evals/live-build/judging/`.** It is a starting point.
 
-- **A bug in a design (build 04).** The design's pseudo-code reset the streak count to 0 whenever it was not 3, so the
-  count could never reach 3 and three of the acceptance criteria would fail.
-- **A missing-data case (build 03).** The design read `exam[0]` whenever the exam list existed. An empty list exists,
-  so `exam[0]` is undefined and the grade would be wrong whenever there was no exam.
-- **A crash in code (build 05).** Model B's code review found that a value was a `BigInt` being added to a string,
-  which throws a `TypeError` in JavaScript. Every valid line would have crashed.
-- **A rounding fault (build 07).** The design added a small epsilon before rounding, which can push a result sitting
-  just below a half-cent onto the boundary and change the interest by one cent.
-- **A logic error (build 10).** Model B pointed out that dividing total weight by 1000 ignores that cartons cannot be
-  split: 5 cartons of 400 kg is 3 pallets, not 2. The final check then found that three of the PRD's own rules
-  disagreed about zero cartons.
+**Serious and real (3).** Found by the other model before any test ran, and fixed.
+- **Build 03, design:** the design read `exam[0]` whenever the exam list existed. An empty list exists, so `exam[0]` is
+  undefined and the grade would be wrong for a student with no exam. The builder fixed it and added a test.
+- **Build 10, requirements:** Model A's review of draft B showed that dividing total weight by 1000 ignores that cartons
+  cannot be split: 5 cartons of 400 kg is 3 pallets, not 2.
+- **Build 10, final check:** three rules in the merged PRD disagreed about a carton count of zero. The builder confirmed
+  and fixed it.
+
+**Real, but rated too high (5).**
+- **Build 04, design:** "Otherwise set count to 0" can be read as belonging to the "count is 3" check, which would stop a
+  streak ever reaching 3. The sentence is ambiguous, but the design's own rules check says a present day resets the
+  count, so the intended meaning is clear. A wording problem, not a P0.
+- **Build 05, final check:** an example went from 0.05 straight to 0.045 and skipped the discount step. The result was
+  right and the wording was sloppy.
+- **Build 07, design:** adding an epsilon before rounding can move a value that sits just below a half-cent onto it. That
+  is a real risk but a rare one, closer to P1.
+- **Build 10, requirements:** "100 / 48 = 2.08" was called wrong because the quotient is 2.0833. It is a rounded figure.
+- **Build 10, design:** a floating-point case where the next double above 1000/9 gives 9 cartons weighing 1000 plus a
+  tiny amount. Real in principle and contrived in practice.
+
+**A false alarm (1).** In build 05, the code review said "a `BigInt` added to a string throws a `TypeError`, so every
+valid line crashes." That is wrong. In JavaScript `1n + "a"` gives `"1a"`. Only a `BigInt` mixed with a `Number` throws.
+Model A **declined** the finding and said exactly this, with a worked trace. I checked it in Node. I first took this
+for a real defect when writing the page, which is why the independent rating matters.
+
+So reviewers over-rate: the same pattern as in the earlier evaluation (9 of 16 final-review P0s were over-rated or
+wrong). A builder that is allowed to decline a finding with a reason, as Model A is, is what stopped the false alarm.
 
 ## The diagram step
 
@@ -93,8 +111,9 @@ cutting long text, would save the extra call, which costs about $0.04.
   quality.
 - **The briefs are small.** Each is one pure function in a made-up domain, which is the kind of feature the sandbox
   and the contract step suit. A real change to an existing codebase is harder, and this run says nothing about it.
-- **We did not judge the findings.** Whether each P0 was real, and whether any were false alarms, has not been
-  checked. The examples above are ones where the described fault is clearly real.
+- **The findings have not been independently judged.** My read of the nine P0s is one reader, and I made a mistake
+  on one of them. The 20 non-P0 findings have not been read for accuracy at all. The rating sheets for two people are
+  in `evals/live-build/judging/`.
 - **It tests the pipeline, not the hosted site.** The builds ran on a local machine. Whether Railway can isolate the
   network is still unknown.
 - **No mutation testing** was run on these builds.
@@ -107,6 +126,7 @@ cutting long text, would save the extra call, which costs about $0.04.
 | One full record per build: the panel, every build stage, every call's cost | `evals/live-build/records/` |
 | The results in one file | `evals/live-build/results-2026-11-12.json` |
 | The runner | `scripts/live-build-dry-run.mjs` |
+| The rating kit: 29 findings, a blind sheet for each of two raters, a page per build, and the key | `evals/live-build/judging/` (`npm run judging-prepare`, then `npm run judging-analyze`) |
 
 The runner in the repository is a tidied copy of the script that produced these results. It has not been run since, and
 running it spends about $3.50.

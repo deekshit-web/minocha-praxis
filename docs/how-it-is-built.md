@@ -129,10 +129,11 @@ run on 12 November. The write-up is `docs/live-build-dry-run.md`, and the record
 | The dry run: 10 briefs across five domains, five builds at once | $0.25 to $0.45 (mean $0.35) | 8 to 33 min | All 10 finished and all passed first time. 7 diagrams passed the check first time and 3 passed after the one correction. |
 
 All twelve passed first time, so **the red-run and fix-round path has still not been exercised live**. That does not
-mean nothing went wrong upstream: reviewers raised a serious finding in 5 of the 10 dry-run builds before any code ran.
-Examples are a crash (a `BigInt` added to a string, which would have broken every valid input) and a design bug that
-would have kept a streak count from ever reaching 3. The brief with a wrong example was not followed: the pipeline said
-the example was wrong and built to the rules.
+mean nothing went wrong upstream: reviewers raised a P0 in 5 of the 10 dry-run builds before any code ran. Read by hand,
+3 of the 9 P0s were serious (for example a design that read `exam[0]` of an empty list), 5 were real but rated too high,
+and 1 was a false alarm: a code review claimed a `BigInt` added to a string throws, which is wrong, and Model A correctly
+declined it. The brief with a wrong example was not followed: the pipeline said the example was wrong and built to the
+rules. This is one reader's check; independent rating is set up in `evals/live-build/judging/`.
 
 What the second run showed. Model B's design review raised a real issue, not an arithmetic one: the brief's 50.00
 monthly cap did not say whether it applies per loan or per account, so a statement screen could show several loans
@@ -275,6 +276,7 @@ problems, a false-alarm rate, real approvals in a live build, and a live build t
 | The demo page | `packages/studio/public/index.html` |
 | The evaluation write-up | `docs/eval-results.md` |
 | The live build dry run, with its data | `docs/live-build-dry-run.md`, `evals/live-build/` |
+| Rating the reviewers' findings (false alarms) | `evals/live-build/judging/`, `packages/studio/src/judging.ts` |
 | The booth walk-through | `docs/booth-script.md` |
 | The README's "what is recorded and what is enforced" | `README.md` |
 
