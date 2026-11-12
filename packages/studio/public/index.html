@@ -1363,7 +1363,8 @@
             detail.appendChild(note);
           }
           if (state === "running") pre.scrollTop = pre.scrollHeight;
-          if (state === "done" && flow.diagram && archViewOf(step.id)) detail.appendChild(archDiagram(archViewOf(step.id)));
+          // A review step that raised a finding is "flagged", not "done", and it is the step that most needs the diagram.
+          if ((state === "done" || state === "flagged") && flow.diagram && archViewOf(step.id)) detail.appendChild(archDiagram(archViewOf(step.id)));
         }
       }
 
