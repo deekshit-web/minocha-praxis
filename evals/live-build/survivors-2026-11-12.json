@@ -1,0 +1,871 @@
+{
+  "ranAt": "2026-11-12T18:41:54.636Z",
+  "networkNamespace": true,
+  "totals": {
+    "survivors": 69,
+    "gap": 22,
+    "gapInvalidOnly": 13,
+    "equivalent": 33,
+    "noDifferenceFound": 1,
+    "unexplained": 0
+  },
+  "builds": [
+    {
+      "build": "01-claim-window",
+      "inputs": 21562,
+      "survivors": [
+        {
+          "key": "01-claim-window#2",
+          "index": 2,
+          "operator": "< to <=",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+          "validDiff": {
+            "args": "[{\"denialDate\":\"2026-01-10\",\"checkDate\":\"2026-02-01\"}]",
+            "real": "returns {\"allowed\":true,\"daysLeft\":98,\"elapsedDays\":22}",
+            "mutant": "throws Error: invalid date: checkDate"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "01-claim-window#4",
+          "index": 4,
+          "operator": "> to >=",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+          "validDiff": {
+            "args": "[{\"denialDate\":\"2023-12-31\",\"checkDate\":\"2023-12-31\"}]",
+            "real": "returns {\"allowed\":true,\"daysLeft\":120,\"elapsedDays\":0}",
+            "mutant": "throws Error: invalid date: denialDate"
+          },
+          "invalidDiff": {
+            "args": "[{\"denialDate\":\"2026-01-10\",\"checkDate\":\"2025-12-11\"}]",
+            "real": "throws Error: checkDate is before denialDate",
+            "mutant": "throws Error: invalid date: checkDate"
+          },
+          "verdict": "gap"
+        },
+        {
+          "key": "01-claim-window#5",
+          "index": 5,
+          "operator": "> to >=",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+          "validDiff": {
+            "args": "[{\"denialDate\":\"2026-01-10\",\"checkDate\":\"2026-01-31\"}]",
+            "real": "returns {\"allowed\":true,\"daysLeft\":99,\"elapsedDays\":21}",
+            "mutant": "throws Error: invalid date: checkDate"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "01-claim-window#13",
+          "index": 13,
+          "operator": "&& to ||",
+          "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[null]",
+            "real": "throws Error: missing field: denialDate",
+            "mutant": "throws TypeError: Cannot convert undefined or null to object"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "01-claim-window#14",
+          "index": 14,
+          "operator": "|| to &&",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "Drops the 'month below 1' part of the range check (mo < 1 && mo > 12 is never true). The round-trip check that follows rejects every month outside 1 to 12, so the same error is thrown. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "01-claim-window#15",
+          "index": 15,
+          "operator": "|| to &&",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "mo > 12 && d < 1 weakens the range check, but the round-trip check rejects every out-of-range month and day with the same error. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "01-claim-window#16",
+          "index": 16,
+          "operator": "|| to &&",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "d < 1 && d > 31 is never true, so the day part of the range check is gone; the round-trip check rejects every out-of-range day with the same error. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "01-claim-window#17",
+          "index": 17,
+          "operator": "|| to &&",
+          "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "(year changed && month changed) || day changed. After the range check, the only impossible dates left are days past the end of a month, and those always change the day of the month, so the check still fails. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "01-claim-window#18",
+          "index": 18,
+          "operator": "|| to &&",
+          "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) throw new Error(\"invalid date: \" + name);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "year changed || (month changed && day changed). A day past the end of a month rolls into the next month, changing both month and day, so the check still fails. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "01-claim-window#19",
+          "index": 19,
+          "operator": "|| to &&",
+          "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"denialDate\":\"<undefined>\",\"checkDate\":\"2026-03-10\"}]",
+            "real": "throws Error: missing field: denialDate",
+            "mutant": "throws Error: invalid date: denialDate"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "01-claim-window#25",
+          "index": 25,
+          "operator": "number + 1",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "mo > 13 lets month 13 past the range check, but the round-trip check rejects it with the same error."
+        },
+        {
+          "key": "01-claim-window#26",
+          "index": 26,
+          "operator": "number + 1",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+          "validDiff": {
+            "args": "[{\"denialDate\":\"2026-01-10\",\"checkDate\":\"2026-02-01\"}]",
+            "real": "returns {\"allowed\":true,\"daysLeft\":98,\"elapsedDays\":22}",
+            "mutant": "throws Error: invalid date: checkDate"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "01-claim-window#27",
+          "index": 27,
+          "operator": "number + 1",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(\"invalid date: \" + name);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "d > 32 lets day 32 past the range check, but the round-trip check rejects it with the same error."
+        },
+        {
+          "key": "01-claim-window#28",
+          "index": 28,
+          "operator": "number + 1",
+          "line": "const dt = new Date(0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "new Date(1) starts one millisecond later, but setUTCHours(0, 0, 0, 0) then sets the milliseconds to 0."
+        },
+        {
+          "key": "01-claim-window#30",
+          "index": 30,
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "Every date is set to 01:00 instead of 00:00. The day number is Math.round(ms / 86400000), and an hour is less than half a day, so it is unchanged."
+        },
+        {
+          "key": "01-claim-window#31",
+          "index": 31,
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "One minute past midnight; Math.round to whole days removes it."
+        },
+        {
+          "key": "01-claim-window#32",
+          "index": 32,
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "One second past midnight; Math.round to whole days removes it."
+        },
+        {
+          "key": "01-claim-window#33",
+          "index": 33,
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "One millisecond past midnight; Math.round to whole days removes it."
+        },
+        {
+          "key": "01-claim-window#35",
+          "index": 35,
+          "operator": "number + 1",
+          "line": "if (!Object.prototype.hasOwnProperty.call(obj, name) || obj[name] === void 0) throw new Error(\"missing field: \" + name);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "void 1 is undefined, exactly as void 0."
+        }
+      ]
+    },
+    {
+      "build": "02-duplicate-claims",
+      "inputs": 1,
+      "survivors": []
+    },
+    {
+      "build": "03-grade-weights",
+      "inputs": 1513,
+      "survivors": [
+        {
+          "key": "03-grade-weights#5",
+          "index": 5,
+          "operator": "|| to &&",
+          "line": "if (input === null || typeof input !== \"object\") {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[null]",
+            "real": "throws Error: input must be an object",
+            "mutant": "throws TypeError: Cannot convert undefined or null to object"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "03-grade-weights#13",
+          "index": 13,
+          "operator": "number + 1",
+          "line": "const rest = scores.slice(0, idx).concat(scores.slice(idx + 1));",
+          "validDiff": {
+            "args": "[{\"homework\":[88,99,11,49,26,20,18],\"quizzes\":[18],\"exam\":[67]}]",
+            "real": "returns {\"homeworkAverage\":50,\"quizAverage\":18,\"examScore\":67,\"final\":48.9,\"display\":\"48.9\",\"droppedHomework\":11}",
+            "mutant": "returns {\"homeworkAverage\":42.4,\"quizAverage\":18,\"examScore\":67,\"final\":47.4,\"display\":\"47.4\",\"droppedHomework\":11}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        }
+      ]
+    },
+    {
+      "build": "04-attendance-streak",
+      "inputs": 1507,
+      "survivors": [
+        {
+          "key": "04-attendance-streak#6",
+          "index": 6,
+          "operator": "|| to &&",
+          "line": "if (entry === null || typeof entry !== \"object\") {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[[null]]",
+            "real": "throws TypeError: entry at index 0 must be an object",
+            "mutant": "throws TypeError: Cannot read properties of null (reading 'status')"
+          },
+          "verdict": "gap (invalid input only)"
+        }
+      ]
+    },
+    {
+      "build": "05-stacked-promo",
+      "inputs": 562,
+      "survivors": [
+        {
+          "key": "05-stacked-promo#1",
+          "index": 1,
+          "operator": "< to <=",
+          "line": "if (scale < 0) {",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "scale <= 0 also enters the branch when scale is 0, where it multiplies by 10n ** 0n (1) and sets scale to 0: no change."
+        },
+        {
+          "key": "05-stacked-promo#3",
+          "index": 3,
+          "operator": "< to <=",
+          "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+          "validDiff": {
+            "args": "[{\"sku\":\"A\",\"units\":0,\"unitPrice\":0}]",
+            "real": "returns {\"sku\":\"A\",\"normalPrice\":0,\"freeUnits\":0,\"paidUnits\":0,\"lineTotal\":0}",
+            "mutant": "throws Error: invalid field: unitPrice"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "05-stacked-promo#10",
+          "index": 10,
+          "operator": "|| to &&",
+          "line": "if (typeof units !== \"number\" || !Number.isFinite(units) || !Number.isInteger(units) || units < 0) {",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "(not a number && not finite) || not an integer || negative. Number.isInteger is false for anything that is not a finite number, so the first two checks were redundant and the same inputs are rejected."
+        },
+        {
+          "key": "05-stacked-promo#13",
+          "index": 13,
+          "operator": "|| to &&",
+          "line": "if (typeof unitPrice !== \"number\" || !Number.isFinite(unitPrice) || unitPrice < 0) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"sku\":\"A\",\"units\":3,\"unitPrice\":\"NaN\"}]",
+            "real": "throws Error: invalid field: unitPrice",
+            "mutant": "throws Error: unparseable number"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "05-stacked-promo#19",
+          "index": 19,
+          "operator": "number + 1",
+          "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+          "validDiff": {
+            "args": "[{\"sku\":\"A\",\"units\":1,\"unitPrice\":1e-7}]",
+            "real": "returns {\"sku\":\"A\",\"normalPrice\":1e-7,\"freeUnits\":0,\"paidUnits\":1,\"lineTotal\":0}",
+            "mutant": "returns {\"sku\":\"A\",\"normalPrice\":1e-7,\"freeUnits\":0,\"paidUnits\":1,\"lineTotal\":0.9}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "05-stacked-promo#20",
+          "index": 20,
+          "operator": "number + 1",
+          "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+          "validDiff": {
+            "args": "[{\"sku\":\"A\",\"units\":0,\"unitPrice\":1e-7}]",
+            "real": "returns {\"sku\":\"A\",\"normalPrice\":0,\"freeUnits\":0,\"paidUnits\":0,\"lineTotal\":0}",
+            "mutant": "throws RangeError: The number NaN cannot be converted to a BigInt because it is not an integer"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "05-stacked-promo#21",
+          "index": 21,
+          "operator": "number + 1",
+          "line": "const exp = m[3] ? parseInt(m[3], 10) : 0;",
+          "validDiff": {
+            "args": "[{\"sku\":\"A\",\"units\":1,\"unitPrice\":1e+21}]",
+            "real": "returns {\"sku\":\"A\",\"normalPrice\":1e+21,\"freeUnits\":0,\"paidUnits\":1,\"lineTotal\":900000000000000000000}",
+            "mutant": "returns {\"sku\":\"A\",\"normalPrice\":1e+21,\"freeUnits\":0,\"paidUnits\":1,\"lineTotal\":9e+22}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "05-stacked-promo#24",
+          "index": 24,
+          "operator": "number + 1",
+          "line": "if (scale < 0) {",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "scale is a whole number, so scale < 1 is scale <= 0, and at 0 the branch changes nothing (see #1)."
+        },
+        {
+          "key": "05-stacked-promo#25",
+          "index": 25,
+          "operator": "number + 1",
+          "line": "scale = 0;",
+          "validDiff": {
+            "args": "[{\"sku\":\"A\",\"units\":1,\"unitPrice\":1e+21}]",
+            "real": "returns {\"sku\":\"A\",\"normalPrice\":1e+21,\"freeUnits\":0,\"paidUnits\":1,\"lineTotal\":900000000000000000000}",
+            "mutant": "returns {\"sku\":\"A\",\"normalPrice\":1e+21,\"freeUnits\":0,\"paidUnits\":1,\"lineTotal\":90000000000000000000}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "05-stacked-promo#31",
+          "index": 31,
+          "operator": "number + 1",
+          "line": "const price = unitPrice === 0 ? 0 : unitPrice;",
+          "validDiff": {
+            "args": "[{\"sku\":\"A\",\"units\":1,\"unitPrice\":1}]",
+            "real": "returns {\"sku\":\"A\",\"normalPrice\":1,\"freeUnits\":0,\"paidUnits\":1,\"lineTotal\":0.9}",
+            "mutant": "returns {\"sku\":\"A\",\"normalPrice\":0,\"freeUnits\":0,\"paidUnits\":1,\"lineTotal\":0}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "05-stacked-promo#32",
+          "index": 32,
+          "operator": "number + 1",
+          "line": "const price = unitPrice === 0 ? 0 : unitPrice;",
+          "validDiff": {
+            "args": "[{\"sku\":\"A\",\"units\":1,\"unitPrice\":0}]",
+            "real": "returns {\"sku\":\"A\",\"normalPrice\":0,\"freeUnits\":0,\"paidUnits\":1,\"lineTotal\":0}",
+            "mutant": "returns {\"sku\":\"A\",\"normalPrice\":1,\"freeUnits\":0,\"paidUnits\":1,\"lineTotal\":0.9}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        }
+      ]
+    },
+    {
+      "build": "06-reorder-point",
+      "inputs": 1,
+      "survivors": []
+    },
+    {
+      "build": "07-interest-days",
+      "inputs": 24162,
+      "survivors": [
+        {
+          "key": "07-interest-days#0",
+          "index": 0,
+          "operator": "<= to <",
+          "line": "if (principal <= 0) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"principal\":0,\"annualRate\":0.05,\"startDate\":\"2026-03-01\",\"endDate\":\"2026-04-01\"}]",
+            "real": "throws Error: zero or negative principal pending REQ-5 confirmation",
+            "mutant": "returns {\"days\":31,\"interest\":0}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "07-interest-days#1",
+          "index": 1,
+          "operator": "<= to <",
+          "line": "if (annualRate <= 0) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"principal\":100,\"annualRate\":0,\"startDate\":\"2026-03-01\",\"endDate\":\"2026-04-01\"}]",
+            "real": "throws Error: zero or negative annualRate pending REQ-5 confirmation",
+            "mutant": "returns {\"days\":31,\"interest\":0}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "07-interest-days#12",
+          "index": 12,
+          "operator": "|| to &&",
+          "line": "if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"principal\":100,\"annualRate\":0.05,\"startDate\":\"2026-04-01x\",\"endDate\":\"2026-04-01\"}]",
+            "real": "throws Error: invalid date: startDate",
+            "mutant": "returns {\"days\":0,\"interest\":0}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "07-interest-days#13",
+          "index": 13,
+          "operator": "|| to &&",
+          "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "(year changed && month changed) || day changed. An impossible month (00, 13 to 99) with a valid day moves the date into another year and month; an impossible day changes the day of the month. Either way the check still fails. Tried on every 2026-MM-DD from 00 to 99, as both dates."
+        },
+        {
+          "key": "07-interest-days#14",
+          "index": 14,
+          "operator": "|| to &&",
+          "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "year changed || (month changed && day changed). An impossible month with a valid day changes the year; an impossible day changes both month and day. Tried on every 2026-MM-DD from 00 to 99, as both dates."
+        },
+        {
+          "key": "07-interest-days#15",
+          "index": 15,
+          "operator": "|| to &&",
+          "line": "if (input === null || typeof input !== \"object\") {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[null]",
+            "real": "throws Error: invalid input",
+            "mutant": "throws TypeError: Cannot convert undefined or null to object"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "07-interest-days#16",
+          "index": 16,
+          "operator": "|| to &&",
+          "line": "if (typeof principal !== \"number\" || !Number.isFinite(principal)) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"principal\":\"NaN\",\"annualRate\":0.05,\"startDate\":\"2026-03-01\",\"endDate\":\"2026-04-01\"}]",
+            "real": "throws Error: invalid principal",
+            "mutant": "returns {\"days\":31,\"interest\":\"NaN\"}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "07-interest-days#17",
+          "index": 17,
+          "operator": "|| to &&",
+          "line": "if (typeof annualRate !== \"number\" || !Number.isFinite(annualRate)) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"principal\":100,\"annualRate\":\"NaN\",\"startDate\":\"2026-03-01\",\"endDate\":\"2026-04-01\"}]",
+            "real": "throws Error: invalid annualRate",
+            "mutant": "returns {\"days\":31,\"interest\":\"NaN\"}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "07-interest-days#18",
+          "index": 18,
+          "operator": "number + 1",
+          "line": "const y = Number(value.slice(0, 4));",
+          "validDiff": {
+            "args": "[{\"principal\":0.01,\"annualRate\":0.001,\"startDate\":\"1999-12-01\",\"endDate\":\"2000-01-01\"}]",
+            "real": "returns {\"days\":31,\"interest\":0}",
+            "mutant": "throws Error: end date before start date pending REQ-5 confirmation"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "07-interest-days#20",
+          "index": 20,
+          "operator": "number + 1",
+          "line": "const m = Number(value.slice(5, 7));",
+          "validDiff": {
+            "args": "[{\"principal\":0.01,\"annualRate\":0.001,\"startDate\":\"2025-12-31\",\"endDate\":\"2025-12-31\"}]",
+            "real": "returns {\"days\":0,\"interest\":0}",
+            "mutant": "throws Error: invalid date: startDate"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "07-interest-days#22",
+          "index": 22,
+          "operator": "number + 1",
+          "line": "const d = Number(value.slice(8, 10));",
+          "validDiff": {
+            "args": "[{\"principal\":0.01,\"annualRate\":0.001,\"startDate\":\"2026-03-01\",\"endDate\":\"2026-03-30\"}]",
+            "real": "returns {\"days\":29,\"interest\":0}",
+            "mutant": "throws Error: invalid date: endDate"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "07-interest-days#23",
+          "index": 23,
+          "operator": "number + 1",
+          "line": "const d = Number(value.slice(8, 10));",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "slice(8, 11) on a string the regex has fixed at 10 characters returns the same two characters as slice(8, 10)."
+        },
+        {
+          "key": "07-interest-days#24",
+          "index": 24,
+          "operator": "number + 1",
+          "line": "const dt = new Date(0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "new Date(1) starts one millisecond later, but setUTCHours(0, 0, 0, 0) then sets the milliseconds to 0."
+        },
+        {
+          "key": "07-interest-days#26",
+          "index": 26,
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "Both dates move to 01:00 by the same amount, and only their difference is used (rounded to whole days)."
+        },
+        {
+          "key": "07-interest-days#27",
+          "index": 27,
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "Both dates move by one minute; only their difference is used."
+        },
+        {
+          "key": "07-interest-days#28",
+          "index": 28,
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "Both dates move by one second; only their difference is used."
+        },
+        {
+          "key": "07-interest-days#29",
+          "index": 29,
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(0, 0, 0, 0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "Both dates move by one millisecond; only their difference is used."
+        },
+        {
+          "key": "07-interest-days#32",
+          "index": 32,
+          "operator": "number + 1",
+          "line": "if (Math.abs(scaled - Math.trunc(scaled)) === 0.5) {",
+          "validDiff": {
+            "args": "[{\"principal\":73,\"annualRate\":0.025,\"startDate\":\"2026-03-01\",\"endDate\":\"2026-03-02\"}]",
+            "real": "throws Error: exact-half rounding pending REQ-4 confirmation",
+            "mutant": "returns {\"days\":1,\"interest\":0.01}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "07-interest-days#34",
+          "index": 34,
+          "operator": "number + 1",
+          "line": "if (principal <= 0) {",
+          "validDiff": {
+            "args": "[{\"principal\":0.01,\"annualRate\":0.001,\"startDate\":\"2026-03-01\",\"endDate\":\"2026-03-01\"}]",
+            "real": "returns {\"days\":0,\"interest\":0}",
+            "mutant": "throws Error: zero or negative principal pending REQ-5 confirmation"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        }
+      ]
+    },
+    {
+      "build": "08-velocity-alert",
+      "inputs": 2002,
+      "survivors": [
+        {
+          "key": "08-velocity-alert#8",
+          "index": 8,
+          "operator": "number + 1",
+          "line": "for (let i = 0; i < times.length; i++) {",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "Starting the loop at 1 skips i = 0, where the window holds one payment: it cannot alert (that needs more than 5), and the inner loop cannot move (times[0] - times[0] is 0, or NaN for a bad time)."
+        }
+      ]
+    },
+    {
+      "build": "09-window-overlap",
+      "inputs": 14642,
+      "survivors": [
+        {
+          "key": "09-window-overlap#8",
+          "index": 8,
+          "operator": "number + 1",
+          "line": "return { overlaps: minutes > 0, minutes };",
+          "validDiff": {
+            "args": "[{\"start\":\"00:00\",\"end\":\"01:00\"},{\"start\":\"00:59\",\"end\":\"01:00\"}]",
+            "real": "returns {\"overlaps\":true,\"minutes\":1}",
+            "mutant": "returns {\"overlaps\":false,\"minutes\":1}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        }
+      ]
+    },
+    {
+      "build": "10-pallets-contradiction",
+      "inputs": 8910,
+      "survivors": [
+        {
+          "key": "10-pallets-contradiction#2",
+          "index": 2,
+          "operator": "< to <=",
+          "line": "if (p < MAX_KG) return true;",
+          "validDiff": {
+            "args": "[{\"cartons\":0,\"cartonWeightKg\":142.85714285714286}]",
+            "real": "returns {\"pallets\":0,\"cartonsPerPallet\":6}",
+            "mutant": "returns {\"pallets\":0,\"cartonsPerPallet\":7}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "10-pallets-contradiction#4",
+          "index": 4,
+          "operator": "< to <=",
+          "line": "if (c < 0) c = 0;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "c starts as min(48, floor(1000 / w)) with 0 < w <= 1000, so it is at least 1; c <= 0 is never true."
+        },
+        {
+          "key": "10-pallets-contradiction#9",
+          "index": 9,
+          "operator": "> to >=",
+          "line": "while (c > 0 && !fits(c, w)) c--;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "The downward loop would only reach 0 if one carton did not fit, which needs w > 1000, already rejected. At c = 0 the mutant would test fits(0, w), which is true, and stop anyway."
+        },
+        {
+          "key": "10-pallets-contradiction#17",
+          "index": 17,
+          "operator": "&& to ||",
+          "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[null]",
+            "real": "throws Error: missing field: cartons",
+            "mutant": "throws TypeError: Cannot convert undefined or null to object"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "10-pallets-contradiction#18",
+          "index": 18,
+          "operator": "&& to ||",
+          "line": "while (c > 0 && !fits(c, w)) c--;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "c > 0 || !fits(c, w) counts down to 0 regardless, then the upward loop climbs back to the largest c that fits. fits is monotone in c, so it ends at the same c (by a slower path)."
+        },
+        {
+          "key": "10-pallets-contradiction#20",
+          "index": 20,
+          "operator": "|| to &&",
+          "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"cartons\":\"<undefined>\",\"cartonWeightKg\":8}]",
+            "real": "throws Error: missing field: cartons",
+            "mutant": "throws Error: invalid cartons"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "10-pallets-contradiction#27",
+          "index": 27,
+          "operator": "number + 1",
+          "line": "const SPLITTER = 134217729;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "no difference found",
+          "reason": "SPLITTER is the constant (2^27 + 1) that splits a float for an exact product; 2^27 + 2 splits differently. It matters only when cartons x weight rounds to exactly 1000. No difference on any carton count from 1 to 49 at the 9 weights nearest 1000 / c, or on 8,900 other inputs, but this is not proven."
+        },
+        {
+          "key": "10-pallets-contradiction#28",
+          "index": 28,
+          "operator": "number + 1",
+          "line": "return e <= 0;",
+          "validDiff": {
+            "args": "[{\"cartons\":0,\"cartonWeightKg\":142.85714285714286}]",
+            "real": "returns {\"pallets\":0,\"cartonsPerPallet\":6}",
+            "mutant": "returns {\"pallets\":0,\"cartonsPerPallet\":7}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "10-pallets-contradiction#29",
+          "index": 29,
+          "operator": "number + 1",
+          "line": "if (!Object.prototype.hasOwnProperty.call(obj, key) || obj[key] === void 0) throw new Error(\"missing field: \" + key);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "void 1 is undefined, exactly as void 0."
+        },
+        {
+          "key": "10-pallets-contradiction#31",
+          "index": 31,
+          "operator": "number + 1",
+          "line": "if (typeof w !== \"number\" || Number.isNaN(w) || w <= 0) throw new Error(\"invalid cartonWeightKg\");",
+          "validDiff": {
+            "args": "[{\"cartons\":0,\"cartonWeightKg\":0.001}]",
+            "real": "returns {\"pallets\":0,\"cartonsPerPallet\":48}",
+            "mutant": "throws Error: invalid cartonWeightKg"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "10-pallets-contradiction#32",
+          "index": 32,
+          "operator": "number + 1",
+          "line": "if (c < 0) c = 0;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "c is at least 1 here (see #4), so c < 1 is never true."
+        },
+        {
+          "key": "10-pallets-contradiction#33",
+          "index": 33,
+          "operator": "number + 1",
+          "line": "if (c < 0) c = 0;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "The branch never runs (c is at least 1), so what it assigns does not matter."
+        },
+        {
+          "key": "10-pallets-contradiction#34",
+          "index": 34,
+          "operator": "number + 1",
+          "line": "while (c > 0 && !fits(c, w)) c--;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "Stopping the downward loop at 1 matters only if one carton does not fit, which needs w > 1000, already rejected."
+        },
+        {
+          "key": "10-pallets-contradiction#35",
+          "index": 35,
+          "operator": "number + 1",
+          "line": "while (c < MAX_CARTONS && fits(c + 1, w)) c++;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "The upward loop never runs in the real code: division is correctly rounded, so if c cartons fit exactly then floor(1000 / w) is at least c, and the downward loop has already found the largest c that fits. fits(c + 2, w) is then false too, as fits is monotone in c."
+        },
+        {
+          "key": "10-pallets-contradiction#37",
+          "index": 37,
+          "operator": "number + 1",
+          "line": "const count = n === 0 ? 0 : n;",
+          "validDiff": {
+            "args": "[{\"cartons\":1,\"cartonWeightKg\":0.001}]",
+            "real": "returns {\"pallets\":1,\"cartonsPerPallet\":48}",
+            "mutant": "returns {\"pallets\":0,\"cartonsPerPallet\":48}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        }
+      ]
+    }
+  ]
+}

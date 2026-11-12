@@ -520,7 +520,8 @@ export function mutationTest(id) {
   });
 }
 
-function mutate(source, runAll) {
+/** Every mutant of a source: the operator, the line it changes, and the changed source. */
+export function mutantsOf(source) {
   // Text inside string and regex literals is data, not logic; changing "STU-104" proves nothing.
   const literals = [...source.matchAll(/"(?:[^"\\]|\\.)*"|\/\^[^\n]*?\$\//g)].map((match) => [match.index, match.index + match[0].length]);
   const inLiteral = (at) => literals.some(([start, end]) => at >= start && at < end);
@@ -539,8 +540,12 @@ function mutate(source, runAll) {
       });
     }
   }
+  return mutants;
+}
+
+function mutate(source, runAll) {
   const results = [];
-  for (const mutant of mutants) {
+  for (const mutant of mutantsOf(source)) {
     let outcome;
     try {
       outcome = runAll(mutant.source);
@@ -586,6 +591,11 @@ function runScriptAgainst(code, script) {
   };
   new Function("test", "assert", "code", '"use strict";\n' + script)(test, assert, code);
   return results;
+}
+
+/** Loads recorded code after the safety scan, to call its functions directly. */
+export function loadRecorded(codeSource) {
+  return instantiateRecorded(codeSource);
 }
 
 /** Runs a recorded test script against recorded code. */

@@ -17,5 +17,7 @@ export interface MutantResult {
 }
 export function mutationTest(id: string): { total: number; killed: number; results: MutantResult[] };
 export function unsafeNames(source: string): string[];
+export function mutantsOf(source: string): Array<{ operator: string; line: string; source: string }>;
+export function loadRecorded(codeSource: string): Record<string, (...args: unknown[]) => unknown>;
 export function runRecorded(codeSource: string, script: string): TestResult[];
 export function mutationTestRecorded(codeSource: string, scripts: string[]): { total: number; killed: number; results: MutantResult[] };
