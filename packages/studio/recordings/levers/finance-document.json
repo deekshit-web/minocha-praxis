@@ -1,0 +1,265 @@
+{
+  "id": "finance-document",
+  "baseline": {
+    "mergeSeconds": 8.8,
+    "mergeCostUsd": 0.025531,
+    "draftBSeconds": 20.5,
+    "draftBCostUsd": 0.002676,
+    "reviewASeconds": 39,
+    "reviewACostUsd": 0.002632
+  },
+  "merges": [
+    {
+      "variant": "opus-5-5",
+      "model": "claude-opus-5-5",
+      "mode": "rewrite",
+      "seconds": 9.5,
+      "costUsd": 0.025997,
+      "outputTokens": 910,
+      "document": "KYC Decision: Customer CUST-3381\nReview date: 2026-11-10\nRecommendation: REQUEST MORE DOCUMENTS. Do not approve and do not refuse on the current file.\n\nReasons:\n\n1. Photo ID fails policy K-2. K-2 requires a valid, unexpired photo ID. Passport ID-778 expired on 2026-09-30, 41 days before the review date, so it cannot be accepted.\n\n2. Proof of address fails policy K-2. K-2 requires proof of address dated within 3 months of review. Three months before 2026-11-10 is 2026-08-10. The utility bill is dated 2026-06-02, about 5 months before review, so it falls outside that window.\n\n3. Sanctions screening returned no match and the risk rating is standard, so nothing in the file supports refusal. Both failures are curable document gaps, so requesting new documents is the right step.\n\nDocuments required from the customer: (1) a valid, unexpired photo ID, such as a renewed passport; (2) proof of address dated on or after 2026-08-10.\n\nNext step: Hold the account until these documents arrive, then re-review against K-2. If the new photo ID differs from ID-778, confirm whether sanctions screening must be re-run, because the facts provided do not cover this.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "Finding 1: Correctly rejects the expired passport and out-of-date utility bill, with accurate date checks, and requests new documents rather than approving or refusing.",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "Finding 2: Checks both K-2 requirements against the review date (passport expired 2026-09-30; bill dated 2026-06-02 is before the 2026-08-10 cutoff) and states exactly which documents to provide.",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions have the same correct figures (41 days, the 2026-08-10 cutoff, about 5 months), the same recommendation and the same document list; they differ only in minor wording and list formatting, so neither is better for the requester.",
+          "costUsd": 0.0132666
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions correctly reject the expired passport and stale utility bill, use the same accurate date checks, and request the same replacement documents rather than approving or refusing.",
+          "costUsd": 0.003832
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "sonnet-5-5",
+      "model": "claude-sonnet-5-5",
+      "mode": "rewrite",
+      "seconds": 7.5,
+      "costUsd": 0.0143285,
+      "outputTokens": 1043,
+      "document": "KYC Decision: Customer CUST-3381. Review date: 2026-11-10. Recommendation: REQUEST MORE DOCUMENTS. Do not approve and do not refuse on the current file. Reasons: 1. Photo ID fails policy K-2. K-2 requires a valid, unexpired photo ID. Passport ID-778 expired on 2026-09-30, 41 days before the review date, so it cannot be accepted. 2. Proof of address fails policy K-2. K-2 requires proof of address dated within 3 months of review, meaning on or after 2026-08-10. The utility bill is dated 2026-06-02, about 5 months before review, so it is out of date. 3. Sanctions screening returned no match and the risk rating is standard, so nothing in the file supports refusal. Both failures are curable document gaps, so requesting new documents is the right step. Documents required from the customer: a valid, unexpired photo ID, such as a renewed passport; and proof of address dated on or after 2026-08-10. Next step: hold the account pending receipt of these documents, then re-review against K-2.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "F1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "F2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "1",
+          "reason": "Both versions are accurate, but Version 1 is easier for the analyst to scan and adds a useful note that sanctions screening may need re-running if the new photo ID differs from ID-778; Version 2 says the same in a single dense paragraph.",
+          "costUsd": 0.016629
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions correctly reject the expired passport and stale utility bill, use the right dates and 2026-08-10 cutoff, and request the same replacement documents rather than approving or refusing.",
+          "costUsd": 0.003798
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "haiku-5-5",
+      "model": "claude-haiku-5-5",
+      "mode": "rewrite",
+      "seconds": 9.5,
+      "costUsd": 0.001353425,
+      "outputTokens": 2317,
+      "document": "KYC Decision: Customer CUST-3381\nReview date: 2026-11-10\nRecommendation: REQUEST MORE DOCUMENTS\n\nReasons:\n\n1. Photo ID fails policy K-2. K-2 requires a valid, unexpired photo ID. Passport ID-778 expired on 2026-09-30, 41 days before the review date. It cannot be accepted.\n\n2. Proof of address fails policy K-2. K-2 requires proof of address dated within 3 months of review, meaning on or after 2026-08-10. The utility bill is dated 2026-06-02, about 5 months before review. It is out of date.\n\n3. Sanctions screening returned no match, and the risk rating is standard. Nothing in the file points to refusal. Both failures are curable document gaps, so requesting new documents is the right step rather than refusing.\n\nDocuments required from the customer:\n- A valid, unexpired photo ID.\n- Proof of address dated on or after 2026-08-10.\n\nNext step: Hold the account pending receipt of these documents, then re-review against K-2. If the new photo ID differs from ID-778, confirm whether sanctions screening needs to be re-run, since the sources do not cover this.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "Finding 1: correctly rejects the expired passport and out-of-date utility bill, and requests new documents rather than approving or refusing",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "Finding 2: checks both K-2 requirements against the review date (passport expired 2026-09-30; 2026-06-02 bill before the 2026-08-10 cutoff) and states the documents required",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions reach the same correct decision with the same accurate date checks (41 days past expiry, 2026-08-10 cutoff) and the same document requests, differing only in minor wording.",
+          "costUsd": 0.0137106
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions correctly reject the expired passport and stale utility bill, apply the 2026-08-10 cutoff, and request the same replacement documents rather than approving or refusing.",
+          "costUsd": 0.003804
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "opus-5-edit",
+      "model": "claude-opus-5",
+      "mode": "edit",
+      "seconds": 17.3,
+      "costUsd": 0.04505625,
+      "outputTokens": 1410,
+      "document": "KYC Decision: Customer CUST-3381\nReview date: 2026-11-10\nRecommendation: REQUEST MORE DOCUMENTS (do not approve and do not refuse on the current file)\n\nReasons:\n\n1. Photo ID fails policy K-2. K-2 requires a valid, unexpired photo ID. Passport ID-778 expired on 2026-09-30, 41 days before the review date. It cannot be accepted.\n\n2. Proof of address fails policy K-2. K-2 requires proof of address dated within 3 months of review, meaning on or after 2026-08-10. The utility bill is dated 2026-06-02, which falls outside that window, about 5 months before review. It is out of date.\n\n3. Sanctions screening returned no match, and the risk rating is standard. Nothing in the file points to refusal. Both failures are curable document gaps, so requesting new documents is the right step rather than refusing.\n\nDocuments required from the customer:\n- A valid, unexpired photo ID, such as a renewed passport.\n- Proof of address dated on or after 2026-08-10.\n\nNext step: Hold the account pending receipt of these documents, then re-review against K-2. If the new photo ID differs from ID-778, confirm whether sanctions screening needs to be re-run, since the sources do not cover this.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "Finding 1: correctly rejects the expired passport and out-of-date utility bill with accurate date checks, and requests new documents rather than approving or refusing",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "Finding 2: checks both K-2 requirements against the review date (passport expired 2026-09-30; bill of 2026-06-02 falls before the 2026-08-10 cutoff) and specifies the documents needed",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions give the same correct recommendation with the same verified figures (41 days since expiry, 2026-08-10 cutoff, about 5 months for the bill) and differ only in wording, so neither serves the analyst better.",
+          "costUsd": 0.014582600000000001
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions correctly reject the expired passport and stale utility bill, use the same accurate dates including the 2026-08-10 cutoff, and request the same replacement documents rather than approving or refusing.",
+          "costUsd": 0.003882
+        },
+        "fullIsVersion": "1"
+      }
+    }
+  ],
+  "failures": [],
+  "fastB": {
+    "model": "grok-4.20-0309-non-reasoning",
+    "draft": {
+      "seconds": 1.4,
+      "costUsd": 0,
+      "text": "KYC decision for CUST-3381: Request more documents. Passport ID-778 is valid and unexpired on review date 2026-11-10 (expiry 2026-09-30 is after). Sanctions screening shows no match and risk is standard. However utility bill dated 2026-06-02 is 5 months before review date 2026-11-10, violating K-2 rule that proof of address must be dated within 3 months of review. New proof of address required.",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "1",
+          "reason": "Draft 1 correctly identifies that the passport expired on 2026-09-30, before the 2026-11-10 review date, and requests both a new ID and a new proof of address; Draft 2 wrongly calls the passport valid (2026-09-30 is not after 2026-11-10), so it asks only for proof of address.",
+          "costUsd": 0.007358
+        },
+        {
+          "judge": "grok",
+          "preferred": "1",
+          "reason": "Draft 1 correctly treats passport ID-778 as expired before the 2026-11-10 review and requires both a current ID and in-window proof of address, while Draft 2 wrongly calls the expired passport valid and only requests a new address document.",
+          "costUsd": 0.002458
+        }
+      ],
+      "baselineIs": "1"
+    },
+    "review": {
+      "seconds": 3.6,
+      "costUsd": 0,
+      "text": "D-A1 · P0 · Wrong expiry calculation\n  Passport expiry is 2026-09-30. Review is 2026-11-10. Correct days before review is 41, not 41 before as stated; however the decision text claims it 'expired on 2026-09-30, 41 days before' which matches only if misstated, but the core issue is the recommendation contradicts the stated expiry failure while policy requires unexpired ID.\nD-A2 · P0 · Incorrect 3-month threshold date\n  Review date 2026-11-10. Exactly 3 months prior is 2026-08-10. Draft correctly states 'on or after 2026-08-10' but then claims utility bill 'about 5 months before' which is arithmetically wrong: from 2026-06-02 to 2026-11-10 is 5 months 8 days, yet the threshold computation must be recomputed per rules and is presented inaccurately in severity.\nD-A3 · P1 · Recommendation contradicts K-2 failures\n  Policy requires valid unexpired photo ID and proof of address within 3 months. Both are missing per facts and draft's own points 1-2, yet draft recommends REQUEST MORE instead of REFUSE or approve. Draft ignores that expired ID cannot be cured by 'renewed' without new screening note.\nStrengths: The draft correctly identifies that sanctions screening shows no match and risk is standard.",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "1",
+          "realBaseline": 0,
+          "falseBaseline": 0,
+          "realFast": 0,
+          "falseFast": 3,
+          "reason": "The draft holds up: the passport expired 41 days before review, the 3-month cutoff is 2026-08-10, and the 2026-06-02 bill is about 5 months old; Review 1 correctly finds no defects, while all three of Review 2's findings are wrong (it disputes a correct day count, calls 'about 5 months' wrong despite computing 5 months 8 days, and attacks a reasonable request-more decision that already flags re-screening), so Review 1 is more useful.",
+          "costUsd": 0.017282
+        },
+        {
+          "judge": "grok",
+          "preferred": "1",
+          "realBaseline": 0,
+          "falseBaseline": 0,
+          "realFast": 0,
+          "falseFast": 3,
+          "reason": "Review 1 correctly finds no defects in a draft whose 41-day expiry gap, 2026-08-10 address cutoff, and request-more recommendation all match the facts, while Review 2 invents three false problems.",
+          "costUsd": 0.003416
+        }
+      ],
+      "baselineIs": "1"
+    }
+  }
+}

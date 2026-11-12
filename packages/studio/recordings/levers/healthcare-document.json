@@ -1,0 +1,271 @@
+{
+  "id": "healthcare-document",
+  "baseline": {
+    "mergeSeconds": 12.9,
+    "mergeCostUsd": 0.034405,
+    "draftBSeconds": 33.7,
+    "draftBCostUsd": 0.002872,
+    "reviewASeconds": 57.7,
+    "reviewACostUsd": 0.002824
+  },
+  "merges": [
+    {
+      "variant": "opus-5-5",
+      "model": "claude-opus-5-5",
+      "mode": "rewrite",
+      "seconds": 23.8,
+      "costUsd": 0.057451,
+      "outputTokens": 2421,
+      "document": "Northwind Health\nAttn: Appeals Department\n\nRe: Appeal of CO-50 Denial, Claim CLM-221\nPatient: PAT-221\nDate of service: 2026-08-20\nService: MRI of the lumbar spine\nDenial code: CARC CO-50\nFiling deadline: 2026-11-18\n\nTo the Appeals Reviewer:\n\nWe appeal the CO-50 denial of claim CLM-221 for the lumbar spine MRI performed on 2026-08-20. This appeal cites Northwind Health policy LS-14 and clinical note DOC-318. The diagnosis code on the claim is unchanged.\n\nPolicy LS-14 covers lumbar MRI after 6 weeks of documented conservative therapy. Clinical note DOC-318 documents physical therapy from 2026-07-01 to 2026-08-14 (44 days, just over six weeks), NSAIDs, and no improvement with this treatment.\n\nThe MRI was performed on 2026-08-20, after six weeks of documented conservative therapy had been completed without improvement. This meets the LS-14 coverage criterion.\n\nPlease overturn the CO-50 denial and process claim CLM-221 for payment under policy LS-14.\n\nEnclosures: Clinical note DOC-318; Northwind Health policy LS-14 (cited)\n\nSincerely,\n\n[Name]\n[Title], Appeals Desk\n[Practice name, phone, address]",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "F1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "F2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both letters are accurate and send-ready: each cites LS-14 and DOC-318, gets the 44-day therapy span right, keeps the diagnosis code unchanged and is concise plain text, with only trivial wording differences between them.",
+          "costUsd": 0.0125222
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions are complete, factually accurate payer-ready appeals that apply LS-14 to the documented therapy, cite the policy and DOC-318, and leave the diagnosis code unchanged.",
+          "costUsd": 0.003976
+        },
+        "fullIsVersion": "2"
+      }
+    },
+    {
+      "variant": "sonnet-5-5",
+      "model": "claude-sonnet-5-5",
+      "mode": "rewrite",
+      "seconds": 12.9,
+      "costUsd": 0.0217855,
+      "outputTokens": 1727,
+      "document": "Northwind Health\nAppeals Department\n\nRe: Appeal of CO-50 denial, Claim CLM-221\nPatient: PAT-221\nDate of service: 2026-08-20\nService: MRI of the lumbar spine\nFiling deadline: 2026-11-18\n\nTo the Appeals Reviewer:\n\nWe appeal the CO-50 denial of claim CLM-221 for an MRI of the lumbar spine performed on 2026-08-20. The diagnosis code is not changed. This appeal cites Northwind Health policy LS-14 and clinical note DOC-318.\n\nPolicy LS-14 covers lumbar MRI after 6 weeks of documented conservative therapy. Clinical note DOC-318 documents physical therapy from 2026-07-01 to 2026-08-14, a period of just over six weeks, plus NSAIDs, with no improvement. The MRI on 2026-08-20 followed six weeks of failed conservative therapy, which meets the LS-14 criterion.\n\nPlease overturn the CO-50 denial and allow payment of claim CLM-221 under policy LS-14.\n\nEnclosure: Clinical note DOC-318\n\nSincerely,\nAppeals desk\nDenial specialist",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "F1: No defects; LS-14 correctly applied to DOC-318 therapy dates, NSAIDs, no improvement; identifiers, dates and unchanged-diagnosis rule match",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "F2: No defects; PT span 2026-07-01 to 2026-08-14 is 44 days, meeting the six-week rule before 2026-08-20; cites policy and DOC-318; diagnosis unchanged; concise plain text",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "2",
+          "reason": "Both versions are accurate and compliant, but Version 2 is slightly stronger: it states the verified 44-day span, names the CARC code, confirms timely filing and lists the policy as an enclosure, though its signature placeholders must be filled in before it is sent.",
+          "costUsd": 0.023687
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "2",
+          "reason": "Version 2 is better for the denial specialist because it makes the LS-14 six-week threshold payer-verifiable with an explicit 44-day span, packages both CO-50 citations, and confirms timeliness, while both letters match the record with no wrong figures or policy breaks.",
+          "costUsd": 0.004022
+        },
+        "fullIsVersion": "2"
+      }
+    },
+    {
+      "variant": "haiku-5-5",
+      "model": "claude-haiku-5-5",
+      "mode": "rewrite",
+      "seconds": 13.2,
+      "costUsd": 0.001713275,
+      "outputTokens": 2975,
+      "document": "Northwind Health\nAttn: Appeals Department\n\nRe: Appeal of Denial, Claim CLM-221\nPatient: PAT-221\nDate of Service: 2026-08-20\nService: MRI of the lumbar spine\nFiling Deadline: 2026-11-18\nDenial Code: CARC CO-50 (not deemed medically necessary)\n\nTo the Appeals Reviewer:\n\nWe request reconsideration of the CO-50 denial for the lumbar spine MRI performed on 2026-08-20. This service meets Northwind Health coverage policy LS-14.\n\nPolicy LS-14 covers a lumbar MRI after 6 weeks of documented conservative therapy. Clinical note DOC-318 documents:\n\n- Physical therapy from 2026-07-01 to 2026-08-14, a period of 44 days.\n- NSAIDs.\n- No improvement with this treatment.\n\nThe MRI was performed on 2026-08-20, after the six weeks of conservative therapy had been completed and had failed. This satisfies LS-14. The diagnosis code on the claim is unchanged.\n\nWe ask that you overturn the denial and process CLM-221 for payment.\n\nEnclosures:\n- Clinical note DOC-318\n- Northwind Health policy LS-14\n\nSincerely,\n\n[Name]\n[Title], Appeals Desk\n[Practice name, phone, address]",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "F1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "F2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [
+            "It glosses CO-50 as 'not deemed medically necessary', which is not among the supplied facts and so breaks the use-only-these-facts rule.",
+            "Its hyphen bullet lists lean toward markdown-style formatting, which strains the plain-text rule."
+          ],
+          "errorsInVersion2": [],
+          "preferred": "2",
+          "reason": "Both letters are accurate (44 days of therapy meets LS-14's six weeks, both cite the policy and DOC-318, and both keep the diagnosis code unchanged), but Version 2 is tighter plain text, adds nothing beyond the supplied facts, and states that it is filed before the deadline.",
+          "costUsd": 0.022431
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "2",
+              "version1": "not addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [
+            "Uses markdown bullet lists, violating the plain-text, no-markdown requirement.",
+            "Adds a CO-50 gloss (\"not deemed medically necessary\") that is not in the supplied facts."
+          ],
+          "errorsInVersion2": [],
+          "preferred": "2",
+          "reason": "Version 2 is better because it matches every required fact in concise plain text, while Version 1 breaks the no-markdown rule and adds an unsupported CO-50 characterization.",
+          "costUsd": 0.004168
+        },
+        "fullIsVersion": "2"
+      }
+    },
+    {
+      "variant": "opus-5-edit",
+      "model": "claude-opus-5",
+      "mode": "edit",
+      "seconds": 28.1,
+      "costUsd": 0.06632375,
+      "outputTokens": 2199,
+      "document": "Northwind Health\nAttn: Appeals Department\n\nRe: Appeal of Denial, Claim CLM-221\nPatient: PAT-221\nDate of Service: 2026-08-20\nService: MRI of the lumbar spine\nDenial Code: CARC CO-50\nFiling Deadline: 2026-11-18\n\nTo the Appeals Reviewer:\n\nWe are requesting reconsideration of the CO-50 denial for the lumbar spine MRI performed on 2026-08-20. This service was medically necessary and meets Northwind Health coverage policy LS-14. As required for CO-50, this appeal cites the coverage policy and a clinical-note reference, and the diagnosis code on the claim is unchanged.\n\nPolicy LS-14 covers a lumbar MRI after 6 weeks of documented conservative therapy. Clinical note DOC-318 documents the following conservative treatment:\n\n- Physical therapy from 2026-07-01 to 2026-08-14, a period of 44 days, or just over six weeks.\n- NSAIDs.\n- No improvement with this treatment.\n\nThe MRI was performed on 2026-08-20, after the required six weeks of therapy had been completed and had failed. This satisfies the LS-14 criterion.\n\nWe ask that you overturn the CO-50 denial and process CLM-221 for payment under policy LS-14. This appeal is submitted before the filing deadline of 2026-11-18.\n\nEnclosures:\n- Clinical note DOC-318\n- Northwind Health policy LS-14 (cited)\n\nSincerely,\n\n[Name]\n[Title], Appeals Desk\n[Practice name, phone, address]",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "F1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "F2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "2",
+          "reason": "Both letters are accurate and meet CO-50 and LS-14, but Version 2 is more concise and avoids the bullet list and the internal statement about what CO-50 requires, which reads oddly in a letter to the payer.",
+          "costUsd": 0.0135542
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both letters accurately apply LS-14 to the documented therapy dates, NSAIDs, and lack of improvement, cite the policy and DOC-318, leave the diagnosis unchanged, and match every identifier and date, so neither is materially better for the requester.",
+          "costUsd": 0.004162
+        },
+        "fullIsVersion": "2"
+      }
+    }
+  ],
+  "failures": [],
+  "fastB": {
+    "model": "grok-4.20-0309-non-reasoning",
+    "draft": {
+      "seconds": 2.6,
+      "costUsd": 0,
+      "text": "Northwind Health Appeals\nP.O. Box 1234\nAnytown, USA 12345\n\nRe: Claim CLM-221 (PAT-221)\nPatient: [Name]\nDate of Service: 2026-08-20\n\nDear Appeals Coordinator:\n\nWe appeal the CO-50 denial for lumbar spine MRI on 2026-08-20. This service meets Northwind Health policy LS-14, which covers lumbar MRI after six weeks of documented conservative therapy.\n\nClinical note DOC-318 confirms physical therapy from 2026-07-01 through 2026-08-14, NSAID use, and no improvement after six weeks. The claim was filed within the 2026-11-18 deadline.\n\nWe request payment per policy LS-14. No diagnosis code change is requested.\n\nSincerely,\nDenial Specialist\nAppeals Desk\n[Contact Info]",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "2",
+          "reason": "Draft 2 sticks to the given facts, ties the six weeks of therapy in DOC-318 to policy LS-14 before the 2026-08-20 service, and keeps the diagnosis code unchanged. Draft 1 invents a payer address, adds placeholders, and makes an unsupported claim that the claim was filed within the 2026-11-18 deadline.",
+          "costUsd": 0.011952
+        },
+        {
+          "judge": "grok",
+          "preferred": "2",
+          "reason": "Draft 2 stays within the given facts, correctly cites LS-14 and DOC-318 without changing the diagnosis, and is payer-ready, while Draft 1 invents an address and placeholders and falsely states the claim was filed by the deadline.",
+          "costUsd": 0.002674
+        }
+      ],
+      "baselineIs": "2"
+    },
+    "review": {
+      "seconds": 3.2,
+      "costUsd": 0,
+      "text": "D-A1 · P0 · Incorrect therapy duration\n  The draft states therapy ran just over six weeks but exact dates 2026-07-01 to 2026-08-14 equal 44 days or 6 weeks 2 days; however the brief and facts require strict adherence to documented dates without approximation that could be challenged, and severity is strict for any wrong figure.\nD-A2 · P1 · Missing red-flag reference\n  The draft omits that the policy also allows coverage sooner with red-flag symptoms; while not required here, referencing only the 6-week path without noting full policy match is incomplete for a payer-ready appeal.\nStrengths: The draft correctly uses only the supplied facts, includes all required claim and document references, maintains the original diagnosis code, and is written in plain text without markdown.",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "2",
+          "realBaseline": 0,
+          "falseBaseline": 0,
+          "realFast": 0,
+          "falseFast": 2,
+          "reason": "Review 2 is more useful because the draft is accurate and Review 1 raises only false findings. 2026-07-01 to 2026-08-14 is 44 days (6 weeks 2 days), so 'just over six weeks' is correct, as Review 1 itself admits. Citing the red-flag path would be irrelevant, since no red-flag symptoms are documented.",
+          "costUsd": 0.017076
+        },
+        {
+          "judge": "grok",
+          "preferred": "2",
+          "realBaseline": 0,
+          "falseBaseline": 0,
+          "realFast": 0,
+          "falseFast": 2,
+          "reason": "Review 2 is more useful because the letter’s dates, policy path, and identifiers are accurate, while Review 1 wrongly treats a correct “just over six weeks” span as an error and flags an inapplicable red-flag omission.",
+          "costUsd": 0.003294
+        }
+      ],
+      "baselineIs": "2"
+    }
+  }
+}

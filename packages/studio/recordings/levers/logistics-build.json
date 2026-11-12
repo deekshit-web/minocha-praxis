@@ -1,0 +1,272 @@
+{
+  "id": "logistics-build",
+  "baseline": {
+    "mergeSeconds": 21.4,
+    "mergeCostUsd": 0.059742,
+    "draftBSeconds": 48.9,
+    "draftBCostUsd": 0.002718,
+    "reviewASeconds": 52.7,
+    "reviewACostUsd": 0.00294
+  },
+  "merges": [
+    {
+      "variant": "opus-5-5",
+      "model": "claude-opus-5-5",
+      "mode": "rewrite",
+      "seconds": 19.5,
+      "costUsd": 0.053898,
+      "outputTokens": 2210,
+      "document": "REQ-1: Send a delay notification when the carrier's latest ETA is more than 2 hours after the promised delivery time. Exactly 2 hours late does not trigger.\nREQ-2: Trust only the carrier's latest ETA, which arrives in UTC. Compare it with the promised time as absolute instants. Show all times to the customer in the delivery address's local time, with the date.\nREQ-3: Send at most 2 notifications per shipment. The first is sent when REQ-1 is met. The second is sent only if a later ETA is at least 2 hours after the ETA shown in the first notification; that ETA is the baseline. Q3 says 'slips by a further 2 hours', so exactly 2 hours further triggers. This differs from the 'more than' rule in Q1 and needs confirmation.\nREQ-4: Always evaluate the carrier's latest ETA only. After the second notification, send nothing more for that shipment.\nAC-1: The address is at UTC+2 (illustrative) and the promised time is 14:00 local (12:00 UTC). A carrier ETA of 14:01 UTC is 2h01m late, so one notification is sent showing 16:01 local.\nAC-2: Same shipment, but the carrier ETA is 14:00 UTC, exactly 2h00m late. No notification is sent.\nAC-3: After AC-1's notification (baseline ETA 14:01 UTC, 16:01 local), a new ETA of 16:00 UTC (18:00 local) is 1h59m further, so nothing is sent. A new ETA of 16:01 UTC (18:01 local) is exactly 2h further and sends the second notification. Any later ETA sends nothing.\nAC-4: The address is at UTC+2 and the promised time is 1 March 23:00 local (21:00 UTC). A carrier ETA of 2 March 00:30 UTC is 3h30m late. A notification is sent showing 2 March 02:30 local, not 00:30 or 1 March.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "1",
+          "reason": "Both versions are correct and address both findings, but Version 1 is marginally better because AC-3 also checks that the second notification shows 18:01 local time, so the conversion rule is tested there too.",
+          "costUsd": 0.0186644
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions add a non-UTC date-rollover test and state the first-notice ETA as the slip baseline, and every figure and rule checks out.",
+          "costUsd": 0.00478
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "sonnet-5-5",
+      "model": "claude-sonnet-5-5",
+      "mode": "rewrite",
+      "seconds": 18.4,
+      "costUsd": 0.029279,
+      "outputTokens": 2443,
+      "document": "REQ-1: Send a delay notification when the carrier's latest ETA is more than 2 hours after the promised delivery time. Exactly 2 hours late does not trigger. REQ-2: The carrier ETA arrives in UTC. Compare it with the promised time as absolute instants. Show all times to the customer in the delivery address's local time, with the date. REQ-3: Send at most 2 notifications per shipment. The first is sent when REQ-1 is met. The second is sent only if a later ETA is 2 hours or more after the ETA shown in the first notification (that ETA is the baseline, not the promised time). A slip of 1 hour 59 minutes does not trigger. The 'more than' margin applies to lateness (Q1); the slip rule follows Q3 literally, so exactly 2 hours further counts. Please confirm. REQ-4: Always evaluate the carrier's latest ETA only. After the second notification, send nothing more for that shipment. AC-1: The address is at UTC+2 (illustrative) and the promised time is 14:00 local (12:00 UTC). A carrier ETA of 14:01 UTC is 2h01m late, so one notification is sent showing 16:01 local. AC-2: Same shipment, but the carrier ETA is 14:00 UTC, exactly 2h00m late. No notification is sent. AC-3: After AC-1's notification (ETA 14:01 UTC), a new ETA of 16:00 UTC (18:00 local, 1h59m further) sends nothing. A new ETA of 16:01 UTC (18:01 local, exactly 2h further) sends the second notification showing 18:01 local. Any later ETA sends nothing. AC-4: The address is at UTC+2 and the promised time is 1 March 23:00 local (21:00 UTC). A carrier ETA of 2 March 00:30 UTC is 3h30m late. A notification is sent showing 2 March 02:30 local, not 00:30 or 1 March.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions have the same requirements and acceptance criteria, all figures check out, and both fix both findings; Version 1's line breaks are easier to read, while Version 2 states the slip baseline slightly more explicitly, so neither is clearly better.",
+          "costUsd": 0.0194644
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions fix the missing non-UTC conversion test and state the first-notice ETA as the slip baseline, with the same correct figures and rules.",
+          "costUsd": 0.004774
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "haiku-5-5",
+      "model": "claude-haiku-5-5",
+      "mode": "rewrite",
+      "seconds": 10.1,
+      "costUsd": 0.00150895,
+      "outputTokens": 2533,
+      "document": "REQ-1: Send a delay notification when the carrier's latest ETA is more than 2 hours after the promised delivery time. Exactly 2 hours late does not trigger. REQ-2: The carrier ETA arrives in UTC. Compare it with the promised time as absolute instants. Show all times to the customer in the delivery address's local time, with the date. REQ-3: Send at most 2 notifications per shipment. The first is sent when REQ-1 is met. The second is sent only if a later ETA slips a further 2 hours beyond the ETA in the first notification. REQ-4: Always evaluate the carrier's latest ETA only. After the second notification, send nothing more for that shipment. AC-1: The address is at UTC+2 (illustrative) and the promised time is 14:00 local (12:00 UTC). A carrier ETA of 14:01 UTC is 2h01m late, so one notification is sent showing 16:01 local. AC-2: Same shipment, but the carrier ETA is 14:00 UTC, exactly 2h00m late. No notification is sent. AC-3: After AC-1's notification at 16:01 local, a new ETA of 16:01 UTC (18:01 local, exactly 2h further) sends nothing. A new ETA of 16:02 UTC (18:02 local) sends the second notification. Any later ETA sends nothing. AC-4: The address is at UTC+2 and the promised time is 1 March 23:00 local (21:00 UTC). A carrier ETA of 2 March 00:30 UTC is 3h30m late. A notification is sent showing 2 March 02:30 local, not 00:30 or 1 March.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [
+            "REQ-3 says the ETA must slip 'a further 2 hours' but never says whether exactly 2 hours triggers. AC-3 then silently treats exactly 2h00m as not triggering and 16:02 UTC as triggering. That is an unstated 'more than' reading of Q3 that the requirement does not support and that was not flagged for confirmation.",
+            "The requirements and criteria are run together in one paragraph, which makes them harder to read and review."
+          ],
+          "preferred": "1",
+          "reason": "Both versions fix the time-zone test gap and state the slip baseline, but Version 1 also makes the exactly-2-hours boundary explicit and consistent between REQ-3 and AC-3, and flags it for confirmation, whereas Version 2 decides that boundary silently in the test only.",
+          "costUsd": 0.02897
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [
+            "AC-3 withholds the second notice when the new ETA is exactly 2 hours beyond the first-notice ETA (16:01 UTC after 14:01 UTC) and requires 16:02 UTC. A further slip of exactly 2 hours should trigger that notice; only the first threshold is more than 2 hours."
+          ],
+          "preferred": "1",
+          "reason": "Version 1 states the slip baseline and correctly sends the second notice at exactly 2 further hours, while Version 2 requires the slip to exceed 2 hours.",
+          "costUsd": 0.00505
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "opus-5-edit",
+      "model": "claude-opus-5",
+      "mode": "edit",
+      "seconds": 44.7,
+      "costUsd": 0.1059325,
+      "outputTokens": 3750,
+      "document": "REQ-1: Send a delay notification when the carrier's latest ETA is more than 2 hours after the promised delivery time. Exactly 2 hours late does not trigger.\nREQ-2: Trust only the carrier's latest ETA, which arrives in UTC. Compare it with the promised time as absolute instants. Show all times to the customer in the delivery address's local time, with the date.\nREQ-3: Send at most 2 notifications per shipment. The first is sent when REQ-1 is met. The second is sent only if a later ETA slips a further 2 hours beyond the ETA shown in the first notification. The brief does not say whether exactly 2 hours further counts; this assumes 'more than', matching Q1, and needs confirmation.\nREQ-4: Always evaluate the carrier's latest ETA only. After the second notification, send nothing more for that shipment.\nAC-1: The address is at UTC+2 (illustrative) and the promised time is 14:00 local (12:00 UTC). A carrier ETA of 14:01 UTC is 2h01m late, so one notification is sent showing 16:01 local.\nAC-2: Same shipment, but the carrier ETA is 14:00 UTC, exactly 2h00m late. No notification is sent.\nAC-3: After AC-1's notification (ETA 16:01 local), a new ETA of 15:00 UTC (17:00 local, 59 minutes further) sends nothing, and a new ETA of 16:01 UTC (18:01 local, exactly 2h further) sends nothing. A new ETA of 16:02 UTC (18:02 local, 2h01m further) sends the second notification. Any later ETA sends nothing.\nAC-4: The address is at UTC+2 and the promised time is 1 March 23:00 local (21:00 UTC). A carrier ETA of 2 March 00:30 UTC is 3h30m late. A notification is sent showing 2 March 02:30 local, not 00:30 or 1 March.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions convert UTC ETAs to a UTC+2 address, including the 1 March to 2 March rollover, and state the slip baseline. All their figures check out, and each flags its differing reading of the exact-2-hour slip boundary for confirmation, so neither is clearly better for the requester.",
+          "costUsd": 0.0230204
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [
+            "REQ-3 and AC-3 treat a further slip of exactly 2 hours as not triggering. Q3 notifies when the new estimate slips by a further 2 hours, which includes exactly 2 hours, unlike Q1's more-than rule. AC-3 withholds the second notice at 16:01 UTC, exactly 2 hours after 14:01 UTC, and sends it only at 16:02 UTC."
+          ],
+          "preferred": "1",
+          "reason": "Version 1 is better because both fix the timezone test and state the slip baseline, but only Version 1 sends the second notice at a further slip of exactly 2 hours, which matches Q3.",
+          "costUsd": 0.005356
+        },
+        "fullIsVersion": "1"
+      }
+    }
+  ],
+  "failures": [],
+  "fastB": {
+    "model": "grok-4.20-0309-non-reasoning",
+    "draft": {
+      "seconds": 1.4,
+      "costUsd": 0,
+      "text": "REQ-1. Notify if carrier latest UTC ETA means delivery >2h after promised time in delivery address local time.\nREQ-2. Send at most 2 notifications per shipment: initial delay then only if slips further 2h.\nAC-1. Promised 2024-10-05 14:00 local; ETA 2024-10-05 17:30 UTC (local 16:30) sends 1st notice.\nAC-2. Later ETA 2024-10-05 20:00 UTC (local 19:00) sends 2nd notice.",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "1",
+          "reason": "Both drafts are arithmetically correct. Draft 1 is preferred because it tests the exact 2-hour boundaries for both the first notice and the further slip and caps notices at two. Its weakness is that it uses a zero UTC offset, whereas Draft 2 actually exercises the UTC-to-local conversion but omits boundary and no-third-notice cases.",
+          "costUsd": 0.018367
+        },
+        {
+          "judge": "grok",
+          "preferred": "1",
+          "reason": "Draft 1 better matches the facts by stating every rule and correctly testing the strict more-than-2-hour threshold, an exact further 2-hour second notice, and the two-notice cap, while Draft 2 only uses over-threshold examples and is less complete.",
+          "costUsd": 0.002536
+        }
+      ],
+      "baselineIs": "1"
+    },
+    "review": {
+      "seconds": 3.6,
+      "costUsd": 0,
+      "text": "D-A1 · P0 · Wrong threshold in AC-1\n  AC-1 states a 14:01 UTC ETA is 2h01m late from 12:00 UTC promised but this is actually a 2h01m delay; brief and Q1 require more than 2 hours after promised time to trigger, and exactly 2 hours must not trigger per REQ-1, but the example violates the 2-hour threshold rule.\nD-A2 · P0 · Incorrect date handling in AC-4\n  Promised 1 March 23:00 local (21:00 UTC), ETA 2 March 00:30 UTC is exactly 3.5 hours late but AC-4 claims 3h30m late which recomputes correctly only if dates align; notification must show 2 March 02:30 local per REQ-2 but example date math was not independently recomputed per rules.\nD-A3 · P1 · Unconfirmed assumption on exactly 2h\n  REQ-3 assumes 'more than' for the further 2-hour slip matching Q1 but explicitly notes this needs confirmation; draft must only use confirmed facts without flagging unconfirmed logic per rules to avoid stating uncertain rules.\nStrengths: AC-2 correctly applies the more-than-2-hours rule by not notifying on an exact 2h00m delay.",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "1",
+          "realBaseline": 0,
+          "falseBaseline": 0,
+          "realFast": 0,
+          "falseFast": 3,
+          "reason": "Review 1 is more useful: the draft checks out (AC-1 12:00 to 14:01 UTC is 2h01m late, shown as 16:01 local; AC-2 is exactly 2h00m and correctly silent; AC-3 has 16:01 UTC exactly 2h further and silent, 16:02 UTC triggers, 18:01 and 18:02 local; AC-4 21:00 UTC 1 March to 00:30 UTC 2 March is 3h30m, shown as 02:30 local 2 March), while all three Review 2 findings are wrong: D-A1 contradicts itself, D-A2 confirms the math it calls incorrect, and D-A3 faults a properly flagged open question.",
+          "costUsd": 0.024315
+        },
+        {
+          "judge": "grok",
+          "preferred": "1",
+          "realBaseline": 0,
+          "falseBaseline": 0,
+          "realFast": 0,
+          "falseFast": 3,
+          "reason": "Review 1 correctly finds no defects, while all three Review 2 findings invent problems in examples and an assumption note that match the stated rules.",
+          "costUsd": 0.003558
+        }
+      ],
+      "baselineIs": "1"
+    }
+  }
+}

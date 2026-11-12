@@ -1,0 +1,312 @@
+{
+  "id": "fmcg-build",
+  "baseline": {
+    "mergeSeconds": 13.6,
+    "mergeCostUsd": 0.039942,
+    "draftBSeconds": 70.4,
+    "draftBCostUsd": 0.002936,
+    "reviewASeconds": 118,
+    "reviewACostUsd": 0.003538
+  },
+  "merges": [
+    {
+      "variant": "opus-5-5",
+      "model": "claude-opus-5-5",
+      "mode": "rewrite",
+      "seconds": 13.4,
+      "costUsd": 0.039638,
+      "outputTokens": 1480,
+      "document": "REQ-1 For each distributor and product, calculate days of cover as stock on hand divided by average daily sell-out. Average daily sell-out is the distributor's total sell-out over the last 4 weeks (28 days) divided by 28.\nREQ-2 Raise an alert in the distributor portal when days of cover is 7 or less, meaning the distributor is likely to run out within a week. Exactly 7.0 days triggers an alert, because that stock lasts no more than a week. Assumption to confirm with National sales operations.\nREQ-3 Send the alert to the area sales manager responsible for the distributor, at most once per distributor per product per day.\nREQ-4 In v1, seasonal products follow the same rule as all other products; separate seasonal handling is logged as a proposal only. Assumption to confirm: the rule applies to all products, because no definition of fast-moving was given. Ask the requester whether a fast-moving filter is needed and how it is defined.\nREQ-5 If 4-week sell-out is zero, days of cover is undefined and no alert is sent. Assumption to confirm with National sales operations.\nAC-1 Given stock on hand of 120 units and 4-week sell-out of 560 units, average daily sell-out is 560 / 28 = 20, so days of cover is 120 / 20 = 6.0. Because 6.0 is 7 or less, the area sales manager receives an alert.\nAC-2 Given stock on hand of 140 units and 4-week sell-out of 560 units, days of cover is 140 / 20 = 7.0. Because 7.0 is 7 or less, an alert is sent.\nAC-3 Given stock on hand of 160 units and 4-week sell-out of 560 units, days of cover is 160 / 20 = 8.0. Because 8.0 is more than 7, no alert is sent.\nAC-4 Given the AC-1 case is evaluated twice on the same day, the area sales manager receives exactly one alert for that distributor and product that day. If the condition still holds the next day, one new alert is sent.\nAC-5 Given stock on hand of 50 units and 4-week sell-out of 0 units, days of cover is undefined and no alert is sent. No error is raised.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "equal",
+          "reason": "Both versions include exactly 7.0 days in the alert, define and test the zero-sales case, raise the fast-moving scope question, and compute every figure correctly (560/28 = 20; 120/20 = 6, 140/20 = 7 and 160/20 = 8), so neither is materially better for the requester.",
+          "costUsd": 0.018638
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "1",
+          "reason": "Version 1 is better because it treats the brief's within-a-week threshold and the confirmed seasonal rule as settled and isolates only the unanswered zero-sales and fast-moving questions as assumptions, while Version 2 hedges the required seven-day boundary and mixes the open fast-moving question into the seasonal requirement.",
+          "costUsd": 0.005404
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "sonnet-5-5",
+      "model": "claude-sonnet-5-5",
+      "mode": "rewrite",
+      "seconds": 13.5,
+      "costUsd": 0.023539,
+      "outputTokens": 1852,
+      "document": "REQ-1 For each distributor and product, calculate days of cover as stock on hand divided by average daily sell-out. Average daily sell-out is the distributor's total sell-out over the last 4 weeks (28 days) divided by 28.\nREQ-2 Raise an alert in the distributor portal when days of cover is 7 or less, meaning the distributor is likely to run out within a week. Exactly 7.0 days triggers an alert. Assumption to confirm with National sales operations: the 7-day threshold is inclusive.\nREQ-3 Send the alert to the area sales manager responsible for the distributor, at most once per distributor per product per day.\nREQ-4 In v1, seasonal products follow the same rule as all other products; separate seasonal handling is logged as a proposal only.\nREQ-5 Assumption to confirm: if 4-week sell-out is zero, days of cover is undefined and no alert is sent.\nREQ-6 Assumption to confirm: no definition of fast-moving was given, so all products are in scope in v1 and no fast-moving filter is applied.\nAC-1 Given stock on hand of 120 units and 4-week sell-out of 560 units, average daily sell-out is 560 / 28 = 20, so days of cover is 120 / 20 = 6.0. Because 6.0 is 7 or less, the area sales manager receives an alert.\nAC-2 Given stock on hand of 300 units and 4-week sell-out of 840 units, average daily sell-out is 840 / 28 = 30, so days of cover is 300 / 30 = 10.0. Because 10.0 is above 7, no alert is sent.\nAC-3 Given the AC-1 case is evaluated twice on the same day, the area sales manager receives exactly one alert for that distributor and product that day. If the condition still holds the next day, one new alert is sent.\nAC-4 Given stock on hand of 140 units and 4-week sell-out of 560 units, days of cover is 140 / 20 = 7.0. An alert is sent, per the REQ-2 boundary.\nAC-5 Given stock on hand of 50 units and 4-week sell-out of 0 units, days of cover is undefined, no alert is sent and no error occurs.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "1",
+          "reason": "Both versions are correct and address every finding, but Version 1 is slightly better because it tests just above the threshold (8.0 days) rather than 10.0 and explicitly prompts the requester to define fast-moving, while Version 2's only edge is flagging the inclusive threshold as an assumption.",
+          "costUsd": 0.022466
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "1",
+          "reason": "Version 1 is better because it tests the alert at 6.0 and 7.0 and no alert at the adjacent 8.0 boundary, and it asks how fast-moving is defined, while both versions correctly include cover of 7, define the zero-sales case, and match the stated audience, cap, and seasonal rules.",
+          "costUsd": 0.005448
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "haiku-5-5",
+      "model": "claude-haiku-5-5",
+      "mode": "rewrite",
+      "seconds": 11,
+      "costUsd": 0.00160045,
+      "outputTokens": 2699,
+      "document": "REQ-1 For each distributor and product, calculate days of cover as stock on hand divided by average daily sell-out. Average daily sell-out is the distributor's total sell-out over the last 4 weeks (28 days) divided by 28. Scope in v1 is all products; National sales operations to confirm that no further fast-moving filter applies. REQ-2 Raise an alert when days of cover is 7.0 or less, meaning the distributor is likely to run out within a week. REQ-3 Send the alert to the area sales manager responsible for the distributor, at most once per distributor per product per day. REQ-4 In v1, seasonal products follow the same rule as all other products; separate seasonal handling is logged as a proposal only. REQ-5 If 4-week sell-out is zero, days of cover is undefined; no alert is sent and no error is raised. Assumption to confirm with National sales operations. AC-1 Stock on hand 120 and 4-week sell-out 560: average daily sell-out 20, days of cover 6.0, alert sent. AC-2 Stock on hand 300 and 4-week sell-out 840: average 30, days of cover 10.0, no alert. AC-3 The AC-1 case evaluated twice on the same day gives exactly one alert that day; if the condition still holds the next day, one new alert is sent. AC-4 Stock on hand 140 and 4-week sell-out 560: average 20, days of cover 7.0, alert sent. AC-5 Stock on hand 8 and 4-week sell-out 28: average 1, days of cover 8.0, no alert. AC-6 Stock on hand 50 and 4-week sell-out 0: no alert and no error.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [
+            "REQ-3 drops the distributor portal as the alert channel, although the deliverable is an alert in the distributor portal."
+          ],
+          "preferred": "1",
+          "reason": "Both versions address every finding and all their figures check out (560/28=20, 120/20=6.0, 140/20=7.0, 160/20=8.0, 840/28=30, 300/30=10.0, 28/28=1, 8/1=8.0), but Version 1 keeps the portal as the alert channel and sets out its requirements and boundary tests more clearly.",
+          "costUsd": 0.025766
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [
+            "The alert is never specified as being delivered in the distributor portal, which the deliverable requires."
+          ],
+          "preferred": "1",
+          "reason": "Both versions fix the seven-day boundary, zero-sales case, and fast-moving scope, but only Version 1 places the alert in the distributor portal as required.",
+          "costUsd": 0.00512
+        },
+        "fullIsVersion": "1"
+      }
+    },
+    {
+      "variant": "opus-5-edit",
+      "model": "claude-opus-5",
+      "mode": "edit",
+      "seconds": 23.2,
+      "costUsd": 0.0628075,
+      "outputTokens": 2008,
+      "document": "REQ-1 For each distributor and product, calculate days of cover as stock on hand divided by average daily sell-out. Average daily sell-out is the distributor's total sell-out over the last 4 weeks (28 days) divided by 28.\nREQ-2 Raise an alert in the distributor portal when days of cover is 7 or less, meaning the distributor is likely to run out within a week. Exactly 7.0 days is inside the window and does trigger an alert.\nREQ-3 Send the alert to the area sales manager responsible for the distributor, at most once per distributor per product per day.\nREQ-4 If the 4-week sell-out total is zero, average daily sell-out is zero and days of cover is undefined; no alert is sent.\nREQ-5 In v1, seasonal products follow the same rule as all other products; separate seasonal handling is logged as a proposal only.\nREQ-6 In v1, all products are in scope, because no definition of fast-moving was supplied. Open question for National sales operations: confirm all products, or supply the fast-moving filter.\nAC-1 Given stock on hand of 120 units and 4-week sell-out of 560 units, average daily sell-out is 560 / 28 = 20, so days of cover is 120 / 20 = 6.0. Because 6.0 is 7 or less, the area sales manager receives an alert.\nAC-2 Given stock on hand of 300 units and 4-week sell-out of 840 units, average daily sell-out is 840 / 28 = 30, so days of cover is 300 / 30 = 10.0. Because 10.0 is above 7, no alert is sent.\nAC-3 Given the AC-1 case is evaluated twice on the same day, the area sales manager receives exactly one alert for that distributor and product that day. If the condition still holds the next day, one new alert is sent.\nAC-4 Given stock on hand of 140 units and 4-week sell-out of 560 units, average daily sell-out is 20, so days of cover is 140 / 20 = 7.0. Because 7.0 is 7 or less, an alert is sent.\nAC-5 Given stock on hand of 50 units and 4-week sell-out of 0 units, average daily sell-out is 0, days of cover is undefined, and no alert is sent and no error is shown.",
+      "judges": {
+        "claude": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [
+            "REQ-4 states the zero-sales behaviour (no alert) as a settled rule, but the requester never decided it; it is not flagged as an assumption to confirm with National sales operations.",
+            "The upper boundary test jumps from 7.0 to 10.0 cover, so the case just above 7 days is not tested (minor)."
+          ],
+          "preferred": "1",
+          "reason": "Both versions fix all three findings with correct arithmetic, but Version 1 flags the zero-sales rule as an assumption to confirm and tests the threshold tightly at 6, 7 and 8 days, while Version 2 asserts an unconfirmed rule.",
+          "costUsd": 0.020294
+        },
+        "grok": {
+          "findings": [
+            {
+              "id": "D-A1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B1",
+              "version1": "addressed",
+              "version2": "addressed"
+            },
+            {
+              "id": "D-B2",
+              "version1": "addressed",
+              "version2": "addressed"
+            }
+          ],
+          "errorsInVersion1": [],
+          "errorsInVersion2": [],
+          "preferred": "1",
+          "reason": "Version 1 is better because it tests both immediate sides of the one-week threshold, including no alert at 8.0, while Version 2 only shows a non-alert at 10.0 and would still pass an off-by-one that alerts at 8 days.",
+          "costUsd": 0.005432
+        },
+        "fullIsVersion": "1"
+      }
+    }
+  ],
+  "failures": [],
+  "fastB": {
+    "model": "grok-4.20-0309-non-reasoning",
+    "draft": {
+      "seconds": 1.7,
+      "costUsd": 0,
+      "text": "REQ-1: Alert triggers when days of cover (stock on hand / avg daily sales from last 4 weeks) is 7 or less.\nREQ-2: Area sales manager receives at most 1 alert per distributor per product per day.\nREQ-3: Seasonal products use same logic in v1; flag as future proposal.\nAC-1: If last 4wk sales=280 units (avg 10/day) and stock=50 then days cover=5; alert fires.\nAC-2: If days cover=8 then no alert sent.",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "1",
+          "reason": "Draft 1 is preferred because it states that sell-out is the sales basis, defines the daily average explicitly as the 4-week total divided by 28, and tests the exact 7-day boundary and the once-per-day limit. Draft 2's numbers are correct (280/28 = 10 per day, 50/10 = 5 days of cover), but it has no acceptance test for the daily limit and uses vaguer wording such as 'sales'. Neither draft says what happens when average daily sales is zero.",
+          "costUsd": 0.011495
+        },
+        {
+          "judge": "grok",
+          "preferred": "1",
+          "reason": "Draft 1 better meets the brief because it puts the alert in the distributor portal, defines days of cover as stock divided by the last 4 weeks of sell-out over 28 days, names the area sales manager and the once-per-day cap, and tests the 7-day boundary, the no-alert case, and the frequency rule, while Draft 2 omits the portal and does not test the daily cap.",
+          "costUsd": 0.002798
+        }
+      ],
+      "baselineIs": "1"
+    },
+    "review": {
+      "seconds": 3.7,
+      "costUsd": 0,
+      "text": "D-A1 · P0 · Wrong threshold in REQ-2\n  Brief requires alert when likely to run out within a week i.e. days of cover below 7; draft incorrectly sets threshold at below 7 instead of <=7 and adds unrequested assumption.\nD-A2 · P0 · Incorrect AC-1 calculation\n  4-week sell-out of 560 over 28 days is 20 per day; 120/20 equals exactly 6, not 6.0 as written. Wrong figure violates recompute-every-number rule.\nD-A3 · P0 · Wrong figure in AC-4\n  140 divided by 20 equals exactly 7, not 7.0. Every number must be recomputed; wrong figure is P0 regardless of size.\nD-A4 · P1 · Undefined zero-sellout handling\n  REQ-1 and Q1 facts give no rule for zero sell-out; AC-4 assumption on undefined case was never asked or answered and should be removed or confirmed.\nStrengths: AC-3 correctly implements the at-most-once-per-day rule from Q3.",
+      "verdicts": [
+        {
+          "judge": "claude",
+          "preferred": "1",
+          "realBaseline": 1,
+          "falseBaseline": 0,
+          "realFast": 1,
+          "falseFast": 3,
+          "reason": "All figures check out (560/28=20, 120/20=6; 840/28=30, 300/30=10; 140/20=7). The only real issue is the 7.0 boundary: AC-4 tests no alert at exactly 7 days, which settles an assumption that has not yet been confirmed. Review 1 raises this point cleanly. Review 2's D-A1 reaches the same point, but its reasoning contradicts itself and it wrongly calls the flagged assumption unrequested. Its D-A2 and D-A3 invent errors, since 6 versus 6.0 and 7 versus 7.0 are the same value. Its D-A4 misplaces the zero sell-out assumption: it is in REQ-4, not AC-4, and is already properly flagged for confirmation. Review 1 is more useful because it gives the author the one real issue with no noise.",
+          "costUsd": 0.024935
+        },
+        {
+          "judge": "grok",
+          "preferred": "1",
+          "realBaseline": 1,
+          "falseBaseline": 0,
+          "realFast": 0,
+          "falseFast": 4,
+          "reason": "Review 1 correctly flags that exactly 7 days of cover is inside a week and must not be excluded before the assumption is confirmed, while Review 2 contradicts itself on that threshold and invents errors in the correct 6.0 and 7.0 results and in a mis-cited AC-4 zero-sell-out assumption.",
+          "costUsd": 0.003894
+        }
+      ],
+      "baselineIs": "1"
+    }
+  }
+}
