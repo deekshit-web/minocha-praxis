@@ -346,6 +346,40 @@
         .scoreboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .phases { margin-left: 0; }
       }
+      /* Architecture diagram: a data-flow view with the area that will change in gold. */
+      .archdiagram { margin: 12px 0 6px; }
+      .archdiagram .cap { margin: 0 0 6px; font-size: 13.5px; font-weight: 650; color: var(--accent-ink); }
+      .archdiagram svg { width: 100%; height: auto; display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+      .archdiagram .shape { stroke-width: 1.5; }
+      .archdiagram .n-new .shape { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 2.5; }
+      .archdiagram .n-modify .shape { fill: #fff; stroke: var(--accent-ink); stroke-width: 2.5; stroke-dasharray: 7 4; }
+      .archdiagram .n-context .shape { fill: #f4f0ea; stroke: #c9c2b6; }
+      .archdiagram .bar { stroke: #c9c2b6; stroke-width: 1.5; }
+      .archdiagram .n-new .bar { stroke: var(--accent); }
+      .archdiagram .n-modify .bar { stroke: var(--accent-ink); }
+      .archdiagram text { font-family: ui-sans-serif, system-ui, sans-serif; fill: var(--ink); }
+      .archdiagram .lbl { font-size: 12.5px; font-weight: 700; }
+      .archdiagram .sub { font-size: 11px; fill: var(--muted); }
+      .archdiagram .file { font: 10px ui-monospace, Menlo, Consolas, monospace; fill: var(--accent-ink); }
+      .archdiagram .n-context .lbl { fill: #6b645a; }
+      .archdiagram .tag { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; fill: var(--accent-ink); }
+      .archdiagram .n-context .tag { fill: #8a8378; }
+      .archdiagram .edge { stroke: #7a7268; stroke-width: 1.4; fill: none; }
+      .archdiagram .edge.late { stroke: var(--charcoal); stroke-width: 1.8; }
+      .archdiagram .elabel { font-size: 10.5px; fill: #4a443c; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+      .archdiagram .pin text { font-size: 9.5px; font-weight: 700; fill: #fff; }
+      .archdiagram .pin.find rect { fill: var(--clay); }
+      .archdiagram .pin.fix rect { fill: var(--charcoal); }
+      .archdiagram .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
+      .archdiagram .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .archdiagram .legend i { display: inline-block; width: 18px; height: 12px; border: 2px solid; }
+      .archdiagram .legend i.new { background: var(--accent-tint); border-color: var(--accent); }
+      .archdiagram .legend i.modify { background: #fff; border-color: var(--accent-ink); border-style: dashed; }
+      .archdiagram .legend i.context { background: #f4f0ea; border-color: #c9c2b6; border-width: 1.5px; }
+      .archdiagram .legend i.round { border-radius: 6px; }
+      .archdiagram ul.files { list-style: none; margin: 8px 0 0; padding: 0; font: 12.5px ui-monospace, Menlo, Consolas, monospace; }
+      .archdiagram ul.files li { padding: 2px 0; }
+      .archdiagram ul.files b { display: inline-block; min-width: 64px; font: 700 10.5px ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.06em; color: var(--accent-ink); }
     </style>
   </head>
   <body>
@@ -419,9 +453,16 @@
           <button type="button" id="play" class="primary">▶ Play</button>
           <button type="button" id="next">Next step ▸</button>
           <select id="speed" aria-label="Replay speed">
-            <option value="10">10×</option>
+            <option value="3">3×</option>
+            <option value="5">5×</option>
+            <option value="10" selected>10×</option>
             <option value="30">30×</option>
-            <option value="60" selected>60×</option>
+            <option value="60">60×</option>
+          </select>
+          <select id="pausemode" aria-label="When to pause">
+            <option value="stage" selected>Pause at each stage</option>
+            <option value="step">Pause at each step</option>
+            <option value="off">Run straight through</option>
           </select>
           <button type="button" id="restart">Restart</button>
           <button type="button" id="see-output">See the output ▾</button>
@@ -552,7 +593,7 @@
       let runId = null;
       let logKey = "";
       let scrollToOutput = false;
-      const play = { index: 0, progress: 0, playing: false, speed: 60, last: 0, frame: 0, drawn: 0, approved: new Set() };
+      const play = { index: 0, progress: 0, playing: false, speed: 10, last: 0, frame: 0, drawn: 0, approved: new Set() };
 
       const byId = (id) => document.getElementById(id);
       function text(id, value) { byId(id).textContent = value ?? ""; }
@@ -942,6 +983,159 @@
         return at >= 1 ? 1 : curve[Math.floor(at * curve.length)];
       }
 
+      // The architecture diagram. Written by hand from the recorded design (packages/studio/src/diagrams.ts), not by a model.
+      const DIAGRAM = { w: 1124, h: 354, nodeW: 200, nodeH: 78, colX: 300, rowY: 120, left: 12, top: 18 };
+      function svgEl(tag, attrs, content) {
+        const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+        for (const key of Object.keys(attrs || {})) node.setAttribute(key, attrs[key]);
+        if (content !== undefined) node.textContent = content;
+        return node;
+      }
+      function fitText(node, value, width, perChar) {
+        if (value.length * perChar > width) {
+          node.setAttribute("textLength", String(width));
+          node.setAttribute("lengthAdjust", "spacingAndGlyphs");
+        }
+      }
+      function wrapLabel(label, max) {
+        const parts = label.split(" · ");
+        if (parts.length > 1 && parts.every((part) => part.length <= max)) return parts;
+        const lines = [];
+        let line = "";
+        for (const word of label.split(" ")) {
+          if (line && (line + " " + word).length > max) {
+            lines.push(line);
+            line = word;
+          } else line = line ? line + " " + word : word;
+        }
+        if (line) lines.push(line);
+        return lines;
+      }
+      function archViewOf(stepId) {
+        return { archDraft: "draft", archReview: "review", archFinal: "final", archApprove: "final" }[stepId] || null;
+      }
+      function archDiagram(view) {
+        const d = flow.diagram;
+        const nodes = d.nodes.filter((node) => view === "final" || !node.since);
+        const edges = d.edges.filter((edge) => view === "final" || !edge.since);
+        const byNode = {};
+        for (const node of nodes) byNode[node.id] = Object.assign({ x: DIAGRAM.left + node.col * DIAGRAM.colX, y: DIAGRAM.top + node.row * DIAGRAM.rowY }, node);
+        const findings = nodes.filter((node) => node.finding).length;
+        const wrap = document.createElement("div");
+        wrap.className = "archdiagram";
+        const cap = document.createElement("p");
+        cap.className = "cap";
+        cap.textContent =
+          view === "draft"
+            ? "Model A's draft: where the change goes. The gold area is code that will change. Grey stays as it is."
+            : view === "review"
+              ? findings
+                ? "Model B's review, pinned to the draft. A red tag shows where a finding lands."
+                : "Model B's review found no defects in this design, so nothing is pinned."
+              : "The approved design. Its file fence allows changes only in the gold area. Nothing else may change.";
+        const svg = svgEl("svg", { viewBox: "0 0 " + DIAGRAM.w + " " + DIAGRAM.h, role: "img", "aria-label": d.summary });
+        svg.appendChild(svgEl("title", {}, d.summary));
+        const defs = svgEl("defs");
+        const marker = svgEl("marker", { id: "arch-arrow", viewBox: "0 0 10 10", refX: "9", refY: "5", markerWidth: "7", markerHeight: "7", orient: "auto-start-reverse" });
+        marker.appendChild(svgEl("path", { d: "M0 0 L10 5 L0 10 z", fill: "#5f574d" }));
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+        const W = DIAGRAM.nodeW;
+        const H = DIAGRAM.nodeH;
+        for (const edge of edges) {
+          const a = byNode[edge.from];
+          const b = byNode[edge.to];
+          if (!a || !b) continue;
+          const ax = a.x + W / 2;
+          const ay = a.y + H / 2;
+          const bx = b.x + W / 2;
+          const by = b.y + H / 2;
+          const dx = bx - ax;
+          const dy = by - ay;
+          const t = Math.min(dx === 0 ? Infinity : W / 2 / Math.abs(dx), dy === 0 ? Infinity : H / 2 / Math.abs(dy));
+          const gap = 3 / Math.hypot(dx, dy);
+          const x1 = ax + dx * (t + gap);
+          const y1 = ay + dy * (t + gap);
+          const x2 = bx - dx * (t + gap);
+          const y2 = by - dy * (t + gap);
+          const line = svgEl("line", { x1, y1, x2, y2, class: "edge" + (edge.since ? " late" : ""), "marker-end": "url(#arch-arrow)" });
+          if (edge.both) line.setAttribute("marker-start", "url(#arch-arrow)");
+          svg.appendChild(line);
+          const mx = (x1 + x2) / 2;
+          const my = (y1 + y2) / 2;
+          if (Math.abs(dx) < Math.abs(dy) * 0.2) {
+            // A vertical edge has a short gap, so its label sits beside the line.
+            svg.appendChild(svgEl("text", { x: mx + 8, y: my + 3.5, class: "elabel" }, edge.label));
+          } else {
+            const lines = wrapLabel(edge.label, 15);
+            const text = svgEl("text", { x: mx, y: my - (lines.length - 1) * 6 + 3.5, class: "elabel", "text-anchor": "middle" });
+            lines.forEach((line, index) => {
+              const span = svgEl("tspan", { x: mx, dy: index === 0 ? 0 : 12 }, line);
+              text.appendChild(span);
+            });
+            svg.appendChild(text);
+          }
+        }
+        const tagText = { new: "NEW", modify: "CHANGES", context: "NOT CHANGED" };
+        for (const node of Object.values(byNode)) {
+          const g = svgEl("g", { class: "n-" + node.area });
+          g.appendChild(svgEl("title", {}, node.label + ": " + (view === "final" ? node.sub : node.draftSub || node.sub) + (node.file ? " (" + node.file + ")" : "")));
+          g.appendChild(svgEl("rect", { x: node.x, y: node.y, width: W, height: H, rx: node.kind === "process" ? 14 : 3, class: "shape" }));
+          if (node.kind === "store") g.appendChild(svgEl("line", { x1: node.x + 16, y1: node.y, x2: node.x + 16, y2: node.y + H, class: "bar" }));
+          const left = node.x + (node.kind === "store" ? 26 : 14);
+          const room = W - (left - node.x) - 10;
+          const label = svgEl("text", { x: left, y: node.y + 27, class: "lbl" }, node.label);
+          fitText(label, node.label, room, 7.3);
+          const subValue = view === "final" ? node.sub : node.draftSub || node.sub;
+          const sub = svgEl("text", { x: left, y: node.y + 45, class: "sub" }, subValue);
+          fitText(sub, subValue, room, 5.9);
+          g.append(label, sub);
+          if (node.file) {
+            const base = node.file.split("/").pop();
+            const file = svgEl("text", { x: left, y: node.y + 64, class: "file" }, base);
+            fitText(file, base, room, 6);
+            g.appendChild(file);
+          }
+          g.appendChild(svgEl("text", { x: node.x + W - 4, y: node.y - 5, class: "tag", "text-anchor": "end" }, tagText[node.area]));
+          const pin = (text, kind, width) => {
+            const p = svgEl("g", { class: "pin " + kind });
+            p.appendChild(svgEl("rect", { x: node.x - 4, y: node.y - 11, width, height: 17, rx: 8.5 }));
+            p.appendChild(svgEl("text", { x: node.x - 4 + width / 2, y: node.y + 1, "text-anchor": "middle" }, text));
+            g.appendChild(p);
+          };
+          if (view === "review" && node.finding) pin(node.finding + " finding", "find", 74);
+          if (view === "final" && node.fixedBy) pin("fixes " + node.fixedBy, "fix", 62);
+          svg.appendChild(g);
+        }
+        const legend = document.createElement("div");
+        legend.className = "legend";
+        for (const [cls, text] of [["new", "New file"], ["modify", "Existing file that changes"], ["context", "Stays as it is"]]) {
+          const item = document.createElement("span");
+          const swatch = document.createElement("i");
+          swatch.className = cls;
+          item.append(swatch, document.createTextNode(text));
+          legend.appendChild(item);
+        }
+        const shapes = document.createElement("span");
+        shapes.textContent = "Square: person or system · Rounded: code · Bar: stored data";
+        legend.appendChild(shapes);
+        wrap.append(cap, svg, legend);
+        const files = nodes.filter((node) => node.file);
+        if (files.length) {
+          const list = document.createElement("ul");
+          list.className = "files";
+          for (const node of files) {
+            const li = document.createElement("li");
+            const tag = document.createElement("b");
+            tag.textContent = node.area === "new" ? "NEW" : "CHANGES";
+            li.append(tag, document.createTextNode(node.file));
+            list.appendChild(li);
+          }
+          wrap.appendChild(list);
+        }
+        return wrap;
+      }
+
       function renderDetail() {
         const detail = byId("detail");
         const id = selected || (flow.steps[play.index] && (play.playing || play.progress > 0) ? flow.steps[play.index].id : null);
@@ -1133,6 +1327,7 @@
             box.className = "approving";
             box.textContent = approvingText(step);
             detail.append(title, box);
+            if (step.id === "archApprove" && flow.diagram) detail.appendChild(archDiagram("final"));
           }
           const turn = document.createElement("div");
           turn.className = "yourturn";
@@ -1161,6 +1356,7 @@
             detail.appendChild(note);
           }
           if (state === "running") pre.scrollTop = pre.scrollHeight;
+          if (state === "done" && flow.diagram && archViewOf(step.id)) detail.appendChild(archDiagram(archViewOf(step.id)));
         }
       }
 
@@ -1853,7 +2049,9 @@
       // The moments a visitor must not miss stay on screen longer: live decisions, catches, checks and test runs.
       function displayMs(step) {
         const key = step.actor === "jev-1.14.0" || step.verdict === "flagged" || step.id === "checks" || step.id === "testsRed" || step.id === "unitRun";
-        return Math.max(key ? 3500 : MIN_DISPLAY_MS, (step.seconds * 1000) / play.speed);
+        // At a slow speed every step stays long enough to explain. At a fast speed the old floor applies.
+        const slow = play.speed <= 5 ? 2 : play.speed <= 10 ? 1.6 : 1;
+        return Math.max((key ? 3500 : MIN_DISPLAY_MS) * slow, (step.seconds * 1000) / play.speed);
       }
 
       function advance() {
@@ -1867,6 +2065,10 @@
         play.blocked = false;
         play.index += 1;
         play.progress = 0;
+        // The presenter chooses where playback waits, so each stage or step can be explained before it moves on.
+        const next = flow.steps[play.index];
+        const pauseMode = byId("pausemode").value;
+        if (play.playing && next && current && (pauseMode === "step" || (pauseMode === "stage" && next.stage !== current.stage))) stop();
         if (play.index >= flow.steps.length) {
           stop();
           if (!outputShown) scrollToOutput = true;

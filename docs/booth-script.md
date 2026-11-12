@@ -9,7 +9,9 @@ whenever they like. Say it your own way. The quoted lines are only a guide to th
 ## Before they arrive
 
 - Open the site on a laptop at least 1400 px wide. Choose **Technical** (top right).
-- Pick **Financial services**, then **Ship a loan pre-qualification check**. Set the speed to **60×**. Leave it on
+- Pick **Financial services**, then **Ship a loan pre-qualification check**. The speed is **10×** and the pause setting is
+  **Pause at each stage**, so Play stops at the start of each stage and you can explain it. Press **Space** or
+  **Resume** to go on. Use **Pause at each step** to stop after every step, or **3×** and **5×** for a slower pace. Leave it on
   step 1 ("1 of 35 · The brief").
 - What you'll see, top to bottom: the **Proof** box (folded to one line), the domain and workflow pickers, three model cards
   (Model A Builder, Model B Checker, Model C Decider), a row of 8 stages (PRD to Deployment), five tiles (Step,
@@ -119,7 +121,11 @@ Click **Reset figures**, then approve the PRD (**A**).
 
 ## 7. Design before code (20 s)
 
-Press **2** for Architecture. Model A designs. **B reviews it** raises **AR-1 · P0**: on a pass the contract returns
+Press **2** for Architecture. Model A designs, and a data-flow diagram opens under the step. The gold boxes are the
+code that will change: a dashed border is an existing file, a solid one is a new file. Grey boxes stay as they are.
+After **B reviews it**, a red tag shows where a finding lands. After **Revise**, a dark tag shows what the revision
+added. The diagram is drawn by hand from the recorded design, and a test checks its file names against it.
+On the finance build, **B reviews it** raises **AR-1 · P0**: on a pass the contract returns
 no reason, but the requirements promise every applicant a reason in plain words. Model A revises, and the conflict
 goes to the credit-risk lead. Approve the design.
 

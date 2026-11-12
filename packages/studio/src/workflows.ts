@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import * as z from "zod/v4";
 import { type BuildRecording, buildRecordingFor } from "./build.ts";
+import { ARCH_DIAGRAMS, type ArchDiagram } from "./diagrams.ts";
 import { type Recording, recordingFor, renderFix, renderMerge, renderReview } from "./record.ts";
 
 /**
@@ -187,6 +188,8 @@ export interface Workflow {
   stages: string[];
   /** Where two steps are walled off from each other: the two drafts, and in a build the tests and the code. */
   walls: Array<{ phase: number; col: number; span: number; label: string }>;
+  /** For a build: a data-flow diagram of the design, with the area that will change marked. */
+  diagram: ArchDiagram | null;
   steps: Step[];
   estimatedCostUsd: number;
   estimatedSeconds: number;
@@ -658,6 +661,7 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
     lowRiskRequest: LOW_RISK_REQUEST[spec.domain],
     stages: (spec.kind === "build" ? BUILD_STAGES : DOCUMENT_STAGES).filter((name) => steps.some((item) => item.stage === name)),
     walls,
+    diagram: spec.kind === "build" ? (ARCH_DIAGRAMS[spec.id] ?? null) : null,
     steps,
     estimatedCostUsd: models.reduce((total, item) => total + (item.estimatedCostUsd ?? 0), 0),
     estimatedSeconds: steps.reduce((total, item) => total + item.seconds, 0),
