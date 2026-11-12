@@ -21,11 +21,15 @@
     "live-dry-run": "node scripts/live-build-dry-run.mjs",
     "judging-prepare": "node scripts/judging.mjs prepare",
     "judging-analyze": "node scripts/judging.mjs analyze",
-    "live-build-mutation": "node scripts/live-build-mutation.mjs"
+    "live-build-mutation": "node scripts/live-build-mutation.mjs",
+    "railway-plan": "NODE_OPTIONS=--import=tsx railway config plan",
+    "railway-apply": "NODE_OPTIONS=--import=tsx railway config apply"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "esbuild": "^0.28.2",
+    "railway": "^3.16.0",
+    "tsx": "^4.23.15",
     "typescript": "~5.9.3"
   }
 }
