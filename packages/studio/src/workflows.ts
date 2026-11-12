@@ -661,7 +661,8 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
     lowRiskRequest: LOW_RISK_REQUEST[spec.domain],
     stages: (spec.kind === "build" ? BUILD_STAGES : DOCUMENT_STAGES).filter((name) => steps.some((item) => item.stage === name)),
     walls,
-    diagram: spec.kind === "build" ? (ARCH_DIAGRAMS[spec.id] ?? null) : null,
+    // A hand-drawn diagram for the five demo builds, or the one Model A drew for a live build and the check accepted.
+    diagram: spec.kind === "build" ? (ARCH_DIAGRAMS[spec.id] ?? spec.buildRecording?.diagram ?? null) : null,
     steps,
     estimatedCostUsd: models.reduce((total, item) => total + (item.estimatedCostUsd ?? 0), 0),
     estimatedSeconds: steps.reduce((total, item) => total + item.seconds, 0),

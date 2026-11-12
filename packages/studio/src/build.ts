@@ -2,6 +2,7 @@ import { CLAUDE_MODEL, ClaudeModel, GROK_MODEL, GrokModel, type ModelProvider, t
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as z from "zod/v4";
+import { ArchDiagramSchema, generateDiagram } from "./diagramGen.ts";
 import { type TestOutcome, runIsolated } from "./isolate.ts";
 import { type RecordedCall, Review, renderReview } from "./record.ts";
 import type { WorkflowSpec } from "./workflows.ts";
@@ -56,6 +57,10 @@ export const BuildRecordingSchema = z.object({
   runs: z.array(z.object({ round: z.number(), code: z.string(), acceptance: z.string(), unit: z.string(), failing: z.number() })),
   fixes: z.array(z.object({ round: z.number(), change: z.string() })),
   finalCode: z.string(),
+  /** Drawn by Model A and checked against the design, for a build that has no hand-drawn diagram. */
+  diagram: ArchDiagramSchema.optional(),
+  /** What the diagram check found: what the correction fixed, or why there is no diagram. */
+  diagramIssues: z.array(z.string()).optional(),
 });
 export type BuildRecording = z.infer<typeof BuildRecordingSchema>;
 
@@ -94,6 +99,8 @@ export interface BuildOptions {
   maxCostUsd?: number;
   /** Stops the build before the next call once it has run this long. */
   maxSeconds?: number;
+  /** Has Model A draw the final design as a data-flow diagram, and checks the drawing against the design. */
+  diagram?: boolean;
 }
 
 /** A build stopped by its own cost or time limit. The calls made so far are billed and reported. */
@@ -109,6 +116,11 @@ function describe(value: unknown, role: string): string {
   const parts: string[] = [];
   for (const key of ["text", "contract", "summary", "code", "script", "change"]) if (typeof item[key] === "string") parts.push(item[key] as string);
   if (Array.isArray(item.cases)) parts.push((item.cases as string[]).join("\n"));
+  if (Array.isArray(item.nodes)) {
+    const nodes = item.nodes as Array<{ id: string; label: string; area: string; file?: string }>;
+    parts.push(`Boxes:\n${nodes.map((node) => `- ${node.label} (${node.area}${node.file ? `, ${node.file}` : ""})`).join("\n")}`);
+    parts.push(`Data flows:\n${((item.edges ?? []) as Array<{ from: string; to: string; label: string }>).map((edge) => `- ${edge.from} to ${edge.to}: ${edge.label}`).join("\n")}`);
+  }
   if (Array.isArray(item.findings)) parts.push(renderReview(item as ReviewAnswer, "D-A").replace(/^D-A(\d+)/gm, `${REVIEW_PREFIX[role] ?? "F-"}$1`));
   if (Array.isArray(item.resolutions)) parts.push((item.resolutions as Array<{ finding: string; outcome: string; note: string }>).map((entry) => `${entry.finding} ${entry.outcome}: ${entry.note}`).join("\n"));
   return parts.join("\n\n");
@@ -209,6 +221,26 @@ export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildS
   const archReview = renumberAs(await ask(seats.b(`Review this architecture against the PRD. ${REVIEW} Use ids AR-1, AR-2, ...`, Review), "archReview", `${PRD}\n\nThe architecture:\n${draft.text}`, Review, B), "AR-");
   const archFinal = await ask(seats.a("Revise the architecture to resolve every finding: apply it, or decline it with a reason. Plain text, at most 10 lines.", Revision), "archFinal", `${PRD}\n\nYour architecture:\n${draft.text}\n\nThe review:\n${renderReviewAs(archReview, "AR-")}`, Revision, A);
 
+  // The design as a picture, for a person who must approve it. A failed drawing never fails the build: only a limit does.
+  let diagram: BuildRecording["diagram"];
+  let diagramIssues: string[] | undefined;
+  if (options.diagram) {
+    try {
+      const drawn = await generateDiagram(ask, (instructions, schema) => seats.a(instructions, schema), { draft: draft.text, review: renderReviewAs(archReview, "AR-"), final: archFinal.text }, A);
+      diagram = drawn.diagram ?? undefined;
+      diagramIssues = drawn.issues;
+      options.onProgress?.({
+        role: "diagramCheck",
+        call: null,
+        text: drawn.diagram ? (drawn.issues.length ? `The diagram passed the check after one correction. The first drawing had these problems:\n- ${drawn.issues.join("\n- ")}` : "The diagram passed the check against the design.") : `No diagram. It failed the check twice:\n- ${drawn.issues.join("\n- ")}`,
+      });
+    } catch (error) {
+      if (error instanceof BuildLimitError) throw error;
+      diagramIssues = [`the diagram could not be drawn: ${error instanceof Error ? error.message.slice(0, 160) : "an error"}`];
+      options.onProgress?.({ role: "diagramCheck", call: null, text: `No diagram. ${diagramIssues[0]}` });
+    }
+  }
+
   // Code: Model A writes it; Model B reviews it; Model A applies or declines each point.
   const first = await ask(seats.a(`Write the module. ${CODE_RULES}`, Code), "code", `${PRD}\n\nThe architecture:\n${archFinal.text}`, Code, A);
   const codeReview = renumberAs(await ask(seats.b(`Review this code against the PRD and the contract. ${REVIEW} Use ids CR-1, CR-2, ...`, Review), "codeReview", `${PRD}\n\nThe code:\n${first.code}`, Review, B), "CR-");
@@ -260,6 +292,8 @@ export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildS
     runs,
     fixes,
     finalCode: code,
+    ...(diagram ? { diagram } : {}),
+    ...(diagramIssues ? { diagramIssues } : {}),
   });
 }
 

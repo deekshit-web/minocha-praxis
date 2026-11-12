@@ -28,12 +28,13 @@ const builtModule = {
   finalCode: "({ daysLeft() { return 5; } })",
 } as unknown as BuildRecording;
 
-function runners(low = false, stopBuild = false): LiveRunners & { panels: number; builds: number; limits: Array<number | undefined> } {
-  const state = { panels: 0, builds: 0, limits: [] as Array<number | undefined> };
+function runners(low = false, stopBuild = false): LiveRunners & { panels: number; builds: number; limits: Array<number | undefined>; diagramAsked: Array<boolean | undefined> } {
+  const state = { panels: 0, builds: 0, limits: [] as Array<number | undefined>, diagramAsked: [] as Array<boolean | undefined> };
   return Object.assign(state, {
     async build(_spec: unknown, _prd: string, options: BuildOptions) {
       state.builds += 1;
       state.limits.push(options.maxCostUsd);
+      state.diagramAsked.push(options.diagram);
       for (const role of ["archDraft", "archReview", "archFinal", "code"]) options.onProgress?.({ role, call: call(role, "claude-opus-5-5", 0.03), text: `${role} text` });
       if (stopBuild) throw new BuildLimitError("The build stopped before \"codeReview\": its calls so far cost $0.20, which is the limit of $0.20.");
       options.onProgress?.({ role: "run1", call: null, text: "3 passing" });
@@ -156,6 +157,14 @@ test("A full build gets what is left of its cost limit. The panel cost comes off
   await settle();
   assert.equal(fake.limits.length, 1);
   assert.ok(Math.abs((fake.limits[0] ?? 0) - 0.65) < 1e-9, "0.75 minus the 0.10 that the panel cost");
+});
+
+test("A full build asks for the design as a diagram.", async () => {
+  const fake = runners();
+  const live = createLiveService({ passcode: "booth-2026", fullBuild: true, dailyCapUsd: 2, runners: fake });
+  live.submit(fullBrief);
+  await settle();
+  assert.deepEqual(fake.diagramAsked, [true]);
 });
 
 test("A build that reaches its limit stops. The run keeps the calls it made, and the page shows the reason.", async () => {

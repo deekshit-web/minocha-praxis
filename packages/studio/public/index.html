@@ -1014,8 +1014,9 @@
       function archViewOf(stepId) {
         return { archDraft: "draft", archReview: "review", archFinal: "final", archApprove: "final" }[stepId] || null;
       }
-      function archDiagram(view) {
-        const d = flow.diagram;
+      function archDiagram(view, source) {
+        // The diagram of the open workflow, or one passed in (the one Model A drew for a live build).
+        const d = source || flow.diagram;
         const nodes = d.nodes.filter((node) => view === "final" || !node.since);
         const edges = d.edges.filter((edge) => view === "final" || !edge.since);
         const byNode = {};
@@ -2403,6 +2404,13 @@
           const final = add("div", undefined, "final");
           final.append(add("div", "The result · " + (job.route && job.route.path === "single" ? "one model" : job.findings + " finding" + (job.findings === 1 ? "" : "s") + " raised in review") + " · $" + job.costUsd.toFixed(3) + " · " + job.seconds + " s, all real", "meta"), add("pre", job.final || ""));
           out.appendChild(final);
+          // Drawn by Model A and checked against the design, so the box and file names are the design's own.
+          if (job.build && job.build.diagram) {
+            const drawn = archDiagram("final", job.build.diagram);
+            const cap = drawn.querySelector(".cap");
+            if (cap) cap.textContent = "The design, drawn by Model A and checked against it. The gold area is the code that changes. Grey stays as it is.";
+            out.appendChild(drawn);
+          }
         }
         if (job.status === "failed") out.appendChild(add("p", "The run stopped: " + (job.error || "an error") + ". Nothing more was charged.", "meta"));
       }

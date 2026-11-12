@@ -100,6 +100,9 @@ const LABELS: Record<string, string> = {
   run3: "Tests run a third time after a fix",
   fix1: "Model A fixes the failing tests",
   fix2: "Model A fixes the failing tests again",
+  diagram: "Model A draws the design as a diagram",
+  diagramFix: "Model A corrects the diagram",
+  diagramCheck: "The diagram is checked against the design",
 };
 
 const digest = (text: string) => createHash("sha256").update(text).digest();
@@ -175,6 +178,7 @@ export function createLiveService(options: LiveOptions) {
           const build = await options.runners.build(spec, job.final, {
             maxCostUsd: Math.max(0, buildCap - job.costUsd),
             maxSeconds: buildSeconds,
+            diagram: true,
             onProgress: ({ role, call, text }) => record(role, call, text),
           });
           job.build = build;

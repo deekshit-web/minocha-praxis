@@ -117,3 +117,73 @@ test("A workflow with a prepared contract does not draft another one.", async ()
   const recording = await recordBuild(spec, "REQ-1 Days of cover.", seats);
   assert.ok(!recording.calls.some((call) => call.role.startsWith("contract")));
 });
+
+const drawing = (overrides: Record<string, unknown> = {}) => ({
+  summary: "A buyer sends order lines to the order total, which sends the total back.",
+  nodes: [
+    { id: "buyer", kind: "entity", area: "context", label: "Buyer", sub: "sends order lines", draftSub: "", file: "", since: "", finding: "", fixedBy: "" },
+    { id: "total", kind: "process", area: "new", label: "orderTotal(items)", sub: "adds the items", draftSub: "", file: "", since: "", finding: "", fixedBy: "" },
+    { id: "prices", kind: "store", area: "context", label: "Price list", sub: "read only", draftSub: "", file: "", since: "", finding: "", fixedBy: "" },
+    { id: "screen", kind: "process", area: "modify", label: "Order screen", sub: "shows the total", draftSub: "", file: "", since: "", finding: "", fixedBy: "" },
+  ],
+  edges: [
+    { from: "buyer", to: "screen", label: "order lines", both: false, since: "" },
+    { from: "screen", to: "total", label: "items", both: false, since: "" },
+    { from: "prices", to: "total", label: "unit prices", both: false, since: "" },
+  ],
+  ...overrides,
+});
+const withDiagram = (order = requestOrder()) => {
+  order.a.splice(order.a.indexOf("archFinal") + 1, 0, "diagram");
+  return order;
+};
+
+test("A build draws its design as a diagram when asked. The drawing is checked and placed.", async () => {
+  const events: string[] = [];
+  const recording = await recordBuild(requestSpec, "REQ-1 The order total is the sum of the items.", scripted(withDiagram(), { ...requestAnswers, diagram: drawing() }), undefined, {
+    diagram: true,
+    onProgress: ({ role, text }) => events.push(role === "diagramCheck" ? `${role}: ${text}` : role),
+  });
+  assert.equal(recording.diagram?.nodes.length, 4);
+  assert.ok(recording.diagram!.nodes.every((node) => Number.isInteger(node.col) && Number.isInteger(node.row)));
+  assert.deepEqual(recording.diagramIssues, []);
+  assert.ok(events.includes("diagramCheck: The diagram passed the check against the design."));
+  assert.ok(events.indexOf("diagram") > events.indexOf("archFinal") && events.indexOf("diagram") < events.indexOf("code"));
+});
+
+test("A build does not draw a diagram unless asked.", async () => {
+  const recording = await recordBuild(requestSpec, "REQ-1 The order total is the sum of the items.", scripted(requestOrder(), requestAnswers));
+  assert.equal(recording.diagram, undefined);
+  assert.ok(!recording.calls.some((call) => call.role.startsWith("diagram")));
+});
+
+test("A drawing that fails the check twice is dropped. The build still finishes and the reasons are kept.", async () => {
+  const bad = drawing({ edges: [{ from: "buyer", to: "ghost", label: "order lines", both: false, since: "" }] });
+  const order = withDiagram();
+  order.a.splice(order.a.indexOf("diagram") + 1, 0, "diagramFix");
+  const recording = await recordBuild(requestSpec, "REQ-1 The order total is the sum of the items.", scripted(order, { ...requestAnswers, diagram: bad, diagramFix: bad }), undefined, { diagram: true });
+  assert.equal(recording.diagram, undefined);
+  assert.match((recording.diagramIssues ?? []).join("\n"), /joins a box that does not exist/);
+  assert.equal(recording.runs.at(-1)?.failing, 0);
+  assert.ok(recording.calls.some((call) => call.role === "diagramFix"));
+});
+
+test("A drawing that Model A cannot return as JSON does not stop the build.", async () => {
+  const order = withDiagram();
+  const events: string[] = [];
+  const recording = await recordBuild(requestSpec, "REQ-1 The order total is the sum of the items.", scripted(order, { ...requestAnswers, diagram: { nope: true } }), undefined, {
+    diagram: true,
+    onProgress: ({ role, text }) => role === "diagramCheck" && events.push(text),
+  });
+  assert.equal(recording.diagram, undefined);
+  assert.match(recording.diagramIssues?.[0] ?? "", /the diagram could not be drawn/);
+  assert.match(events[0] ?? "", /^No diagram\./);
+  assert.equal(recording.runs.at(-1)?.failing, 0);
+});
+
+test("The cost limit stops the build at the diagram step. A limit is not hidden as a failed drawing.", async () => {
+  await assert.rejects(
+    recordBuild(requestSpec, "REQ-1 The order total is the sum of the items.", scripted(withDiagram(), { ...requestAnswers, diagram: drawing() }, 0.05), undefined, { diagram: true, maxCostUsd: 0.3 }),
+    (error: Error) => error instanceof BuildLimitError && /stopped before "diagram"/.test(error.message),
+  );
+});
