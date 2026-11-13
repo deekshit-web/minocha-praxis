@@ -252,12 +252,27 @@ holiday (20). Every example in the briefs was worked out by hand first.
 - **The new Model B prompt held up on briefs it had not seen.** Every build got the full 16 cases. On their own,
   Model B's acceptance tests caught 75% of 229 mutants, against 63% on the first run (both counting every mutant);
   Model A's unit tests caught 72%, and the two together 77%. On the first run Model B's tests added nothing to Model
-  A's; here they caught the most of either suite. The survivors of this run have not been sorted, so there is no
-  figure leaving out equivalent mutants.
+  A's; here they caught the most of either suite. Leaving out the 28 mutants that can never change a result, the
+  tests caught 88% (176 of 201), against 79% on the first run (see below).
 - **No answer needed the retry,** and the runner, tidied since the first run, worked unchanged.
 - **Mutation testing needed one fix.** In 20, two mutants made a day-by-day loop endless and stalled the run. The
   script now falls back to one mutant per process with a 10-second limit, counting a timeout as caught, as a test
   runner would. On the first run's 208 mutants the fallback gives the same answer as the normal path for every one.
+
+**The 53 survivors, sorted** (`npm run live-build-survivors -- evals/live-build/run-2`, on 56,036 inputs):
+
+| Verdict | Count | What it is |
+| --- | --- | --- |
+| Gap, ordinary input | 2 | 14: a whole-number string such as `"1"` read as `0.1` (no test mixes `"1"` with `"4.0"`); 16: a rebate whose tenths of a cent come to exactly 49, which the mutant rounds up (`50000.83` gives `800.03` instead of `800.02`) |
+| Gap, extreme input | 4 | 17: the leap rule for years divisible by 400 (February 2000, 1600 or 2400); 19: the code's `1e-9` float tolerance, which only a weight within a billionth of a kilogram of a half kilogram can show |
+| Gap, invalid input only | 19 | 8 of them are inputs the contract leaves open: 15's order or case size of 0 or less (6) and 16's exact half cent (2). The rest give a different error for `null`, a missing field, or an hour of 24 or a minute of 60 |
+| Equivalent | 28 | Can never change a result, with the reason for each in `evals/live-build/run-2/survivors-equivalent.json` |
+| No difference found | 0 | |
+
+None of the first run's four open gaps has a counterpart here. Two of them were inputs the PRD left open, and in this
+run the contract said so in writing (16's half cent, 15's values of 0 or less), so they count as invalid input, not as
+gaps. The other two were small values next to a boundary (a principal of 1, a carton of 1 kg); this run's two ordinary
+gaps are of other kinds, an input form and one remainder. Both are cheap to close: one more acceptance case each.
 
 So the fix-round path has still never run on live output: across 22 live builds, every first run has passed. Briefs
 that state a hard rule plainly do not make the code fail, because the panel and contract settle the rule first. To
@@ -282,7 +297,7 @@ the first run. The path itself is covered by the build tests with scripted model
   to run model-written code (see `docs/how-it-is-built.md`).
 - **A mutation score is not a bug count.** It shows where the tests are thin, not whether the code is wrong. The
   operators are simple ones. The gaps were found by comparing on generated inputs, so a gap the inputs miss would be
-  counted as equivalent only if the written reason also holds; one survivor is left unproven.
+  counted as equivalent only if the written reason also holds; one survivor of the first run is left unproven.
 
 ## Files
 
@@ -292,7 +307,7 @@ the first run. The path itself is covered by the build tests with scripted model
 | One full record per build: the panel, every build stage, every call's cost | `evals/live-build/records/` |
 | The results in one file | `evals/live-build/results-2026-11-12.json` |
 | The runner | `scripts/live-build-dry-run.mjs` |
-| The second run: briefs, records, results, mutation testing, and the independent check of the four trap builds | `evals/live-build/run-2/` (`npm run live-build-mutation -- evals/live-build/run-2/records`; `npm run live-build-trap-check`, free) |
+| The second run: briefs, records, results, mutation testing, the 53 survivors sorted, and the independent check of the four trap builds | `evals/live-build/run-2/` (`npm run live-build-mutation -- evals/live-build/run-2/records`; `npm run live-build-survivors -- evals/live-build/run-2`; `npm run live-build-trap-check`, all free) |
 | Mutation testing on the ten builds: every mutant, which test caught it, the survivors | `evals/live-build/mutation-2026-11-12.json` (`npm run live-build-mutation`, free) |
 | Model B's test steps re-run with the old and new prompt (40 answers), the failures, and their scores | `evals/live-build/acceptance-prompt/`, `evals/live-build/acceptance-score-2026-11-13.json` (`npm run acceptance-eval`, about $0.80; `npm run acceptance-score`, free) |
 | The 69 survivors sorted: each gap with the input that shows it, each equivalent mutant with its reason | `evals/live-build/survivors-2026-11-12.json`, reasons in `evals/live-build/survivors-equivalent.json` (`npm run live-build-survivors`, free) |

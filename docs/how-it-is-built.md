@@ -130,7 +130,7 @@ run on 12 November. The write-up is `docs/live-build-dry-run.md`, and the record
 | --- | --- | --- | --- |
 | The first two, by hand | $0.32 and $0.39 | 16 to 17 min | All tests passed first time. |
 | The dry run: 10 briefs across five domains, five builds at once | $0.25 to $0.45 (mean $0.35) | 8 to 33 min | All 10 finished and all passed their acceptance tests first time (3 of Model A's unit tests failed in two builds, uncounted at the time; both causes are now fixed). The tests caught 67% of 208 mutants, 79% leaving out the 33 that can never change a result; 15 survivors are gaps on ordinary inputs. 7 diagrams passed the check first time and 3 passed after the one correction. |
-| A second dry run: 10 new briefs, 4 built to make the first code wrong | $0.26 to $0.53 (mean $0.37) | 11 to 36 min | All 10 passed first time. The four trap builds agree with a reference written from their briefs on 14,671 inputs. Model B's acceptance tests caught 75% of 229 mutants on their own, against 63% before the prompt change. |
+| A second dry run: 10 new briefs, 4 built to make the first code wrong | $0.26 to $0.53 (mean $0.37) | 11 to 36 min | All 10 passed first time. The four trap builds agree with a reference written from their briefs on 14,671 inputs. Model B's acceptance tests caught 75% of 229 mutants on their own, against 63% before the prompt change; both suites together caught 88% leaving out the 28 that can never change a result, with 2 survivors gaps on ordinary inputs. |
 
 All twenty-two passed first time, including four built to fail, so **the red-run and fix-round path has still not been exercised live**. That does not
 mean nothing went wrong upstream: reviewers raised a P0 in 5 of the 10 dry-run builds before any code ran. Read by hand,

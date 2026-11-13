@@ -1,0 +1,680 @@
+{
+  "ranAt": "2026-11-13T07:34:35.835Z",
+  "networkNamespace": true,
+  "mutationResults": "mutation-2026-11-13.json",
+  "totals": {
+    "survivors": 53,
+    "gap": 6,
+    "gapInvalidOnly": 19,
+    "equivalent": 28,
+    "noDifferenceFound": 0,
+    "ranOutOfTime": 0,
+    "unexplained": 0
+  },
+  "builds": [
+    {
+      "build": "11-prior-auth",
+      "inputs": 0,
+      "survivors": []
+    },
+    {
+      "build": "12-observation-hours",
+      "inputs": 21652,
+      "survivors": [
+        {
+          "key": "12-observation-hours#27",
+          "index": 27,
+          "operator": "&& to ||",
+          "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[null]",
+            "real": "returns {\"status\":\"invalid\",\"elapsedMinutes\":null,\"roundedHours\":null,\"billableHours\":null,\"flags\":[\"admission is missing\",\"discharge is missing\"]}",
+            "mutant": "throws TypeError: Cannot convert undefined or null to object"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "12-observation-hours#28",
+          "index": 28,
+          "operator": "|| to &&",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || h > 23 || mi > 59) return null;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "mo < 1 && mo > 12 is never true, so the month part of the range check is gone. The round-trip check that follows rejects every month outside 1 to 12, so the same 'invalid' answer comes back. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "12-observation-hours#29",
+          "index": 29,
+          "operator": "|| to &&",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || h > 23 || mi > 59) return null;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "mo > 12 && d < 1 lets month 13 and up, and day 00, past the range check, but the round-trip check rejects both with the same 'invalid' answer. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "12-observation-hours#30",
+          "index": 30,
+          "operator": "|| to &&",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || h > 23 || mi > 59) return null;",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"admission\":\"2026-05-04 24:00\",\"discharge\":\"2026-05-06 10:00\"}]",
+            "real": "returns {\"status\":\"invalid\",\"elapsedMinutes\":null,\"roundedHours\":null,\"billableHours\":null,\"flags\":[\"admission is not a real calendar date-time in the form YYYY-MM-DD HH:mm\"]}",
+            "mutant": "returns {\"status\":\"nonexistent\",\"elapsedMinutes\":null,\"roundedHours\":null,\"billableHours\":null,\"flags\":[\"admission is a local time that does not exist in America/New_York (clocks went forward)\"]}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "12-observation-hours#31",
+          "index": 31,
+          "operator": "|| to &&",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || h > 23 || mi > 59) return null;",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"admission\":\"2026-05-04 24:00\",\"discharge\":\"2026-05-06 10:00\"}]",
+            "real": "returns {\"status\":\"invalid\",\"elapsedMinutes\":null,\"roundedHours\":null,\"billableHours\":null,\"flags\":[\"admission is not a real calendar date-time in the form YYYY-MM-DD HH:mm\"]}",
+            "mutant": "returns {\"status\":\"nonexistent\",\"elapsedMinutes\":null,\"roundedHours\":null,\"billableHours\":null,\"flags\":[\"admission is a local time that does not exist in America/New_York (clocks went forward)\"]}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "12-observation-hours#32",
+          "index": 32,
+          "operator": "|| to &&",
+          "line": "if (check.getUTCFullYear() !== y || check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d) return null;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "(year changed && month changed) || day changed. After the range check, the only impossible dates left are days past the end of a month, and those always change the day of the month, so the check still fails. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "12-observation-hours#33",
+          "index": 33,
+          "operator": "|| to &&",
+          "line": "if (check.getUTCFullYear() !== y || check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d) return null;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "year changed || (month changed && day changed). A day past the end of a month rolls into the next month, changing both month and day, so the check still fails. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "12-observation-hours#34",
+          "index": 34,
+          "operator": "|| to &&",
+          "line": "if (value === void 0 || value === null) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"admission\":\"<undefined>\",\"discharge\":\"2026-05-05 10:00\"}]",
+            "real": "returns {\"status\":\"invalid\",\"elapsedMinutes\":null,\"roundedHours\":null,\"billableHours\":null,\"flags\":[\"admission is missing\"]}",
+            "mutant": "returns {\"status\":\"invalid\",\"elapsedMinutes\":null,\"roundedHours\":null,\"billableHours\":null,\"flags\":[\"admission is not a real calendar date-time in the form YYYY-MM-DD HH:mm\"]}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "12-observation-hours#35",
+          "index": 35,
+          "operator": "number + 1",
+          "line": "const dt = new Date(0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "new Date(1) starts one millisecond later, but setUTCHours(h, mi, 0, 0) then sets the seconds and milliseconds to 0, so utcMs returns the same value."
+        },
+        {
+          "key": "12-observation-hours#37",
+          "index": 37,
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(h, mi, 0, 0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "Every instant from utcMs is one second later. The round-trip check reads only the date, matches() compares only year to minute, and the elapsed time is a difference of two instants that are both one second later, so every answer is the same."
+        },
+        {
+          "key": "12-observation-hours#38",
+          "index": 38,
+          "operator": "number + 1",
+          "line": "dt.setUTCHours(h, mi, 0, 0);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "As #37 with one millisecond: the check reads only the date, matches() compares only year to minute, and the shift cancels in the elapsed time."
+        },
+        {
+          "key": "12-observation-hours#45",
+          "index": 45,
+          "operator": "number + 1",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || h > 23 || mi > 59) return null;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "mo > 13 lets month 13 past the range check, but the round-trip check rejects it with the same 'invalid' answer. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "12-observation-hours#47",
+          "index": 47,
+          "operator": "number + 1",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || h > 23 || mi > 59) return null;",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"admission\":\"2026-05-04 24:00\",\"discharge\":\"2026-05-06 10:00\"}]",
+            "real": "returns {\"status\":\"invalid\",\"elapsedMinutes\":null,\"roundedHours\":null,\"billableHours\":null,\"flags\":[\"admission is not a real calendar date-time in the form YYYY-MM-DD HH:mm\"]}",
+            "mutant": "returns {\"status\":\"nonexistent\",\"elapsedMinutes\":null,\"roundedHours\":null,\"billableHours\":null,\"flags\":[\"admission is a local time that does not exist in America/New_York (clocks went forward)\"]}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "12-observation-hours#48",
+          "index": 48,
+          "operator": "number + 1",
+          "line": "if (mo < 1 || mo > 12 || d < 1 || h > 23 || mi > 59) return null;",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"admission\":\"2026-05-04 23:60\",\"discharge\":\"2026-05-06 10:00\"}]",
+            "real": "returns {\"status\":\"invalid\",\"elapsedMinutes\":null,\"roundedHours\":null,\"billableHours\":null,\"flags\":[\"admission is not a real calendar date-time in the form YYYY-MM-DD HH:mm\"]}",
+            "mutant": "returns {\"status\":\"nonexistent\",\"elapsedMinutes\":null,\"roundedHours\":null,\"billableHours\":null,\"flags\":[\"admission is a local time that does not exist in America/New_York (clocks went forward)\"]}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "12-observation-hours#49",
+          "index": 49,
+          "operator": "number + 1",
+          "line": "const check = new Date(utcMs(y, mo, d, 0, 0));",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "The round-trip check builds 01:00 instead of 00:00 on the same day and reads only the year, month and day, which do not change."
+        },
+        {
+          "key": "12-observation-hours#50",
+          "index": 50,
+          "operator": "number + 1",
+          "line": "const check = new Date(utcMs(y, mo, d, 0, 0));",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "The round-trip check builds 00:01 instead of 00:00 on the same day and reads only the year, month and day, which do not change."
+        },
+        {
+          "key": "12-observation-hours#52",
+          "index": 52,
+          "operator": "number + 1",
+          "line": "const hour = Number(parts.hour) % 24;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "The formatter uses hourCycle h23, so the hour it gives is 0 to 23; % 24 and % 25 leave every such hour unchanged."
+        },
+        {
+          "key": "12-observation-hours#53",
+          "index": 53,
+          "operator": "number + 1",
+          "line": "if (value === void 0 || value === null) {",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "void 1 is undefined, the same as void 0."
+        }
+      ]
+    },
+    {
+      "build": "13-late-penalty",
+      "inputs": 250,
+      "survivors": [
+        {
+          "key": "13-late-penalty#0",
+          "index": 0,
+          "operator": "> to >=",
+          "line": "if (!(diff > 0)) return 0;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "!(diff >= 0) differs from !(diff > 0) only when diff is 0, and then the mutant returns Math.ceil(0 / DAY_MS), which is 0, the same answer. The one exception is a submittedAt of -0 with a deadline of 0, where it returns -0, which equals 0 under ===."
+        },
+        {
+          "key": "13-late-penalty#4",
+          "index": 4,
+          "operator": "|| to &&",
+          "line": "if (input === null || typeof input !== \"object\") {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "countLatePeriods [null]",
+            "real": "throws Error: input must be an object",
+            "mutant": "throws TypeError: Cannot convert undefined or null to object"
+          },
+          "verdict": "gap (invalid input only)"
+        }
+      ]
+    },
+    {
+      "build": "14-gpa-rounding",
+      "inputs": 3506,
+      "survivors": [
+        {
+          "key": "14-gpa-rounding#0",
+          "index": 0,
+          "operator": "< to <=",
+          "line": "if (dot < 0) return { v: BigInt(value), s: 0 };",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "dot <= 0 differs from dot < 0 only when the string starts with a dot, and the decimal pattern ^[0-9]+(\\.[0-9]+)?$ already rejects that before this line."
+        },
+        {
+          "key": "14-gpa-rounding#11",
+          "index": 11,
+          "operator": "&& to ||",
+          "line": "const isObj = (x) => x !== null && typeof x === \"object\" && !Array.isArray(x);",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[null]",
+            "real": "throws Error: invalid input",
+            "mutant": "throws TypeError: Cannot convert undefined or null to object"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "14-gpa-rounding#12",
+          "index": 12,
+          "operator": "&& to ||",
+          "line": "const isObj = (x) => x !== null && typeof x === \"object\" && !Array.isArray(x);",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[null]",
+            "real": "throws Error: invalid input",
+            "mutant": "throws TypeError: Cannot convert undefined or null to object"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "14-gpa-rounding#17",
+          "index": 17,
+          "operator": "number + 1",
+          "line": "if (dot < 0) return { v: BigInt(value), s: 0 };",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "dot < 1 differs from dot < 0 only when the dot is the first character, and the decimal pattern already rejects that before this line."
+        },
+        {
+          "key": "14-gpa-rounding#18",
+          "index": 18,
+          "operator": "number + 1",
+          "line": "if (dot < 0) return { v: BigInt(value), s: 0 };",
+          "validDiff": {
+            "args": "[{\"courses\":[{\"gradePoints\":\"2.3\",\"credits\":\"4.0\"},{\"gradePoints\":\"1.3\",\"credits\":\"1\"}]}]",
+            "real": "returns {\"gpa\":\"2.10\"}",
+            "mutant": "returns {\"gpa\":\"2.28\"}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "14-gpa-rounding#22",
+          "index": 22,
+          "operator": "number + 1",
+          "line": "let N = { v: 0n, s: 0 };",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "The running numerator starts as 0 with scale 1 (0.0) instead of scale 0. Zero at any scale is zero; add() aligns scales exactly, and the final division scales both sides, so the quotient is the same."
+        },
+        {
+          "key": "14-gpa-rounding#23",
+          "index": 23,
+          "operator": "number + 1",
+          "line": "let D = { v: 0n, s: 0 };",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "The running credit total starts as 0.0 instead of 0, the same value; the zero-credit check tests the value, not the scale, and the division scales both sides exactly."
+        }
+      ]
+    },
+    {
+      "build": "15-case-pack",
+      "inputs": 686,
+      "survivors": [
+        {
+          "key": "15-case-pack#0",
+          "index": 0,
+          "operator": "<= to <",
+          "line": "if (typeof orderUnits !== \"number\" || !Number.isFinite(orderUnits) || orderUnits <= 0) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"orderUnits\":0,\"caseSize\":12}]",
+            "real": "throws Error: orderUnits of 0 or less, or not a finite number, is not yet specified (AC-4): confirm with requester",
+            "mutant": "returns {\"cases\":2,\"shippedUnits\":24}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "15-case-pack#1",
+          "index": 1,
+          "operator": "<= to <",
+          "line": "if (typeof caseSize !== \"number\" || !Number.isFinite(caseSize) || caseSize <= 0) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"orderUnits\":30,\"caseSize\":0}]",
+            "real": "throws Error: caseSize of 0 or less, or not a finite number, is not yet specified (AC-4): confirm with requester",
+            "mutant": "returns {\"cases\":\"Infinity\",\"shippedUnits\":\"NaN\"}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "15-case-pack#4",
+          "index": 4,
+          "operator": "|| to &&",
+          "line": "if (typeof orderUnits !== \"number\" || !Number.isFinite(orderUnits) || orderUnits <= 0) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"orderUnits\":\"NaN\",\"caseSize\":12}]",
+            "real": "throws Error: orderUnits of 0 or less, or not a finite number, is not yet specified (AC-4): confirm with requester",
+            "mutant": "returns {\"cases\":\"NaN\",\"shippedUnits\":\"NaN\"}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "15-case-pack#5",
+          "index": 5,
+          "operator": "|| to &&",
+          "line": "if (typeof orderUnits !== \"number\" || !Number.isFinite(orderUnits) || orderUnits <= 0) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"orderUnits\":0,\"caseSize\":12}]",
+            "real": "throws Error: orderUnits of 0 or less, or not a finite number, is not yet specified (AC-4): confirm with requester",
+            "mutant": "returns {\"cases\":2,\"shippedUnits\":24}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "15-case-pack#6",
+          "index": 6,
+          "operator": "|| to &&",
+          "line": "if (typeof caseSize !== \"number\" || !Number.isFinite(caseSize) || caseSize <= 0) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"orderUnits\":30,\"caseSize\":\"NaN\"}]",
+            "real": "throws Error: caseSize of 0 or less, or not a finite number, is not yet specified (AC-4): confirm with requester",
+            "mutant": "returns {\"cases\":\"NaN\",\"shippedUnits\":\"NaN\"}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "15-case-pack#7",
+          "index": 7,
+          "operator": "|| to &&",
+          "line": "if (typeof caseSize !== \"number\" || !Number.isFinite(caseSize) || caseSize <= 0) {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"orderUnits\":30,\"caseSize\":0}]",
+            "real": "throws Error: caseSize of 0 or less, or not a finite number, is not yet specified (AC-4): confirm with requester",
+            "mutant": "returns {\"cases\":\"Infinity\",\"shippedUnits\":\"NaN\"}"
+          },
+          "verdict": "gap (invalid input only)"
+        }
+      ]
+    },
+    {
+      "build": "16-volume-rebate",
+      "inputs": 4829,
+      "survivors": [
+        {
+          "key": "16-volume-rebate#0",
+          "index": 0,
+          "operator": "> to >=",
+          "line": "if (r > 50) return q + 1;",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "r >= 50 also catches r === 50, which the next line already rounds up to q + 1, so every remainder gives the same answer."
+        },
+        {
+          "key": "16-volume-rebate#6",
+          "index": 6,
+          "operator": "&& to ||",
+          "line": "const obj = input !== null && typeof input === \"object\" ? input : {};",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[null]",
+            "real": "throws Error: invalid field: quarterlyPurchases",
+            "mutant": "throws TypeError: Cannot convert undefined or null to object"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "16-volume-rebate#16",
+          "index": 16,
+          "operator": "number + 1",
+          "line": "if (r === 50) return q + 1;",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"quarterlyPurchases\":10000.25}]",
+            "real": "returns {\"rebate\":0.01,\"bands\":[{\"rate\":0,\"portion\":10000,\"amount\":0},{\"rate\":0.02,\"portion\":0.25,\"amount\":0.005},{\"rate\":0.03,\"portion\":0,\"amount\":0}]}",
+            "mutant": "returns {\"rebate\":0,\"bands\":[{\"rate\":0,\"portion\":10000,\"amount\":0},{\"rate\":0.02,\"portion\":0.25,\"amount\":0.005},{\"rate\":0.03,\"portion\":0,\"amount\":0}]}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "16-volume-rebate#17",
+          "index": 17,
+          "operator": "number + 1",
+          "line": "if (r === 50) return q + 1;",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[{\"quarterlyPurchases\":10000.25}]",
+            "real": "returns {\"rebate\":0.01,\"bands\":[{\"rate\":0,\"portion\":10000,\"amount\":0},{\"rate\":0.02,\"portion\":0.25,\"amount\":0.005},{\"rate\":0.03,\"portion\":0,\"amount\":0}]}",
+            "mutant": "returns {\"rebate\":0.02,\"bands\":[{\"rate\":0,\"portion\":10000,\"amount\":0},{\"rate\":0.02,\"portion\":0.25,\"amount\":0.005},{\"rate\":0.03,\"portion\":0,\"amount\":0}]}"
+          },
+          "verdict": "gap (invalid input only)"
+        },
+        {
+          "key": "16-volume-rebate#19",
+          "index": 19,
+          "operator": "number + 1",
+          "line": "let totalUnits = 0;",
+          "validDiff": {
+            "args": "[{\"quarterlyPurchases\":50000.83}]",
+            "real": "returns {\"rebate\":800.02,\"bands\":[{\"rate\":0,\"portion\":10000,\"amount\":0},{\"rate\":0.02,\"portion\":40000,\"amount\":800},{\"rate\":0.03,\"portion\":0.83,\"amount\":0.0249}]}",
+            "mutant": "returns {\"rebate\":800.03,\"bands\":[{\"rate\":0,\"portion\":10000,\"amount\":0},{\"rate\":0.02,\"portion\":40000,\"amount\":800},{\"rate\":0.03,\"portion\":0.83,\"amount\":0.0249}]}"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        }
+      ]
+    },
+    {
+      "build": "17-due-dates",
+      "inputs": 1167,
+      "survivors": [
+        {
+          "key": "17-due-dates#12",
+          "index": 12,
+          "operator": "number + 1",
+          "line": "const isLeap = (y) => y % 4 === 0 && y % 100 !== 0 || y % 400 === 0;",
+          "validDiff": {
+            "args": "[{\"startDate\":\"1600-01-29\",\"count\":14}]",
+            "real": "returns [\"1600-02-29\",\"1600-03-29\",\"1600-04-29\",\"1600-05-29\",\"1600-06-29\",\"1600-07-29\",\"1600-08-29\",\"1600-09-29\",\"1600-10-29\",\"1600-11-29\",\"1600-12-29\",\"1601-01-29\",\"1601-02-28\",\"1601-03-29\"]",
+            "mutant": "returns [\"1600-02-28\",\"1600-03-29\",\"1600-04-29\",\"1600-05-29\",\"1600-06-29\",\"1600-07-29\",\"1600-08-29\",\"1600-09-29\",\"1600-10-29\",\"1600-11-29\",\"1600-12-29\",\"1601-01-29\",\"1601-02-28\",\"1601-03-29\"]"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "17-due-dates#13",
+          "index": 13,
+          "operator": "number + 1",
+          "line": "const isLeap = (y) => y % 4 === 0 && y % 100 !== 0 || y % 400 === 0;",
+          "validDiff": {
+            "args": "[{\"startDate\":\"1600-01-29\",\"count\":14}]",
+            "real": "returns [\"1600-02-29\",\"1600-03-29\",\"1600-04-29\",\"1600-05-29\",\"1600-06-29\",\"1600-07-29\",\"1600-08-29\",\"1600-09-29\",\"1600-10-29\",\"1600-11-29\",\"1600-12-29\",\"1601-01-29\",\"1601-02-28\",\"1601-03-29\"]",
+            "mutant": "returns [\"1600-02-28\",\"1600-03-29\",\"1600-04-29\",\"1600-05-29\",\"1600-06-29\",\"1600-07-29\",\"1600-08-29\",\"1600-09-29\",\"1600-10-29\",\"1600-11-29\",\"1600-12-29\",\"1601-01-29\",\"1601-02-29\",\"1601-03-29\"]"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "17-due-dates#14",
+          "index": 14,
+          "operator": "number + 1",
+          "line": "const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "January's length becomes 32, but the day is Math.min(start day, month length) and a real start date has a day of at most 31, so min(d, 32) equals min(d, 31). The same holds for #16, #18, #20, #21, #23 and #25."
+        },
+        {
+          "key": "17-due-dates#16",
+          "index": 16,
+          "operator": "number + 1",
+          "line": "const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "March's length becomes 32; the start day is at most 31, so Math.min gives the same day."
+        },
+        {
+          "key": "17-due-dates#18",
+          "index": 18,
+          "operator": "number + 1",
+          "line": "const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "May's length becomes 32; the start day is at most 31, so Math.min gives the same day."
+        },
+        {
+          "key": "17-due-dates#20",
+          "index": 20,
+          "operator": "number + 1",
+          "line": "const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "July's length becomes 32; the start day is at most 31, so Math.min gives the same day."
+        },
+        {
+          "key": "17-due-dates#21",
+          "index": 21,
+          "operator": "number + 1",
+          "line": "const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "August's length becomes 32; the start day is at most 31, so Math.min gives the same day."
+        },
+        {
+          "key": "17-due-dates#23",
+          "index": 23,
+          "operator": "number + 1",
+          "line": "const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "October's length becomes 32; the start day is at most 31, so Math.min gives the same day."
+        },
+        {
+          "key": "17-due-dates#25",
+          "index": 25,
+          "operator": "number + 1",
+          "line": "const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "December's length becomes 32; the start day is at most 31, so Math.min gives the same day."
+        }
+      ]
+    },
+    {
+      "build": "18-id-expiry",
+      "inputs": 20442,
+      "survivors": [
+        {
+          "key": "18-id-expiry#7",
+          "index": 7,
+          "operator": "|| to &&",
+          "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) {",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "(year changed && month changed) || day changed. With the regex fixing the form, an impossible date is either a month outside 1 to 12 (which changes the year and month together, or the month and day) or a day past the end of a month (which always changes the day), so the check still fails. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "18-id-expiry#8",
+          "index": 8,
+          "operator": "|| to &&",
+          "line": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) {",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "year changed || (month changed && day changed). A day past the end of a month changes both month and day; month 00 or 13 and up changes the year. Tried on every 2026-MM-DD from 00 to 99."
+        },
+        {
+          "key": "18-id-expiry#9",
+          "index": 9,
+          "operator": "|| to &&",
+          "line": "if (input === null || typeof input !== \"object\") {",
+          "validDiff": null,
+          "invalidDiff": {
+            "args": "[null]",
+            "real": "throws Error: invalid input",
+            "mutant": "throws TypeError: Cannot convert undefined or null to object"
+          },
+          "verdict": "gap (invalid input only)"
+        }
+      ]
+    },
+    {
+      "build": "19-billable-weight",
+      "inputs": 2088,
+      "survivors": [
+        {
+          "key": "19-billable-weight#0",
+          "index": 0,
+          "operator": "< to <=",
+          "line": "if (Math.abs(doubled - nearest) < 1e-9) {",
+          "validDiff": {
+            "args": "roundUpToHalfKg [5e-10]",
+            "real": "returns 0.5",
+            "mutant": "returns 0"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        },
+        {
+          "key": "19-billable-weight#2",
+          "index": 2,
+          "operator": "number + 1",
+          "line": "if (Math.abs(doubled - nearest) < 1e-9) {",
+          "validDiff": {
+            "args": "roundUpToHalfKg [4.999999999999997e-10]",
+            "real": "returns 0",
+            "mutant": "returns 0.5"
+          },
+          "invalidDiff": null,
+          "verdict": "gap"
+        }
+      ]
+    },
+    {
+      "build": "20-promised-date",
+      "inputs": 1416,
+      "survivors": [
+        {
+          "key": "20-promised-date#18",
+          "index": 18,
+          "operator": "number + 1",
+          "line": "const hhmm = (time || \"\").slice(0, 5);",
+          "validDiff": null,
+          "invalidDiff": null,
+          "verdict": "equivalent",
+          "reason": "The time is compared with '14:00'. A 6-character prefix compares the same way as the 5-character one: if the first 5 characters are below '14:00' so is any longer string that starts with them, and if they are '14:00' or above, so is the longer one. The contract's form HH:MM has only 5 characters anyway."
+        }
+      ]
+    }
+  ]
+}
