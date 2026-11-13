@@ -3,7 +3,7 @@ import * as z from "zod/v4";
 import type { SeatSpec } from "./claude.ts";
 import type { PanelRole } from "./panel.ts";
 import { CompletionError, type Completion, type CompletionRequest, type ModelProvider } from "./provider.ts";
-import type { TokenUsage } from "./pricing.ts";
+import { callCost, type TokenUsage } from "./pricing.ts";
 
 export const GROK_MODEL = "grok-4.7";
 
@@ -18,6 +18,18 @@ const PATIENT = new Agent({ headersTimeout: 15 * 60 * 1000, bodyTimeout: 15 * 60
 const patientFetch = ((input: string, init: RequestInit) =>
   undiciFetch(input, { ...(init as object), dispatcher: PATIENT })) as unknown as typeof fetch;
 
+/**
+ * How hard grok-4.7 reasons. xAI's default is "high", and reasoning was 87% of one week's xAI bill ($45.70 of $52.59).
+ * GROK_REASONING_EFFORT sets it for every Grok seat; unset leaves xAI's default.
+ */
+export type GrokEffort = "low" | "medium" | "high" | "xhigh";
+function effortFromEnv(): GrokEffort | undefined {
+  const value = process.env.GROK_REASONING_EFFORT;
+  if (!value) return undefined;
+  if (!["low", "medium", "high", "xhigh"].includes(value)) throw new Error(`GROK_REASONING_EFFORT must be low, medium, high or xhigh, not ${value}`);
+  return value as GrokEffort;
+}
+
 /** The parts of an xAI chat-completions response this provider reads. */
 interface GrokResponse {
   model?: string;
@@ -26,6 +38,8 @@ interface GrokResponse {
     prompt_tokens?: number;
     completion_tokens?: number;
     prompt_tokens_details?: { cached_tokens?: number };
+    /** Grok's hidden reasoning. Not in completion_tokens, but billed at the output rate. */
+    completion_tokens_details?: { reasoning_tokens?: number };
     /** What xAI billed for the call, in billionths of a dollar. */
     cost_in_nano_usd?: number | null;
   };
@@ -42,12 +56,15 @@ export class GrokModel implements ModelProvider {
   private readonly apiKey: string | undefined;
   private readonly fetch: typeof fetch;
   private readonly endpoint: string;
+  /** Unset sends nothing, and xAI reasons at its default, "high". */
+  private readonly reasoningEffort: GrokEffort | undefined;
 
   constructor(
     private readonly context: string,
     private readonly seats: Partial<Record<PanelRole, SeatSpec>>,
-    options: { apiKey?: string; model?: string; fetch?: typeof fetch; endpoint?: string } = {},
+    options: { apiKey?: string; model?: string; fetch?: typeof fetch; endpoint?: string; reasoningEffort?: GrokEffort } = {},
   ) {
+    this.reasoningEffort = options.reasoningEffort ?? effortFromEnv();
     this.endpoint = options.endpoint ?? ENDPOINT;
     this.apiKey = options.apiKey ?? process.env.XAI_API_KEY;
     this.model = options.model ?? GROK_MODEL;
@@ -74,8 +91,10 @@ export class GrokModel implements ModelProvider {
       body: JSON.stringify({
         model: this.model,
         max_tokens: 16000,
+        ...(this.reasoningEffort ? { reasoning_effort: this.reasoningEffort } : {}),
         messages: [
-          { role: "system", content: `${this.context}\n\n${instructions}` },
+          // Shared material goes first, after the context, so xAI's automatic prefix cache can reuse it.
+          { role: "system", content: request.shared ? `${this.context}\n\n${request.shared}\n\n${instructions}` : `${this.context}\n\n${instructions}` },
           { role: "user", content: request.prompt },
         ],
         response_format: compiled
@@ -96,12 +115,16 @@ export class GrokModel implements ModelProvider {
     const model = body.model ?? this.model;
     const usage: TokenUsage = {
       inputTokens: (body.usage?.prompt_tokens ?? 0) - (body.usage?.prompt_tokens_details?.cached_tokens ?? 0),
-      outputTokens: body.usage?.completion_tokens ?? 0,
+      // Reasoning is most of the bill: in one week xAI billed $45.70 of $52.59 for reasoning tokens.
+      outputTokens: (body.usage?.completion_tokens ?? 0) + (body.usage?.completion_tokens_details?.reasoning_tokens ?? 0),
       cacheReadTokens: body.usage?.prompt_tokens_details?.cached_tokens ?? 0,
       cacheWriteTokens: 0,
     };
+    // xAI's cost_in_nano_usd came out far below the bill (it seems to leave out reasoning), so the cost is never
+    // taken as less than the list price of the tokens used.
     const nano = body.usage?.cost_in_nano_usd;
-    const costUsd = typeof nano === "number" ? nano / 1e9 : undefined;
+    const listed = callCost(this.model, usage) ?? undefined;
+    const costUsd = typeof nano === "number" ? Math.max(nano / 1e9, listed ?? 0) : listed;
     const choice = body.choices?.[0];
     if (choice?.message?.refusal) throw new CompletionError(`model-refused:${request.role}:grok`, model, usage, costUsd);
     if (choice?.finish_reason === "length") throw new CompletionError(`model-truncated:${request.role}`, model, usage, costUsd);

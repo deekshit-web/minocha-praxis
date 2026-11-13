@@ -5,6 +5,16 @@ import { callCost, type TokenUsage } from "./pricing.ts";
 export interface CompletionRequest {
   role: PanelRole;
   prompt: string;
+  /**
+   * Material that several calls in a row share word for word (a build's PRD and contract). A live provider puts it
+   * before the call's own instructions, so the provider can cache it; the model reads it before the prompt.
+   */
+  shared?: string;
+}
+
+/** The whole text a request gives the model, for a provider that does not place `shared` separately. */
+export function fullPrompt(request: CompletionRequest): string {
+  return request.shared ? `${request.shared}\n\n${request.prompt}` : request.prompt;
 }
 
 /** One seat's answer. A live provider also reports the model that answered and what it cost in tokens. */
@@ -115,7 +125,7 @@ export class ResumingProvider implements ModelProvider {
   async complete(request: CompletionRequest): Promise<Completion> {
     const answer = this.saved.find((item) => item.role === request.role);
     if (!answer) return this.live.complete(request);
-    if (answer.prompt !== request.prompt) throw new Error(`resume-prompt-changed:${request.role}`);
+    if (answer.prompt !== fullPrompt(request)) throw new Error(`resume-prompt-changed:${request.role}`);
     return { text: answer.text, model: answer.model, usage: answer.usage, resumed: true };
   }
 }

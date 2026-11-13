@@ -126,7 +126,10 @@ Built in three phases. Committed on `main`, **not pushed or deployed** at the ti
 Twelve real runs so far, all on made-up briefs and all on a local machine: two tried by hand, then a ten-build dry
 run on 12 November. The write-up is `docs/live-build-dry-run.md`, and the records are in `evals/live-build/`.
 
-| Runs | Cost per build | Time | Result |
+Recorded costs undercount Model B: they leave out Grok's hidden reasoning, which was 87% of one week's xAI bill. A
+build probably cost about $1.50, not $0.35; see the correction at the top of `docs/live-build-dry-run.md`.
+
+| Runs | Recorded cost per build (Model B undercounted) | Time | Result |
 | --- | --- | --- | --- |
 | The first two, by hand | $0.32 and $0.39 | 16 to 17 min | All tests passed first time. |
 | The dry run: 10 briefs across five domains, five builds at once | $0.25 to $0.45 (mean $0.35) | 8 to 33 min | All 10 finished and all passed their acceptance tests first time (3 of Model A's unit tests failed in two builds, uncounted at the time; both causes are now fixed). The tests caught 67% of 208 mutants, 79% leaving out the 33 that can never change a result; 15 survivors are gaps on ordinary inputs. 7 diagrams passed the check first time and 3 passed after the one correction. |
@@ -257,7 +260,7 @@ network, and with time, memory and output limits. This is defense in depth and w
 **Can I run it on my feature?** The PRD panel runs live on your brief with a passcode. A full live build exists
 but is switched off on the public site until the sandbox is confirmed on the host.
 
-**How much does it cost?** A document $0.09 to $0.22. A feature build about $0.25 to $0.45 on live models (measured over twelve runs), and 8 to 33 minutes.
+**How much does it cost?** A document $0.09 to $0.22. A feature build recorded $0.25 to $0.45 on live models over twelve runs, but those figures left out Grok's hidden reasoning; the true cost was probably about $1.50 a build (see `docs/live-build-dry-run.md`). It takes 8 to 33 minutes.
 Each Model C decision costs about $0.00002.
 
 **How do you know the tests are good?** We run mutation testing: small deliberate breaks in the code, then the

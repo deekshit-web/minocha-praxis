@@ -1,29 +1,33 @@
-// `npm run acceptance-score`: scores Model B's acceptance test scripts from `npm run acceptance-eval` (and the ones the
-// ten live builds recorded) against each build's real code.
+// `npm run acceptance-score [run folder]`: scores Model B's acceptance test scripts from `npm run acceptance-eval` (and
+// the ones the ten live builds recorded) against each build's real code. The run folder defaults to the first run,
+// evals/live-build; the second is evals/live-build/run-2.
 //
 // For each script: how many tests it has, which fail on the real code (a wrong test, or a real bug: read them), and
-// how many mutants it catches, leaving out the 33 equivalent mutants (evals/live-build/survivors-equivalent.json) and
-// any test that fails on the real code. It also counts how many of the known gaps it closes: the 15 ordinary and 7
-// extreme gaps on valid input and the 13 on invalid input only, from evals/live-build/survivors-<date>.json.
+// how many mutants it catches, leaving out the equivalent mutants (<run>/survivors-equivalent.json) and any test that
+// fails on the real code. It also counts how many of the run's known gaps it closes, ordinary and extreme on valid
+// input and those on invalid input only, from <run>/survivors-<date>.json.
 //
 // The code and the tests are model-written, so each build runs in a child process with no environment, Node's
 // permission model and a network namespace where the machine allows one. No model is called.
 
 import { spawnSync } from "node:child_process";
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const evalDir = join(root, "evals/live-build");
+const evalDir = process.argv[2] ? resolve(process.argv[2]) : join(root, "evals/live-build");
 const answersDir = join(evalDir, "acceptance-prompt");
 const testsPath = join(root, "packages/studio/public/tests.js");
 
 const equivalent = JSON.parse(readFileSync(join(evalDir, "survivors-equivalent.json"), "utf8"));
 const survivorsFile = readdirSync(evalDir).filter((name) => /^survivors-\d{4}-\d{2}-\d{2}\.json$/.test(name)).sort().pop();
 const survivors = JSON.parse(readFileSync(join(evalDir, survivorsFile), "utf8")).builds.flatMap((b) => b.survivors);
-// The 7 valid-input gaps that need extreme inputs (see docs/live-build-dry-run.md, "Sorting the 69 survivors").
-const EXTREME = new Set(["05-stacked-promo#19", "05-stacked-promo#20", "05-stacked-promo#21", "05-stacked-promo#25", "07-interest-days#18", "10-pallets-contradiction#2", "10-pallets-contradiction#28"]);
+// The valid-input gaps that need extreme inputs (see docs/live-build-dry-run.md): 7 in the first run, 4 in the second.
+const EXTREME = new Set([
+  "05-stacked-promo#19", "05-stacked-promo#20", "05-stacked-promo#21", "05-stacked-promo#25", "07-interest-days#18", "10-pallets-contradiction#2", "10-pallets-contradiction#28",
+  "17-due-dates#12", "17-due-dates#13", "19-billable-weight#0", "19-billable-weight#2",
+]);
 const gapKind = Object.fromEntries(
   survivors.filter((s) => s.verdict.startsWith("gap")).map((s) => [s.key, s.verdict === "gap" ? (EXTREME.has(s.key) ? "extreme" : "ordinary") : "invalid"]),
 );
@@ -64,7 +68,7 @@ const canUnshare = spawnSync("unshare", ["-rn", "--", process.execPath, "-e", "p
 const nodeArgs = ["--permission", `--allow-fs-read=${testsPath}`, "--max-old-space-size=512", "--input-type=module", "-e", CHILD];
 const [command, args] = canUnshare ? ["unshare", ["-rn", "--", process.execPath, ...nodeArgs]] : [process.execPath, nodeArgs];
 
-const answers = readdirSync(answersDir).filter((name) => name.endsWith(".json")).map((name) => JSON.parse(readFileSync(join(answersDir, name), "utf8")));
+const answers = !existsSync(answersDir) ? [] : readdirSync(answersDir).filter((name) => name.endsWith(".json")).map((name) => JSON.parse(readFileSync(join(answersDir, name), "utf8")));
 const rows = [];
 for (const file of readdirSync(join(evalDir, "records")).filter((name) => name.endsWith(".json")).sort()) {
   const build = file.replace(/\.json$/, "");
@@ -84,7 +88,8 @@ for (const file of readdirSync(join(evalDir, "records")).filter((name) => name.e
   });
 }
 
-const variants = ["recorded", "before", "after"].filter((v) => rows.some((r) => r.variant === v));
+const gapCount = (kind) => Object.values(gapKind).filter((k) => k === kind).length;
+const variants = ["recorded", "before", "after", "current"].filter((v) => rows.some((r) => r.variant === v));
 const summary = {};
 for (const variant of variants) {
   const these = rows.filter((r) => r.variant === variant && !r.error);
@@ -96,7 +101,7 @@ for (const variant of variants) {
     testsPerBuild: sum((r) => r.tests) / these.length,
     wrongTestsPerBuild: sum((r) => r.failing.length) / these.length,
     killRate: sum((r) => r.killedCount) / sum((r) => r.total),
-    // Per sample set (all ten builds), averaged: of 15 ordinary, 7 extreme and 13 invalid-input gaps.
+    // Per sample set (all ten builds), averaged, of the run's ordinary, extreme and invalid-input gaps.
     ordinaryGapsClosed: sum((r) => r.closed.ordinary) / sets,
     extremeGapsClosed: sum((r) => r.closed.extreme) / sets,
     invalidGapsClosed: sum((r) => r.closed.invalid) / sets,
@@ -107,7 +112,7 @@ const outPath = join(evalDir, `acceptance-score-${date}.json`);
 writeFileSync(outPath, JSON.stringify({ ranAt: new Date().toISOString(), networkNamespace: canUnshare, summary, rows }, null, 2) + "\n");
 
 const pct = (x) => `${Math.round(100 * x)}%`;
-console.log("| Prompt | Scripts | Tests a build | Tests that fail on the real code, a build | Mutants caught | Ordinary gaps closed (of 15) | Extreme (of 7) | Invalid input (of 13) |\n| --- | --- | --- | --- | --- | --- | --- | --- |");
+console.log(`| Prompt | Scripts | Tests a build | Tests that fail on the real code, a build | Mutants caught | Ordinary gaps closed (of ${gapCount("ordinary")}) | Extreme (of ${gapCount("extreme")}) | Invalid input (of ${gapCount("invalid")}) |\n| --- | --- | --- | --- | --- | --- | --- | --- |`);
 for (const [variant, s] of Object.entries(summary)) {
   console.log(`| ${variant} | ${s.scripts}${s.errors ? ` (+${s.errors} would not run)` : ""} | ${s.testsPerBuild.toFixed(1)} | ${s.wrongTestsPerBuild.toFixed(2)} | ${pct(s.killRate)} | ${s.ordinaryGapsClosed.toFixed(1)} | ${s.extremeGapsClosed.toFixed(1)} | ${s.invalidGapsClosed.toFixed(1)} |`);
 }

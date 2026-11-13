@@ -120,3 +120,30 @@ test("The default xAI client waits for a slow server. A network failure names it
   const unreachable = new GrokModel("ctx", seats, { apiKey: "xai-test", endpoint: `http://127.0.0.1:${port}/v1/chat/completions` });
   await assert.rejects(unreachable.complete({ role: "critiqueOfA", prompt: "p" }), /xai-network: ECONNREFUSED/);
 });
+
+test("A Grok seat counts its hidden reasoning as output and never records less than the list price.", async () => {
+  const raw = reply(JSON.stringify(critique));
+  // 600 input, 400 cached, 2000 completion and 50,000 reasoning tokens, with a billed cost that leaves reasoning out.
+  Object.assign(raw.usage, { completion_tokens_details: { reasoning_tokens: 50_000 } });
+  const { fetch } = fakeFetch(200, raw);
+  const answer = await new GrokModel("SHARED CONTEXT", seats, { apiKey: "xai-test", fetch }).complete({ role: "critiqueOfA", prompt: "p" });
+  assert.equal(answer.usage?.outputTokens, 52_000);
+  assert.ok(Math.abs((answer.costUsd ?? 0) - (600 * 2 + 52_000 * 6 + 400 * 0.5) / 1e6) < 1e-12);
+});
+
+test("A Grok seat puts shared material after the context and before its instructions, and sends a reasoning effort only when one is set.", async () => {
+  const { fetch, requests } = fakeFetch(200, reply(JSON.stringify(critique)));
+  await new GrokModel("SHARED CONTEXT", seats, { apiKey: "xai-test", fetch }).complete({ role: "critiqueOfA", prompt: "the rest", shared: "THE PRD" });
+  await new GrokModel("SHARED CONTEXT", seats, { apiKey: "xai-test", fetch, reasoningEffort: "low" }).complete({ role: "critiqueOfA", prompt: "p" });
+  const [first, second] = requests.map((request) => JSON.parse(String(request.init.body)) as { reasoning_effort?: string; messages: Array<{ content: string }> });
+  assert.match(first?.messages[0]?.content ?? "", /^SHARED CONTEXT\n\nTHE PRD\n\nYou are analyst B/);
+  assert.equal(first?.messages[1]?.content, "the rest");
+  assert.equal(first?.reasoning_effort, undefined);
+  assert.equal(second?.reasoning_effort, "low");
+});
+
+test("A one-hour cache write costs twice the input price; a five-minute one, 1.25 times.", () => {
+  const usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 1_000_000, cacheWriteLongTokens: 1_000_000 };
+  assert.equal(callCost("claude-opus-5-5", usage), 8);
+  assert.equal(callCost("claude-opus-5-5", { ...usage, cacheWriteLongTokens: 0 }), 5);
+});

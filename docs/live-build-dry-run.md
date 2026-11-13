@@ -4,10 +4,19 @@ Ten real end-to-end builds on live models, to find out how the live build behave
 tried by hand. Everything below comes from the records in `evals/live-build/records/`. The runner is
 `scripts/live-build-dry-run.mjs` (`npm run live-dry-run`).
 
+> **Correction (13 November 2026): Model B's costs here are too low.** Every cost below adds what Claude billed to
+> what xAI reported for Grok. The Grok part left out Grok's hidden reasoning, which grok-4.7 does at its default
+> "high" effort and which xAI bills at the output rate. xAI's console for the week of 7 to 13 November shows $52.59 of
+> Grok text, $45.70 of it reasoning (7.6M tokens), against about $4 recorded here. The true cost of each call cannot be
+> recovered from these records. A rough figure, from about $24 billed on 11 November for some 160 Grok calls, is
+> $0.15 a Grok call, or about $1.20 of Grok a build, so a build cost about $1.50, not $0.35. Claude's costs are right.
+> The recorder now counts reasoning tokens (`orchestrator/src/grok.ts`), so later runs record the full cost.
+
 ## The short version
 
 - All 10 builds finished. None failed, none stopped at its limit, and five at once caused no rate-limit errors.
-- **Cost $0.25 to $0.45 a build, $3.48 in all** (mean $0.35). Each build had a hard limit of $0.75 and none came near it.
+- **Recorded cost $0.25 to $0.45 a build, $3.48 in all** (mean $0.35), but Model B's share is undercounted: see the
+  correction above. A build probably cost about $1.50. Each build had a limit of $0.75 on the recorded cost.
 - **Time 8 to 33 minutes** with five running at once. A single build on its own took 16 to 17 minutes earlier.
 - **Every build passed its acceptance tests on the first run.** No build needed a fix round, so the fix path has
   still not run live. Model A's own unit tests did not all pass: 3 failed in two builds (01 and 07), and the pipeline
@@ -208,7 +217,7 @@ PRD leaves open. The prompt names no build. It is `ACCEPTANCE_CASES_PROMPT` in `
 
 To measure it, `npm run acceptance-eval` re-ran only Model B's two test steps (cases, then script) on the ten
 recorded PRDs and contracts, twice with the old prompt and twice with the new, and `npm run acceptance-score` scored
-every script against the recorded code. 40 samples cost $0.80 (plus about $0.06 for three failed answers).
+every script against the recorded code. 40 samples recorded $0.80 (plus about $0.06 for three failed answers), without Grok's reasoning, which was most of the real cost.
 
 | Prompt | Tests a build | Tests wrong on the real code | Mutants caught (of 175 that can change a result) | Ordinary gaps closed (of 15) |
 | --- | --- | --- | --- | --- |
@@ -222,7 +231,7 @@ every script against the recorded code. 40 samples cost $0.80 (plus about $0.06 
 - **Still open:** 07's exact-half rounding (rightly untested: the PRD leaves it open), a principal of 1 or less (07),
   a carton of 1 kg or less (10), and a price of exactly 1 (05, closed in one sample of two). None of the 7 extreme
   gaps or the 13 invalid-input gaps closed.
-- **The cost:** about $0.013 more a build, and about 4.5 minutes longer (Model B's two steps took 450 s, not 181 s).
+- **The cost:** about $0.013 more a build as recorded (without Grok's reasoning, so really more), and about 4.5 minutes longer (Model B's two steps took 450 s, not 181 s).
 - **Less reliable at first.** 3 of 23 answers to the new prompt did not match the answer schema, against 0 of 20 for
   the old one (network failures aside); in a build that would have stopped it. The build now asks once more when an
   answer does not match the schema, and counts both calls. A second bad answer still stops the build.
@@ -238,8 +247,8 @@ hinging on a rule code often gets wrong even when it is stated: a hospital stay 
 a GPA rounded half to even (14), loan due dates from the 31st (17), and a delivery date over a cutoff, a weekend and a
 holiday (20). Every example in the briefs was worked out by hand first.
 
-- **All 10 finished and all passed first time,** acceptance and unit tests, with no fix round. **$3.71 in all**, $0.26
-  to $0.53 a build (mean $0.37, against $0.35 before), 11 to 36 minutes with five at once.
+- **All 10 finished and all passed first time,** acceptance and unit tests, with no fix round. **$3.71 recorded in all**,
+  $0.26 to $0.53 a build (mean $0.37, against $0.35 before; Model B's share undercounted, see the correction at the top), 11 to 36 minutes with five at once.
 - **The traps did not spring.** The pipeline settled each hard rule before any code was written. For the GPA, the PRD
   and contract chose decimal strings ("3.7"), so the code never touched floating point. Model B's acceptance tests went
   straight at each trap: 9 of 12's 16 cases involve the clock changes, 12 of 17's are month ends, and every one of
@@ -314,5 +323,5 @@ the first run. The path itself is covered by the build tests with scripted model
 | The rating kit: 29 findings, a blind sheet for each of two raters, a page per build, and the key | `evals/live-build/judging/` (`npm run judging-prepare`, then `npm run judging-analyze`) |
 
 The runner in the repository is a tidied copy of the script that produced these results. It produced the second run
-unchanged (`node scripts/live-build-dry-run.mjs evals/live-build/run-2/briefs.json`); a run of ten spends about $3.50
-to $4.
+unchanged (`node scripts/live-build-dry-run.mjs evals/live-build/run-2/briefs.json`); a run of ten records about $3.50
+to $4, but at Grok's default reasoning effort it really costs several times that (see the correction at the top).

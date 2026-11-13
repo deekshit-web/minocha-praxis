@@ -3,6 +3,8 @@ export interface TokenUsage {
   outputTokens: number;
   cacheReadTokens: number;
   cacheWriteTokens: number;
+  /** Of cacheWriteTokens, those written to the one-hour cache, which costs twice the input price (five minutes: 1.25 times). */
+  cacheWriteLongTokens?: number;
 }
 
 interface Price {
@@ -41,6 +43,7 @@ export function callCost(model: string, usage: TokenUsage): number | null {
     usage.inputTokens * price.input +
     usage.outputTokens * price.output +
     usage.cacheReadTokens * price.cacheRead +
-    usage.cacheWriteTokens * price.cacheWrite;
+    (usage.cacheWriteTokens - (usage.cacheWriteLongTokens ?? 0)) * price.cacheWrite +
+    (usage.cacheWriteLongTokens ?? 0) * price.input * 2;
   return perToken / 1_000_000;
 }

@@ -67,14 +67,24 @@ export class ClaudeModel implements ModelProvider {
       : `${seat.instructions}\n\nAnswer with one JSON object that matches this JSON Schema, and nothing else:\n${JSON.stringify(z.toJSONSchema(seat.schema))}`;
     // Streamed, so a long answer gets room without hitting HTTP timeouts. A synthesis of two full PRDs
     // used all of a 16,000-token limit on thinking and output.
+    // Calls that share material (a build's PRD and contract) cache it for an hour: between two of Model A's calls
+    // Model B can reason for over ten minutes, which outlives the five-minute cache. A one-hour entry must come
+    // before any five-minute one, so with shared material the only breakpoint is on it.
+    const system = request.shared
+      ? [
+          { type: "text" as const, text: this.context },
+          { type: "text" as const, text: request.shared, cache_control: { type: "ephemeral" as const, ttl: "1h" as const } },
+          { type: "text" as const, text: instructions },
+        ]
+      : [
+          { type: "text" as const, text: this.context, cache_control: { type: "ephemeral" as const } },
+          { type: "text" as const, text: instructions },
+        ];
     const params = {
       model: this.model,
       max_tokens: 64000,
       ...(this.fallbacks ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
-      system: [
-        { type: "text" as const, text: this.context, cache_control: { type: "ephemeral" as const } },
-        { type: "text" as const, text: instructions },
-      ],
+      system,
       messages: [{ role: "user" as const, content: request.prompt }],
     };
     const response = await this.client.beta.messages
@@ -85,6 +95,7 @@ export class ClaudeModel implements ModelProvider {
       outputTokens: response.usage.output_tokens,
       cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
       cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
+      cacheWriteLongTokens: response.usage.cache_creation?.ephemeral_1h_input_tokens ?? 0,
     };
     if (response.stop_reason === "refusal") {
       throw new CompletionError(`model-refused:${request.role}:${response.stop_details?.category ?? "unknown"}`, response.model, usage);

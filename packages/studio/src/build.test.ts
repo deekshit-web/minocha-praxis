@@ -255,3 +255,21 @@ test("The cost limit stops the build at the diagram step. A limit is not hidden 
     (error: Error) => error instanceof BuildLimitError && /stopped before "diagram"/.test(error.message),
   );
 });
+
+test("Every build call sends the PRD as shared material, so it can be cached, and the rest as its prompt.", async () => {
+  const requests: Array<{ shared?: string; prompt: string }> = [];
+  const seats = scripted(requestOrder(), requestAnswers);
+  const watch = (make: BuildSeats["a"]): BuildSeats["a"] => (instructions, schema) => {
+    const seat = make(instructions, schema);
+    return { ...seat, complete: (request) => (requests.push(request), seat.complete(request)) };
+  };
+  seats.a = watch(seats.a);
+  seats.b = watch(seats.b);
+  const prd = "REQ-1 The order total is the sum of the items.";
+  await recordBuild(requestSpec, prd, seats);
+  const brief = `The approved PRD:\n${prd}`;
+  const full = `${brief}\n\nThe module contract:\norderTotal(items) returns a number; an empty list returns 0.`;
+  // The three contract calls share the PRD alone; every later call shares the PRD and the final contract.
+  assert.deepEqual(requests.map((request) => request.shared), [brief, brief, brief, ...Array(requests.length - 3).fill(full)]);
+  assert.ok(requests.every((request) => request.prompt.length > 0 && !request.prompt.includes("The approved PRD")));
+});

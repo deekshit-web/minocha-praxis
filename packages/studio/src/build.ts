@@ -43,8 +43,10 @@ export const ACCEPTANCE_CASES_PROMPT =
   "Write the acceptance test cases for this feature from the PRD only: one line each, 'TC-n · <requirement> · <inputs> → <expected result>'. At most 16. " +
   "Cover every requirement and acceptance criterion, then the edges where code usually goes wrong: for each limit or threshold, the value exactly at it and one step on either side; " +
   "zero, one and the smallest allowed value; an empty list and a single item; an item a rule picks out being first, in the middle and last; " +
-  "for dates, the 1st and the last day of a month, December and January, and a leap day; and one case for each error the PRD names. " +
-  "Choose input values so that a plausible mistake gives a different answer: avoid values where, for example, dropping the wrong item or rounding the other way happens to give the same result. " +
+  "for dates, the 1st and the last day of a month, December and January, and a leap day; " +
+  "for rounding, the closest values on each side of the halfway point that the inputs can actually produce (work out the smallest step the unrounded result can move by, which may be smaller than one step of the input); " +
+  "when an input may be written in more than one form (such as \"3\" and \"3.0\"), each form, mixed within one case; and one case for each error the PRD names. " +
+  "Choose input values so that a plausible mistake gives a different answer: avoid values where, for example, dropping the wrong item or rounding the other way happens to give the same result, and use unequal amounts, because a mistake that scales every item alike can cancel out. " +
   "Work out every expected result exactly from the PRD, showing the arithmetic briefly where it is not obvious. Do not test behaviour the PRD leaves open.";
 export const ACCEPTANCE_SCRIPT_PROMPT = `Write the test script for these cases, one test per case, using the exact expected values the case gives. You have never seen the code; work from the contract. ${TEST_RULES}`;
 
@@ -161,6 +163,14 @@ export function liveBuildSeats(context: string): BuildSeats {
 export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildSeats, now = () => new Date(), options: BuildOptions = {}): Promise<BuildRecording> {
   const startedAt = Date.now();
   const calls: RecordedCall[] = [];
+  // Every stage's prompt starts with the PRD (and, once there is one, the contract). That part is sent as shared
+  // material, so the providers can cache it across the build's calls instead of paying for it each time.
+  const sharedPrefixes: string[] = [];
+  const requestFor = (prompt: string) => {
+    const shared = sharedPrefixes.filter((prefix) => prompt.startsWith(prefix)).sort((x, y) => y.length - x.length)[0];
+    if (!shared) return { role: "analystA" as const, prompt };
+    return { role: "analystA" as const, shared, prompt: prompt.slice(shared.length).trim() || "Work from the PRD and contract above." };
+  };
   const ask = async <T>(seat: ModelProvider, role: string, prompt: string, schema: z.ZodType<T>, model: string, attempt = 1): Promise<T> => {
     const spent = calls.reduce((total, call) => total + call.costUsd, 0);
     if (options.maxCostUsd !== undefined && spent >= options.maxCostUsd) throw new BuildLimitError(`The build stopped before "${role}": its calls so far cost $${spent.toFixed(2)}, which is the limit of $${options.maxCostUsd.toFixed(2)}.`);
@@ -168,7 +178,7 @@ export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildS
     const started = Date.now();
     let answer: Awaited<ReturnType<ModelProvider["complete"]>>;
     try {
-      answer = await seat.complete({ role: "analystA", prompt });
+      answer = await seat.complete(requestFor(prompt));
     } catch (error) {
       // A model now and then returns an answer that does not match the schema (3 of 23 of Model B's longer test-case
       // answers in one trial). Ask once more, and count what the failed attempt cost.
@@ -222,6 +232,7 @@ export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildS
   // every requirement can be tested through it, and Model A revises it only if Model B raised a finding.
   const draftContract = async (): Promise<string> => {
     const brief = `The approved PRD:\n${prd}`;
+    sharedPrefixes.push(brief);
     const first = await ask(
       seats.a(
         `Write the module contract for this feature: the exact function names, and the data shapes of their inputs and results, in one short paragraph. Describe no behaviour, because the PRD gives it. The module is plain JavaScript functions with no input or output, so every requirement can be tested through them. Match the style of this example: ${CONTRACTS["finance-build"]}`,
@@ -245,6 +256,7 @@ export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildS
   };
   const contract = options.contract ?? CONTRACTS[spec.id] ?? (await draftContract());
   const PRD = `The approved PRD:\n${prd}\n\nThe module contract:\n${contract}`;
+  sharedPrefixes.push(PRD);
 
   // Architecture: Model A designs, Model B reviews, Model A revises.
   const draft = await ask(seats.a("Design how to build this: the components, the data, and the exact files that may change (the file fence). Plain text, at most 10 lines.", Architecture), "archDraft", PRD, Architecture, A);
