@@ -28,7 +28,7 @@ whenever they like. Say it your own way. The quoted lines are only a guide to th
 > Claude reviews its own work, it spots most of the problems but marks them as less serious than they are. So the
 > last review in this pipeline comes from a different vendor. I'll show you where that matters."
 
-Click the **Proof** box open. It's a run with the meter on: two models, $1.52, about 21 minutes. The mistake it
+Click the **Proof** box open. It's a run with the meter on: two models, about $1.86 (of which $0.34 is an estimate for Grok's hidden reasoning), about 21 minutes. The mistake it
 caught there is small (a deadline 17 days away called "within 14 days"), so don't lean on it. Its use is that the
 whole transcript is downloadable: **Download the run record**. Fold it again when you're done with it.
 
@@ -177,7 +177,7 @@ handed you** next to **What you get instead**.
 Open the fold **Run the real panel on your own request** and give them the passcode. Let them type a real-world
 brief (made-up names, no personal data) and any facts. Model C routes it live. A low-risk brief goes to one model.
 Anything else gets both drafts, the crossed reviews, the merge and the final check, live, in about 4 to 8 minutes
-for around $0.15. The day's spend is capped at $5. In our test run, a supplier shortfall letter, Model B caught two
+for roughly $0.10 to $0.30. The day's spend is capped (set `LIVE_DAILY_CAP_USD` before you go). In our test run, a supplier shortfall letter, Model B caught two
 P0s in Model A's draft: it said a penalty week had passed when only six days had.
 
 ## Questions you'll get
@@ -206,8 +206,8 @@ P0s in Model A's draft: it said a penalty week had passed when only six days had
 - **"What stops the models going along with each other?"** They're different vendors and never see each other's
   drafts. The checks are code. The tests are written from the PRD and not from the code. A person approves at four
   gates.
-- **"What does it cost?"** A document costs $0.09–0.22 and takes 1–5 minutes. A whole feature build costs
-  $0.29–0.45 and takes 27–39 minutes, nearly all of it waiting on Model B. Each Model C decision costs about
+- **"What does it cost?"** A document costs $0.11–0.25 and takes 1–5 minutes. A whole feature build costs
+  about $1.50 live (the page prices the recorded builds at $0.62–1.28) and takes 8–36 minutes, nearly all of it waiting on Model B. Each Model C decision costs about
   $0.00002.
 - **"What isn't done?"** Hooking it up to your repositories and CI, real deployments, and a faster Model B. We also
   have no score yet for the consistency problems the final review finds, and no measured false-alarm rate, because

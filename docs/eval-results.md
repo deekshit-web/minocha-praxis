@@ -4,6 +4,11 @@ Run in November 2026 on Opus 5.5 (Model A) and Grok 4.7 (Model B). Every number 
 calls. Results are under `.claude/hillclimb/prd-planted/` and `.claude/hillclimb/prd-briefs/`; re-run with
 `npm run eval-prd` and `npm run self-review`. Total spend across all three tests, judges included, is about $42.
 
+> **Cost caveat (14 November 2026):** costs for Grok calls recorded before 13 November left out grok-4.7's hidden
+> reasoning, so every cost, cost ratio and "cheaper" comparison involving Grok below is too low, and the mixed
+> Claude + Grok rows are the most affected. Claude's costs are right. Quality scores are unaffected. See the
+> correction at the top of `docs/live-build-dry-run.md`.
+
 ## Part A: does a reviewer catch a known defect?
 
 36 PRDs, each with one planted defect (a wrong deadline, a wrong CARC action, a missing role check, ...).

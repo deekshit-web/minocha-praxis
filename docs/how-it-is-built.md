@@ -38,7 +38,7 @@ reaches into another by a relative path (`harness/src/boundaries.test.ts`).
 | `factory` | The web UI for the gated walk. |
 | `studio` | The demo site, the recorded builds, the live runs, the sandbox, the diagram generator. |
 
-About 13,000 lines of TypeScript, tests included. 192 tests run with `npm run harness`.
+About 13,000 lines of TypeScript, tests included. 226 tests run with `npm run harness`.
 
 ## The three model roles
 
@@ -112,7 +112,7 @@ This is the question that decides whether the demo is believed. Say it before yo
 
 ## The live end-to-end build
 
-Built in three phases. Committed on `main`, **not pushed or deployed** at the time of writing. It is **off by default**.
+Built in three phases. It is **off by default** and **not enabled on the public site**, because the host cannot confirm the sandbox's network isolation (see "The sandbox").
 
 1. **The pipeline.** A request goes through the PRD panel, then a contract step (Model A drafts the function
    names and data shapes, Model B checks that every requirement can be tested through them), then every build stage.
@@ -123,8 +123,8 @@ Built in three phases. Committed on `main`, **not pushed or deployed** at the ti
    finding or an edge the design does not support. It allows one correction, then drops a drawing that still fails.
    A failed drawing never fails the build.
 
-Twelve real runs so far, all on made-up briefs and all on a local machine: two tried by hand, then a ten-build dry
-run on 12 November. The write-up is `docs/live-build-dry-run.md`, and the records are in `evals/live-build/`.
+Twenty-two real runs so far, all on made-up briefs and all on a local machine: two tried by hand, a ten-build dry
+run on 12 November, and a second ten-build run on 13 November. The write-ups are in `docs/live-build-dry-run.md`, and the records are in `evals/live-build/`.
 
 Recorded costs undercount Model B: they leave out Grok's hidden reasoning, which was 87% of one week's xAI bill. A
 build probably cost about $1.50, not $0.35; see the correction at the top of `docs/live-build-dry-run.md`.
@@ -232,7 +232,7 @@ Full write-up: `docs/eval-results.md`. About $42 of real, metered calls.
 - **Other merge models**, on all 10 workflows: Opus 5.5 matched Opus 5 (23% less cost, 27% less time on the four
   workflows where it was compared). Sonnet 5.5 was 56% cheaper but dropped findings. Haiku 5.5 was 97% cheaper but
   dropped more. A faster Grok as Model B was about 23 times faster but invented 51 review findings and lost.
-- **Cost of a build:** $0.29 to $0.49 recorded for the five demo builds; $0.32 and $0.39 for the two live builds.
+- **Cost of a build:** the page prices the five demo builds at $0.62 to $1.28 (Grok's hidden reasoning estimated from call time for older recordings). Live builds recorded $0.25 to $0.53, but that left out Grok's reasoning; the true cost is probably about $1.50 (see `docs/live-build-dry-run.md`).
 
 **Limits an expert will find.** Eight briefs is a small sample. Claude Code sorted the 16 findings, not a person.
 There is no false-alarm rate, because our clean control documents turned out to contain a real flaw. There is no
@@ -260,7 +260,7 @@ network, and with time, memory and output limits. This is defense in depth and w
 **Can I run it on my feature?** The PRD panel runs live on your brief with a passcode. A full live build exists
 but is switched off on the public site until the sandbox is confirmed on the host.
 
-**How much does it cost?** A document $0.09 to $0.22. A feature build recorded $0.25 to $0.45 on live models over twelve runs, but those figures left out Grok's hidden reasoning; the true cost was probably about $1.50 a build (see `docs/live-build-dry-run.md`). It takes 8 to 33 minutes.
+**How much does it cost?** A document $0.11 to $0.25. A live feature build probably costs about $1.50 and takes 8 to 36 minutes. The recorded figures ($0.25 to $0.53) left out Grok's hidden reasoning, so treat them as a floor (see `docs/live-build-dry-run.md`).
 Each Model C decision costs about $0.00002.
 
 **How do you know the tests are good?** We run mutation testing: small deliberate breaks in the code, then the
