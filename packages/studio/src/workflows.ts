@@ -146,6 +146,8 @@ export interface Step {
   tokens?: { input: number; output: number };
   /** What this call would cost if it were live. Null for steps that are not model calls. */
   estimatedCostUsd: number | null;
+  /** The recorded cost adds an estimate of Grok's hidden reasoning, which the recorder left out at the time. */
+  costEstimated?: boolean;
   verdict?: "pass" | "flagged";
   /** The software-development stage a build step belongs to. */
   stage?: string;
@@ -623,8 +625,8 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
         seconds: 20,
         verdict: /^✗/m.test(spec.testsRed ?? "") ? "flagged" : "pass",
       }),
-      llm({ id: "fix", phase: 3, col: 3, row: 1, title: "Fix", caption: "Model A reads the failing test and makes one targeted fix.", given: "The failing test output and the code.", output: spec.fix ?? "", after: ["testsRed"] }, CLAUDE, SIZE.fix),
-      step({ id: "testsGreen", kind: "tool", phase: 3, col: 4, row: 1, title: "Tests again", actor: "Test runner", caption: "The same tests run again, with the unit tests, and all pass.", given: "The fixed code.", output: spec.testsGreen ?? "", after: ["fix"], seconds: 20, verdict: "pass" }),
+      llm({ id: "fix", phase: 3, col: 3, row: 1, title: "Fix", caption: /^✗/m.test(spec.testsRed ?? "") ? "Model A reads the failing test and makes one targeted fix." : "No test failed, so Model A has nothing to fix.", given: "The failing test output and the code.", output: spec.fix ?? "", after: ["testsRed"] }, CLAUDE, SIZE.fix),
+      step({ id: "testsGreen", kind: "tool", phase: 3, col: 4, row: 1, title: "Tests again", actor: "Test runner", caption: /^✗/m.test(spec.testsRed ?? "") ? "The same tests run again, with the unit tests, and all pass." : "Model B's tests and Model A's unit tests run together once more, and all pass.", given: "The fixed code.", output: spec.testsGreen ?? "", after: ["fix"], seconds: 20, verdict: "pass" }),
       step({ id: "release", kind: "check", phase: 4, col: 0, row: 1, title: "Release gate", actor: "No model", caption: "The release gate re-checks approvals, tests and data rules before anything ships.", given: "Approvals, test results and scans.", output: spec.release ?? "", after: ["testsGreen"], seconds: 2, verdict: "pass" }),
       step({ id: "staging", kind: "tool", phase: 4, col: 1, row: 1, title: "Deploy to staging", actor: "Pipeline", caption: "The build goes to staging, a copy of production with no real users.", given: "The released build.", output: deploy?.staging ?? "", after: ["release"], seconds: 240 }),
       step({ id: "smoke", kind: "check", phase: 4, col: 2, row: 1, title: "Smoke tests", actor: "No model", caption: "Scripted checks exercise the main paths on staging.", given: "The staging deployment.", output: deploy?.smoke ?? "", after: ["staging"], seconds: 60, verdict: "pass" }),
@@ -686,6 +688,7 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
         seconds: calls.reduce((total, entry) => total + entry.seconds, 0),
         tokens: { input: calls.reduce((total, entry) => total + entry.inputTokens, 0), output: calls.reduce((total, entry) => total + entry.outputTokens, 0) },
         estimatedCostUsd: calls.reduce((total, entry) => total + entry.costUsd, 0),
+        ...(calls.some((entry) => entry.costEstimated) ? { costEstimated: true } : {}),
       };
     });
   }
@@ -693,7 +696,7 @@ export function expand(spec: WorkflowSpec, options: { raw?: boolean } = {}): Wor
   if (recording) {
         steps = steps.map((item) => {
       const call = recording.calls.find((entry) => STEP_OF_CALL[entry.role] === item.id);
-      return call ? { ...item, recorded: true, seconds: call.seconds, tokens: { input: call.inputTokens, output: call.outputTokens }, estimatedCostUsd: call.costUsd } : item;
+      return call ? { ...item, recorded: true, seconds: call.seconds, tokens: { input: call.inputTokens, output: call.outputTokens }, estimatedCostUsd: call.costUsd, ...(call.costEstimated ? { costEstimated: true } : {}) } : item;
     });
   }
   const models = steps.filter((item) => item.kind === "llm");

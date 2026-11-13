@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { CompletionRequest, ModelProvider } from "@northwind/orchestrator";
-import { panelContext, recordPanel, renderMerge, renderReview } from "./record.ts";
+import { GROK_USD_PER_SECOND, panelContext, recordPanel, recordingFor, renderMerge, renderReview, withGrokReasoning } from "./record.ts";
 import { loadSpecs } from "./workflows.ts";
 
 const spec = loadSpecs(undefined, { recordings: false }).find((item) => item.id === "fmcg-document")!;
@@ -66,4 +66,26 @@ test("In the final check, Model B reviews the merged document. Model A makes a f
       assert.equal(fixer.prompts.length, 0);
     }
   }
+});
+
+test("Grok calls recorded before reasoning was counted are priced from their time, and never lowered.", () => {
+  const calls = [
+    { model: "claude-opus-5-5", seconds: 100, costUsd: 0.03 },
+    { model: "grok-4.7", seconds: 100, costUsd: 0.003 },
+    { model: "grok-4.7", seconds: 1, costUsd: 0.01 },
+  ];
+  const before = withGrokReasoning(calls, "2026-11-11T07:43:20Z");
+  assert.deepEqual(before[0], calls[0]);
+  assert.equal(before[1]?.costUsd, Number((100 * GROK_USD_PER_SECOND).toFixed(6)));
+  assert.equal(before[1]?.costEstimated, true);
+  assert.deepEqual(before[2], calls[2]);
+  assert.deepEqual(withGrokReasoning(calls, "2026-11-14T00:00:00Z"), calls);
+});
+
+test("A recording loads with the estimate, and raw for code that saves it back.", () => {
+  const estimated = recordingFor("healthcare-build")!;
+  const raw = recordingFor("healthcare-build", undefined, { raw: true })!;
+  const grok = (calls: { model: string; costUsd: number }[]) => calls.filter((call) => call.model.startsWith("grok")).reduce((total, call) => total + call.costUsd, 0);
+  assert.ok(grok(estimated.calls) > grok(raw.calls) * 5);
+  assert.ok(raw.calls.every((call) => call.costEstimated === undefined));
 });

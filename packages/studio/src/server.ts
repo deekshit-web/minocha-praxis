@@ -5,13 +5,28 @@ import { createServer, type Server, type ServerResponse } from "node:http";
 import { join } from "node:path";
 import { networkIsolated } from "./isolate.ts";
 import { createDecider } from "./jev.ts";
-import { gatedFor } from "./record.ts";
+import { gatedFor, withGrokReasoning } from "./record.ts";
 import { createLiveService, liveRunners } from "./live.ts";
 import { catalog, expand, loadSpecs } from "./workflows.ts";
 
 /** A summary of a real, metered run of the requirements panel, so viewers can see the replays are not invented. */
 const EVIDENCE = "packages/studio/evidence/live-prd-2026-11-09.json";
 /** That run's full transcript: drafts, reviews, merge and gate verdicts. */
+/**
+ * The 9 November run's record, with Grok's hidden reasoning estimated (see withGrokReasoning). The totals move by
+ * the same amount, and `grokReasoningEstimatedUsd` says how much of them is estimate.
+ */
+export function evidenceWithGrokReasoning(text: string): string {
+  const run = JSON.parse(text) as { date: string; calls: { model: string; seconds: number; costUsd: number }[]; totals: { costUsd: number; costIncludingRetryUsd: number } };
+  const calls = withGrokReasoning(run.calls, `${run.date}T23:59:59Z`);
+  const added = calls.reduce((total, call, index) => total + call.costUsd - (run.calls[index]?.costUsd ?? 0), 0);
+  const round = (value: number) => Math.round(value * 100) / 100;
+  return JSON.stringify({
+    ...run,
+    calls,
+    totals: { ...run.totals, costUsd: round(run.totals.costUsd + added), costIncludingRetryUsd: round(run.totals.costIncludingRetryUsd + added), grokReasoningEstimatedUsd: round(added) },
+  }, null, 2);
+}
 const TRANSCRIPT = "packages/studio/evidence/live-prd-2026-11-09-transcript.json";
 
 function send(res: ServerResponse, status: number, body: unknown, type = "application/json; charset=utf-8"): void {
@@ -67,7 +82,7 @@ export function createStudioServer(options: StudioOptions = {}): Server {
         return;
       }
       if (req.method === "GET" && url.pathname === "/api/evidence") {
-        const body = readFileSync(join(repoRoot(), EVIDENCE), "utf8");
+        const body = evidenceWithGrokReasoning(readFileSync(join(repoRoot(), EVIDENCE), "utf8"));
         if (url.searchParams.has("download")) {
           res.writeHead(200, { "content-type": "application/json; charset=utf-8", "content-disposition": 'attachment; filename="kodiflex-live-run-2026-11-09.json"', "x-content-type-options": "nosniff" });
           res.end(body);

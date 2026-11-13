@@ -21,7 +21,7 @@ const specs = loadSpecs(undefined, { recordings: false }).filter((spec) => (want
 let spent = 0;
 for (const spec of specs) {
   if (finalOnly) {
-    const existing = recordingFor(spec.id, dir);
+    const existing = recordingFor(spec.id, dir, { raw: true });
     if (!existing || existing.finalReview) {
       console.log(`${spec.id}: ${existing ? "already has a final check" : "no recording"}, skipped`);
       continue;

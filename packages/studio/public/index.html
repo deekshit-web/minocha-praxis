@@ -421,7 +421,7 @@
       <details class="fold" id="fold-livebrief"><summary><span>Run the real panel on your own request</span><span class="hint">live models, with a passcode</span></summary><section class="card livebrief" id="livebrief" hidden>
         <p class="eyebrow">Live · your own brief</p>
         <h2>Run the real panel on your own request</h2>
-        <p class="meta">Real models, right now: Model C routes it, then Model A and Model B draft, review each other and merge, and Model B checks the final document once more. About $0.15 and 4 to 8 minutes (Model B is the slow one). Please use made-up names and ids, never personal data.</p>
+        <p class="meta">Real models, right now: Model C routes it, then Model A and Model B draft, review each other and merge, and Model B checks the final document once more. About $0.10 to $0.30 and 4 to 8 minutes (Model B is the slow one). Please use made-up names and ids, never personal data.</p>
         <form id="liveform">
           <label>Passcode<input type="password" name="passcode" autocomplete="off" required /></label>
           <label>Domain<select name="domain" id="livedomain"></select></label>
@@ -487,7 +487,7 @@
       </section>
 
       <footer>
-        How to read this page: the drafts, reviews, merges and final checks are recordings of real model runs, replayed so the page costs nothing; each step says whether it is recorded, and shows the real time, tokens and cost of the call it replays. Model C's small decisions run live when a decision-model key is set, for a fraction of a cent, and say so. The code checks and the build workflows' tests are real code, and they run in your browser. Steps marked replay or simulated show estimates from the same price table the live runs use. With a passcode, the panel also runs live on your own request.
+        How to read this page: the drafts, reviews, merges and final checks are recordings of real model runs, replayed so the page costs nothing; each step says whether it is recorded, and shows the real time, tokens and cost of the call it replays. Model C's small decisions run live when a decision-model key is set, for a fraction of a cent, and say so. The code checks and the build workflows' tests are real code, and they run in your browser. Steps marked replay or simulated show estimates from the same price table the live runs use. Model B (Grok) also reasons privately before it answers, and xAI bills that reasoning; recordings made before 13 November did not count it, so their Model B costs are estimated from each call's time. A feature build costs about $0.60 to $1.50 on live models, and a document $0.10 to $0.30. With a passcode, the panel also runs live on your own request.
       </footer>
     </div>
 
@@ -1180,7 +1180,7 @@
               ? "Request sent to " + modelLabel(step.actor) + " (simulated). Waiting for the first token… " + step.tokens.input.toLocaleString() + " tokens in."
               : "Streaming (simulated): " + Math.round(step.tokens.output * share).toLocaleString() + " of about " + step.tokens.output.toLocaleString() + " output tokens · " + duration(step.seconds * play.progress) + " of about " + duration(step.seconds) + "."
             : step.recorded
-            ? "Recorded live on " + new Date(flow.recording.recordedAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + ": this is what " + modelLabel(step.actor) + " actually wrote. It took " + duration(step.seconds) + ", read " + step.tokens.input.toLocaleString() + " tokens, wrote " + step.tokens.output.toLocaleString() + ", and cost $" + (step.estimatedCostUsd || 0).toFixed(3) + ". Replaying it costs nothing."
+            ? "Recorded live on " + new Date(flow.recording.recordedAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + ": this is what " + modelLabel(step.actor) + " actually wrote. It took " + duration(step.seconds) + ", read " + step.tokens.input.toLocaleString() + " tokens, wrote " + step.tokens.output.toLocaleString() + ", and cost $" + (step.estimatedCostUsd || 0).toFixed(3) + (step.costEstimated ? " (about; this includes an estimate of Model B's hidden reasoning, which the meter missed at the time)" : "") + ". Replaying it costs nothing."
             : step.kind === "llm"
             ? "Not called. A live run would take about " + duration(step.seconds) + " and cost about " + money(step.estimatedCostUsd) + " (" + step.tokens.input.toLocaleString() + " tokens in, " + step.tokens.output.toLocaleString() + " out)."
             : (step.kind === "tool" || step.kind === "check") && !isReal(step) && step.kind !== "input"
@@ -1213,7 +1213,7 @@
                 ["Tokens", step.tokens.input.toLocaleString() + " in · " + step.tokens.output.toLocaleString() + " out"],
                 ["Timing", "took " + duration(step.seconds)],
                 ["Stop reason", vendor.stop],
-                ["Cost", "$" + (step.estimatedCostUsd || 0).toFixed(4) + ", real"],
+                ["Cost", "$" + (step.estimatedCostUsd || 0).toFixed(4) + (step.costEstimated ? ", estimated: the recorded cost left out Grok's hidden reasoning, so it is priced from the call's time" : ", real")],
               ]
             : real
             ? [
@@ -2272,7 +2272,7 @@
         const claude = run.reviews.claudeReviewingGrok.length;
         const summary = add(
           "p",
-          "On " + new Date(run.date + "T12:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + " the requirements panel ran live on Claude Opus 5 and Grok 4.7: " + total.calls + " model calls, " + duration(total.modelSeconds) + " of model time, " + money(total.costUsd) + " (" + money(total.costIncludingRetryUsd) + " including one call that hit its output limit and was retried). Grok found " + grok + " defects in Claude's draft and Claude found " + claude + " in Grok's. The merge resolved all " + (grok + claude) + ", and every code gate passed.",
+          "On " + new Date(run.date + "T12:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + " the requirements panel ran live on Claude Opus 5 and Grok 4.7: " + total.calls + " model calls, " + duration(total.modelSeconds) + " of model time, " + money(total.costUsd) + " (" + money(total.costIncludingRetryUsd) + " including one call that hit its output limit and was retried" + (total.grokReasoningEstimatedUsd ? "; " + money(total.grokReasoningEstimatedUsd) + " of it is an estimate of Grok's hidden reasoning, which the meter missed at the time" : "") + "). Grok found " + grok + " defects in Claude's draft and Claude found " + claude + " in Grok's. The merge resolved all " + (grok + claude) + ", and every code gate passed.",
         );
         const quote = add("blockquote");
         quote.append(add("span", "Model B (Grok 4.7), reviewing Model A's (Claude Opus 5) draft · " + run.highlight.severity, "who"), document.createTextNode(run.highlight.point));
@@ -2288,7 +2288,7 @@
         table.appendChild(head);
         for (const call of run.calls) {
           const tr = add("tr");
-          [call.role + (call.note ? " (retried)" : ""), modelLabel(call.model), duration(call.seconds), call.inputTokens.toLocaleString(), call.outputTokens.toLocaleString(), money(call.costUsd)].forEach((item) => tr.appendChild(add("td", item)));
+          [call.role + (call.note ? " (retried)" : ""), modelLabel(call.model), duration(call.seconds), call.inputTokens.toLocaleString(), call.outputTokens.toLocaleString(), money(call.costUsd) + (call.costEstimated ? " (est.)" : "")].forEach((item) => tr.appendChild(add("td", item)));
           table.appendChild(tr);
         }
         details.appendChild(table);

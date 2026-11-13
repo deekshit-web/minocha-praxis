@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createDecider } from "./jev.ts";
-import { createStudioServer } from "./server.ts";
+import { createStudioServer, evidenceWithGrokReasoning } from "./server.ts";
 
 test("The studio serves its catalog and each simulated workflow. It rejects requests from other sites.", async () => {
   const server = createStudioServer({ decider: createDecider({ apiKey: "" }) });
@@ -61,4 +61,14 @@ test("The container image includes each folder that the server reads at run time
   for (const folder of ["public", "workflows", "evidence", "recordings"]) {
     assert.match(dockerfile, new RegExp(`COPY --from=build /app/packages/studio/${folder} `), `Dockerfile does not copy packages/studio/${folder}`);
   }
+});
+
+test("The 9 November evidence adds Grok's estimated reasoning to its calls and its totals alike.", () => {
+  const raw = { date: "2026-11-09", calls: [{ model: "claude-opus-5", seconds: 10, costUsd: 0.3 }, { model: "grok-4.7", seconds: 500, costUsd: 0.06 }], totals: { costUsd: 0.36, costIncludingRetryUsd: 0.5, calls: 2 } };
+  const run = JSON.parse(evidenceWithGrokReasoning(JSON.stringify(raw)));
+  assert.equal(run.calls[0].costUsd, 0.3);
+  assert.equal(run.calls[1].costEstimated, true);
+  assert.equal(run.totals.grokReasoningEstimatedUsd, 0.22);
+  assert.equal(run.totals.costUsd, 0.58);
+  assert.equal(run.totals.costIncludingRetryUsd, 0.72);
 });

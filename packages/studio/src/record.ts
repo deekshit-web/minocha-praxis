@@ -42,7 +42,27 @@ const Call = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   costUsd: z.number(),
+  /** Set when costUsd is an estimate that adds Grok's hidden reasoning, which the recorder left out at the time. */
+  costEstimated: z.boolean().optional(),
 });
+
+/**
+ * Grok calls recorded before 13 November 2026 left out grok-4.7's hidden reasoning, which xAI bills at the output
+ * rate and which was 87% of one week's xAI bill. The tokens cannot be recovered, so such a call's cost is estimated
+ * from its duration: calls recorded with reasoning counted, at xAI's default "high" effort, cost $0.00055 to $0.00057
+ * a second (evals/live-build/run-2/acceptance-prompt, 16-volume-rebate and 17-due-dates "current"). An estimate never
+ * lowers what was recorded. Claude's costs were always right.
+ */
+export const GROK_REASONING_COUNTED_FROM = "2026-11-13T12:36:45Z";
+export const GROK_USD_PER_SECOND = 0.00056;
+export function withGrokReasoning<T extends { model: string; seconds: number; costUsd: number }>(calls: T[], recordedAt: string): (T & { costEstimated?: boolean })[] {
+  if (Date.parse(recordedAt) >= Date.parse(GROK_REASONING_COUNTED_FROM)) return calls;
+  return calls.map((call) => {
+    if (!call.model.startsWith("grok")) return call;
+    const estimate = call.seconds * GROK_USD_PER_SECOND;
+    return estimate > call.costUsd ? { ...call, costUsd: Number(estimate.toFixed(6)), costEstimated: true } : call;
+  });
+}
 
 export const RecordingSchema = z.object({
   id: z.string(),
@@ -261,9 +281,12 @@ export function gatedFor(id: string, dir = RECORDING_DIR()): unknown | null {
   return existsSync(path) ? (JSON.parse(readFileSync(path, "utf8")) as unknown) : null;
 }
 
-/** A workflow's recording, if one has been made. */
-export function recordingFor(id: string, dir = RECORDING_DIR()): Recording | null {
+/** A workflow's recording, if one has been made. `raw` skips the Grok reasoning estimate, for code that saves it back. */
+export function recordingFor(id: string, dir = RECORDING_DIR(), { raw = false } = {}): Recording | null {
   const path = join(dir, `${id}.json`);
   if (!existsSync(path)) return null;
-  return RecordingSchema.parse(JSON.parse(readFileSync(path, "utf8")));
+  const recording = RecordingSchema.parse(JSON.parse(readFileSync(path, "utf8")));
+  if (raw) return recording;
+  const latest = [recording.recordedAt, recording.finalCheckedAt ?? recording.recordedAt].sort().at(-1) ?? recording.recordedAt;
+  return { ...recording, calls: withGrokReasoning(recording.calls, latest) };
 }

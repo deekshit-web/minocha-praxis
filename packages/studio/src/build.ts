@@ -4,7 +4,7 @@ import { join } from "node:path";
 import * as z from "zod/v4";
 import { ArchDiagramSchema, generateDiagram } from "./diagramGen.ts";
 import { type TestOutcome, runIsolated } from "./isolate.ts";
-import { type RecordedCall, Review, renderReview } from "./record.ts";
+import { type RecordedCall, Review, renderReview, withGrokReasoning } from "./record.ts";
 import type { WorkflowSpec } from "./workflows.ts";
 
 /**
@@ -62,7 +62,7 @@ export const BuildRecordingSchema = z.object({
   id: z.string(),
   recordedAt: z.string(),
   contract: z.string(),
-  calls: z.array(z.object({ role: z.string(), model: z.string(), seconds: z.number(), inputTokens: z.number(), outputTokens: z.number(), costUsd: z.number() })),
+  calls: z.array(z.object({ role: z.string(), model: z.string(), seconds: z.number(), inputTokens: z.number(), outputTokens: z.number(), costUsd: z.number(), costEstimated: z.boolean().optional() })),
   architecture: z.object({ draft: z.string(), review: z.string(), final: z.string(), resolutions: z.string() }),
   code: z.object({ first: z.string(), summary: z.string(), review: z.string(), revised: z.string(), resolutions: z.string() }),
   unitScript: z.string(),
@@ -362,5 +362,7 @@ const BUILD_DIR = () => join(repoRoot(), "packages/studio/recordings/build");
 
 export function buildRecordingFor(id: string, dir = BUILD_DIR()): BuildRecording | null {
   const path = join(dir, `${id}.json`);
-  return existsSync(path) ? BuildRecordingSchema.parse(JSON.parse(readFileSync(path, "utf8"))) : null;
+  if (!existsSync(path)) return null;
+  const recording = BuildRecordingSchema.parse(JSON.parse(readFileSync(path, "utf8")));
+  return { ...recording, calls: withGrokReasoning(recording.calls, recording.recordedAt) };
 }
