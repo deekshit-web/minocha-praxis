@@ -228,12 +228,46 @@ every script against the recorded code. 40 samples cost $0.80 (plus about $0.06 
   answer does not match the schema, and counts both calls. A second bad answer still stops the build.
 
 **Read this as an upper bound.** The prompt was written after looking at these ten builds' gaps, and it was measured
-on the same ten. The fair test is on builds it has not seen.
+on the same ten. The fair test is on builds it has not seen; the second run below is that test.
+
+## A second run: ten new briefs (13 November)
+
+Ten new briefs (`evals/live-build/run-2/briefs.json`), two per domain, on topics the first run did not use, went through
+the same runner with the new Model B prompt and the fixes above. Four were built to make the first code wrong, each
+hinging on a rule code often gets wrong even when it is stated: a hospital stay across a daylight-saving night (12),
+a GPA rounded half to even (14), loan due dates from the 31st (17), and a delivery date over a cutoff, a weekend and a
+holiday (20). Every example in the briefs was worked out by hand first.
+
+- **All 10 finished and all passed first time,** acceptance and unit tests, with no fix round. **$3.71 in all**, $0.26
+  to $0.53 a build (mean $0.37, against $0.35 before), 11 to 36 minutes with five at once.
+- **The traps did not spring.** The pipeline settled each hard rule before any code was written. For the GPA, the PRD
+  and contract chose decimal strings ("3.7"), so the code never touched floating point. Model B's acceptance tests went
+  straight at each trap: 9 of 12's 16 cases involve the clock changes, 12 of 17's are month ends, and every one of
+  20's involves the cutoff or a holiday.
+- **The four trap builds are right, checked independently.** `npm run live-build-trap-check` runs each one beside a
+  reference written from its brief, on 14,671 generated inputs (daylight-saving nights, exact halves, month ends and
+  leap years, cutoffs and holidays). There were 0 disagreements. The check is not blind: with `--self-test` it is
+  given the naive code a model might write (wall-clock subtraction, `Math.round`, `setUTCMonth`, no holidays) and
+  finds 351, 57, 947 and 520 disagreements.
+- **The new Model B prompt held up on briefs it had not seen.** Every build got the full 16 cases. On their own,
+  Model B's acceptance tests caught 75% of 229 mutants, against 63% on the first run (both counting every mutant);
+  Model A's unit tests caught 72%, and the two together 77%. On the first run Model B's tests added nothing to Model
+  A's; here they caught the most of either suite. The survivors of this run have not been sorted, so there is no
+  figure leaving out equivalent mutants.
+- **No answer needed the retry,** and the runner, tidied since the first run, worked unchanged.
+- **Mutation testing needed one fix.** In 20, two mutants made a day-by-day loop endless and stalled the run. The
+  script now falls back to one mutant per process with a 10-second limit, counting a timeout as caught, as a test
+  runner would. On the first run's 208 mutants the fallback gives the same answer as the normal path for every one.
+
+So the fix-round path has still never run on live output: across 22 live builds, every first run has passed. Briefs
+that state a hard rule plainly do not make the code fail, because the panel and contract settle the rule first. To
+exercise the path live would take a fault the pipeline cannot see coming, for example code deliberately broken before
+the first run. The path itself is covered by the build tests with scripted models.
 
 ## What this does not show
 
-- **No build failed.** The red-run and fix-round path has never run on live output. To test it I would need briefs
-  built to make a model's first code wrong.
+- **No build failed.** The red-run and fix-round path has never run on live output. Four briefs built to make the
+  first code wrong (the second run) did not: the pipeline settled each hard rule before any code was written.
 - **Passing tests is weak evidence on its own.** The tests come from the PRD that the same pipeline wrote. They show
   the code matches the pipeline's reading of the brief, not the requester's intent. Reviewers raised a P0 in half the
   builds before any code ran, so first-run passes mostly reflect problems fixed upstream. Nobody reviewed the code
@@ -258,10 +292,12 @@ on the same ten. The fair test is on builds it has not seen.
 | One full record per build: the panel, every build stage, every call's cost | `evals/live-build/records/` |
 | The results in one file | `evals/live-build/results-2026-11-12.json` |
 | The runner | `scripts/live-build-dry-run.mjs` |
+| The second run: briefs, records, results, mutation testing, and the independent check of the four trap builds | `evals/live-build/run-2/` (`npm run live-build-mutation -- evals/live-build/run-2/records`; `npm run live-build-trap-check`, free) |
 | Mutation testing on the ten builds: every mutant, which test caught it, the survivors | `evals/live-build/mutation-2026-11-12.json` (`npm run live-build-mutation`, free) |
 | Model B's test steps re-run with the old and new prompt (40 answers), the failures, and their scores | `evals/live-build/acceptance-prompt/`, `evals/live-build/acceptance-score-2026-11-13.json` (`npm run acceptance-eval`, about $0.80; `npm run acceptance-score`, free) |
 | The 69 survivors sorted: each gap with the input that shows it, each equivalent mutant with its reason | `evals/live-build/survivors-2026-11-12.json`, reasons in `evals/live-build/survivors-equivalent.json` (`npm run live-build-survivors`, free) |
 | The rating kit: 29 findings, a blind sheet for each of two raters, a page per build, and the key | `evals/live-build/judging/` (`npm run judging-prepare`, then `npm run judging-analyze`) |
 
-The runner in the repository is a tidied copy of the script that produced these results. It has not been run since, and
-running it spends about $3.50.
+The runner in the repository is a tidied copy of the script that produced these results. It produced the second run
+unchanged (`node scripts/live-build-dry-run.mjs evals/live-build/run-2/briefs.json`); a run of ten spends about $3.50
+to $4.

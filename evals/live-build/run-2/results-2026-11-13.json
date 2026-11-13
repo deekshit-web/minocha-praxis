@@ -1,0 +1,176 @@
+{
+ "spent": 3.7053434,
+ "results": [
+  {
+   "id": "11-prior-auth",
+   "note": "clear rule, two limits",
+   "domain": "healthcare",
+   "status": "done",
+   "error": null,
+   "costUsd": 0.32113139999999996,
+   "wallSeconds": 826,
+   "testRunFailures": [
+    0
+   ],
+   "fixRounds": 0,
+   "diagram": "drawn",
+   "firstDrawingProblems": [
+    "The sub text of box check must be 1 to 31 characters.",
+    "Box check claims a change from a review, but the review raised no finding."
+   ],
+   "contractRevised": false
+  },
+  {
+   "id": "15-case-pack",
+   "note": "clear rounding rule",
+   "domain": "fmcg",
+   "status": "done",
+   "error": null,
+   "costUsd": 0.2636232,
+   "wallSeconds": 871,
+   "testRunFailures": [
+    0
+   ],
+   "fixRounds": 0,
+   "diagram": "drawn",
+   "firstDrawingProblems": [],
+   "contractRevised": false
+  },
+  {
+   "id": "13-late-penalty",
+   "note": "clear rule with a cap",
+   "domain": "education",
+   "status": "done",
+   "error": null,
+   "costUsd": 0.39467100000000005,
+   "wallSeconds": 1758,
+   "testRunFailures": [
+    0
+   ],
+   "fixRounds": 0,
+   "diagram": "drawn",
+   "firstDrawingProblems": [
+    "The sub text of box caller must be 1 to 31 characters."
+   ],
+   "contractRevised": false
+  },
+  {
+   "id": "14-gpa-rounding",
+   "note": "built to fail: round half to even",
+   "domain": "education",
+   "status": "done",
+   "error": null,
+   "costUsd": 0.40393799999999996,
+   "wallSeconds": 1758,
+   "testRunFailures": [
+    0
+   ],
+   "fixRounds": 0,
+   "diagram": "drawn",
+   "firstDrawingProblems": [],
+   "contractRevised": true
+  },
+  {
+   "id": "12-observation-hours",
+   "note": "built to fail: daylight saving changes the length of a day",
+   "domain": "healthcare",
+   "status": "done",
+   "error": null,
+   "costUsd": 0.5277114000000002,
+   "wallSeconds": 2178,
+   "testRunFailures": [
+    0
+   ],
+   "fixRounds": 0,
+   "diagram": "drawn",
+   "firstDrawingProblems": [
+    "Box resolve claims a change from a review, but the review raised no finding."
+   ],
+   "contractRevised": false
+  },
+  {
+   "id": "20-promised-date",
+   "note": "built to fail: cutoff, weekend and holiday",
+   "domain": "logistics",
+   "status": "done",
+   "error": null,
+   "costUsd": 0.4679213999999999,
+   "wallSeconds": 1412,
+   "testRunFailures": [
+    0
+   ],
+   "fixRounds": 0,
+   "diagram": "drawn",
+   "firstDrawingProblems": [
+    "Box promise claims a change from a review, but the review raised no finding."
+   ],
+   "contractRevised": true
+  },
+  {
+   "id": "16-volume-rebate",
+   "note": "marginal tiers",
+   "domain": "fmcg",
+   "status": "done",
+   "error": null,
+   "costUsd": 0.41791899999999993,
+   "wallSeconds": 1637,
+   "testRunFailures": [
+    0
+   ],
+   "fixRounds": 0,
+   "diagram": "drawn",
+   "firstDrawingProblems": [],
+   "contractRevised": true
+  },
+  {
+   "id": "18-id-expiry",
+   "note": "clear threshold",
+   "domain": "finance",
+   "status": "done",
+   "error": null,
+   "costUsd": 0.26958319999999997,
+   "wallSeconds": 766,
+   "testRunFailures": [
+    0
+   ],
+   "fixRounds": 0,
+   "diagram": "drawn",
+   "firstDrawingProblems": [],
+   "contractRevised": false
+  },
+  {
+   "id": "19-billable-weight",
+   "note": "clear formula with rounding",
+   "domain": "logistics",
+   "status": "done",
+   "error": null,
+   "costUsd": 0.34696520000000003,
+   "wallSeconds": 916,
+   "testRunFailures": [
+    0
+   ],
+   "fixRounds": 0,
+   "diagram": "none",
+   "firstDrawingProblems": [
+    "Box dimcalc claims a change from a review, but the review raised no finding."
+   ],
+   "contractRevised": false
+  },
+  {
+   "id": "17-due-dates",
+   "note": "built to fail: month ends",
+   "domain": "finance",
+   "status": "done",
+   "error": null,
+   "costUsd": 0.2918796,
+   "wallSeconds": 676,
+   "testRunFailures": [
+    0
+   ],
+   "fixRounds": 0,
+   "diagram": "drawn",
+   "firstDrawingProblems": [],
+   "contractRevised": false
+  }
+ ]
+}

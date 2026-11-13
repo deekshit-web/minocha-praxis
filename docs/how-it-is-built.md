@@ -130,8 +130,9 @@ run on 12 November. The write-up is `docs/live-build-dry-run.md`, and the record
 | --- | --- | --- | --- |
 | The first two, by hand | $0.32 and $0.39 | 16 to 17 min | All tests passed first time. |
 | The dry run: 10 briefs across five domains, five builds at once | $0.25 to $0.45 (mean $0.35) | 8 to 33 min | All 10 finished and all passed their acceptance tests first time (3 of Model A's unit tests failed in two builds, uncounted at the time; both causes are now fixed). The tests caught 67% of 208 mutants, 79% leaving out the 33 that can never change a result; 15 survivors are gaps on ordinary inputs. 7 diagrams passed the check first time and 3 passed after the one correction. |
+| A second dry run: 10 new briefs, 4 built to make the first code wrong | $0.26 to $0.53 (mean $0.37) | 11 to 36 min | All 10 passed first time. The four trap builds agree with a reference written from their briefs on 14,671 inputs. Model B's acceptance tests caught 75% of 229 mutants on their own, against 63% before the prompt change. |
 
-All twelve passed first time, so **the red-run and fix-round path has still not been exercised live**. That does not
+All twenty-two passed first time, including four built to fail, so **the red-run and fix-round path has still not been exercised live**. That does not
 mean nothing went wrong upstream: reviewers raised a P0 in 5 of the 10 dry-run builds before any code ran. Read by hand,
 3 of the 9 P0s were serious (for example a design that read `exam[0]` of an empty list), 5 were real but rated too high,
 and 1 was a false alarm: a code review claimed a `BigInt` added to a string throws, which is wrong, and Model A correctly
@@ -232,7 +233,7 @@ Full write-up: `docs/eval-results.md`. About $42 of real, metered calls.
 
 **Limits an expert will find.** Eight briefs is a small sample. Claude Code sorted the 16 findings, not a person.
 There is no false-alarm rate, because our clean control documents turned out to contain a real flaw. There is no
-score yet for the consistency problems the final review finds. Twelve live builds have been measured. None needed a fix round, and all were small single-function features in made-up domains.
+score yet for the consistency problems the final review finds. Twenty-two live builds have been measured. None needed a fix round, and all were small single-function features in made-up domains.
 
 ## Questions you will get
 

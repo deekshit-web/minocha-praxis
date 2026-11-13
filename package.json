@@ -25,6 +25,7 @@
     "live-build-survivors": "node scripts/live-build-survivors.mjs",
     "acceptance-eval": "node scripts/acceptance-eval.mjs",
     "acceptance-score": "node scripts/acceptance-score.mjs",
+    "live-build-trap-check": "node scripts/live-build-trap-check.mjs",
     "railway-plan": "NODE_OPTIONS=--import=tsx railway config plan",
     "railway-apply": "NODE_OPTIONS=--import=tsx railway config apply"
   },
