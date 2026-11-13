@@ -1,0 +1,19 @@
+{
+  "build": "09-window-overlap",
+  "variant": "before",
+  "n": 2,
+  "model": "grok-4.7",
+  "recordedAt": "2026-11-12T19:51:49.253Z",
+  "cases": [
+    "TC-1 · REQ-2 · first 09:00-11:00, second 10:30-12:00 → 30 minutes",
+    "TC-2 · REQ-3 · first 09:00-11:00, second 10:30-12:00 → overlapping, overlap 30 minutes is greater than 0",
+    "TC-3 · REQ-3 · first 09:00-12:00, second 12:00-13:00 → not overlapping, 0 minutes",
+    "TC-4 · REQ-4 · first 10:30-12:00, second 09:00-11:00 → 30 minutes and overlapping, same as the reverse order",
+    "TC-5 · REQ-4 · first 12:00-13:00, second 09:00-12:00 → 0 minutes and not overlapping, same as the reverse order",
+    "TC-6 · REQ-2 · first 09:00-11:00, second 12:00-13:00 → 0 minutes",
+    "TC-7 · REQ-1 · first 09:00-11:00, second 10:30-12:00, both same day with start and end in HH:mm → accepted, 30 minutes"
+  ],
+  "script": "test(\"partial overlap of 09:00 to 11:00 and 10:30 to 12:00 is 30 minutes\", function () {\n  var actual = code.windowOverlap({ start: \"09:00\", end: \"11:00\" }, { start: \"10:30\", end: \"12:00\" });\n  assert.equal(actual.minutes, 30);\n});\n\ntest(\"09:00 to 11:00 and 10:30 to 12:00 count as overlapping because the overlap is greater than 0\", function () {\n  var actual = code.windowOverlap({ start: \"09:00\", end: \"11:00\" }, { start: \"10:30\", end: \"12:00\" });\n  assert.equal(actual.overlaps, true);\n  assert.equal(actual.minutes, 30);\n  assert.ok(actual.minutes > 0);\n});\n\ntest(\"windows that only touch at 12:00 do not overlap and return 0 minutes\", function () {\n  var actual = code.windowOverlap({ start: \"09:00\", end: \"12:00\" }, { start: \"12:00\", end: \"13:00\" });\n  assert.equal(actual.overlaps, false);\n  assert.equal(actual.minutes, 0);\n});\n\ntest(\"giving 10:30 to 12:00 first still overlaps by 30 minutes the same as the other order\", function () {\n  var forward = code.windowOverlap({ start: \"09:00\", end: \"11:00\" }, { start: \"10:30\", end: \"12:00\" });\n  var actual = code.windowOverlap({ start: \"10:30\", end: \"12:00\" }, { start: \"09:00\", end: \"11:00\" });\n  assert.equal(actual.minutes, 30);\n  assert.equal(actual.overlaps, true);\n  assert.deepEqual(actual, forward);\n});\n\ntest(\"giving 12:00 to 13:00 first still does not overlap and returns 0 the same as the other order\", function () {\n  var forward = code.windowOverlap({ start: \"09:00\", end: \"12:00\" }, { start: \"12:00\", end: \"13:00\" });\n  var actual = code.windowOverlap({ start: \"12:00\", end: \"13:00\" }, { start: \"09:00\", end: \"12:00\" });\n  assert.equal(actual.minutes, 0);\n  assert.equal(actual.overlaps, false);\n  assert.deepEqual(actual, forward);\n});\n\ntest(\"09:00 to 11:00 and 12:00 to 13:00 have a gap and overlap by 0 minutes\", function () {\n  var actual = code.windowOverlap({ start: \"09:00\", end: \"11:00\" }, { start: \"12:00\", end: \"13:00\" });\n  assert.equal(actual.minutes, 0);\n});\n\ntest(\"same day windows with start and end in HH:mm are accepted and return 30 minutes\", function () {\n  var actual = code.windowOverlap({ start: \"09:00\", end: \"11:00\" }, { start: \"10:30\", end: \"12:00\" });\n  assert.deepEqual(actual, { overlaps: true, minutes: 30 });\n});\n",
+  "costUsd": 0.010372,
+  "seconds": 165.8
+}

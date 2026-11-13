@@ -1,0 +1,20 @@
+{
+  "build": "05-stacked-promo",
+  "variant": "before",
+  "n": 1,
+  "model": "grok-4.7",
+  "recordedAt": "2026-11-12T19:41:40.367Z",
+  "cases": [
+    "TC-1 · REQ-3 10% applies only to paid units · sku=A, units=8, unitPrice=5.00 → normal price 40.00, free 2, paid 6, line total 27.00 (not 26.00)",
+    "TC-2 · REQ-4 units under 4 get only the 10% discount · sku=A, units=3, unitPrice=5.00 → free 0, line total 13.50",
+    "TC-3 · REQ-2 free units = floor(units/4), leftovers charged · sku=A, units=7, unitPrice=5.00 → free 1, paid 6, line total 27.00",
+    "TC-4 · REQ-2 one unit waived per complete set of four · sku=A, units=4, unitPrice=5.00 → free 1, paid 3, line total 13.50",
+    "TC-5 · REQ-1 units of 0 is valid · sku=A, units=0, unitPrice=5.00 → line total 0.00",
+    "TC-6 · REQ-1 round once at the end, half-up, to 2 decimals · sku=A, units=1, unitPrice=0.05 → line total 0.05",
+    "TC-7 · REQ-4 reject negative units and return no total · sku=A, units=-1, unitPrice=5.00 → error, no total",
+    "TC-8 · REQ-4 reject negative unitPrice and return no total · sku=A, units=1, unitPrice=-1.00 → error, no total"
+  ],
+  "script": "test(\"ten percent discount applies only to paid units\", function () {\n  var actual = code.priceLine({ sku: \"A\", units: 8, unitPrice: 5 });\n  assert.deepEqual(actual, { sku: \"A\", normalPrice: 40, freeUnits: 2, paidUnits: 6, lineTotal: 27 });\n  assert.ok(actual.lineTotal !== 26);\n});\n\ntest(\"units under four get only the ten percent discount\", function () {\n  var actual = code.priceLine({ sku: \"A\", units: 3, unitPrice: 5 });\n  assert.deepEqual(actual, { sku: \"A\", normalPrice: 15, freeUnits: 0, paidUnits: 3, lineTotal: 13.5 });\n});\n\ntest(\"free units are floor of units divided by four and leftovers are charged\", function () {\n  var actual = code.priceLine({ sku: \"A\", units: 7, unitPrice: 5 });\n  assert.deepEqual(actual, { sku: \"A\", normalPrice: 35, freeUnits: 1, paidUnits: 6, lineTotal: 27 });\n});\n\ntest(\"one unit is waived per complete set of four\", function () {\n  var actual = code.priceLine({ sku: \"A\", units: 4, unitPrice: 5 });\n  assert.deepEqual(actual, { sku: \"A\", normalPrice: 20, freeUnits: 1, paidUnits: 3, lineTotal: 13.5 });\n});\n\ntest(\"zero units is valid and the line total is zero\", function () {\n  var actual = code.priceLine({ sku: \"A\", units: 0, unitPrice: 5 });\n  assert.deepEqual(actual, { sku: \"A\", normalPrice: 0, freeUnits: 0, paidUnits: 0, lineTotal: 0 });\n});\n\ntest(\"line total is rounded once at the end half up to two decimals\", function () {\n  var actual = code.priceLine({ sku: \"A\", units: 1, unitPrice: 0.05 });\n  assert.deepEqual(actual, { sku: \"A\", normalPrice: 0.05, freeUnits: 0, paidUnits: 1, lineTotal: 0.05 });\n});\n\ntest(\"negative units are rejected with an error and no total is returned\", function () {\n  assert.throws(function () {\n    code.priceLine({ sku: \"A\", units: -1, unitPrice: 5 });\n  }, /^invalid field: units$/);\n});\n\ntest(\"negative unit price is rejected with an error and no total is returned\", function () {\n  assert.throws(function () {\n    code.priceLine({ sku: \"A\", units: 1, unitPrice: -1 });\n  }, /^invalid field: unitPrice$/);\n});\n",
+  "costUsd": 0.012534,
+  "seconds": 142.6
+}

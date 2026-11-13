@@ -1,0 +1,28 @@
+{
+  "build": "09-window-overlap",
+  "variant": "after",
+  "n": 2,
+  "model": "grok-4.7",
+  "recordedAt": "2026-11-12T19:54:48.357Z",
+  "cases": [
+    "TC-1 · AC-1 · first 09:00-11:00, second 10:30-12:00 → overlaps true, minutes 30 (11:00 minus 10:30)",
+    "TC-2 · AC-2 · first 09:00-12:00, second 12:00-13:00 → overlaps false, minutes 0 (12:00 minus 12:00)",
+    "TC-3 · AC-3 · first 10:30-12:00, second 09:00-11:00 → overlaps true, minutes 30 (11:00 minus 10:30)",
+    "TC-4 · REQ-4 · first 12:00-13:00, second 09:00-12:00 → overlaps false, minutes 0 (12:00 minus 12:00)",
+    "TC-5 · REQ-3 · first 09:00-10:00, second 09:59-11:30 → overlaps true, minutes 1 (10:00 minus 09:59)",
+    "TC-6 · REQ-3 · first 09:00-10:00, second 10:01-11:17 → overlaps false, minutes 0 (max(0, 10:00 minus 10:01))",
+    "TC-7 · REQ-2 · first 08:00-14:00, second 10:15-11:45 → overlaps true, minutes 90 (11:45 minus 10:15)",
+    "TC-8 · REQ-4 · first 10:15-11:45, second 08:00-14:00 → overlaps true, minutes 90 (11:45 minus 10:15)",
+    "TC-9 · REQ-2 · first 08:20-10:05, second 09:50-12:40 → overlaps true, minutes 15 (10:05 minus 09:50)",
+    "TC-10 · REQ-4 · first 09:50-12:40, second 08:20-10:05 → overlaps true, minutes 15 (10:05 minus 09:50)",
+    "TC-11 · REQ-2 · first 10:59-13:00, second 10:00-12:00 → overlaps true, minutes 61 (12:00 minus 10:59)",
+    "TC-12 · REQ-2 · first 07:10-08:40, second 09:40-12:05 → overlaps false, minutes 0 (max(0, 08:40 minus 09:40))",
+    "TC-13 · REQ-4 · first 09:40-12:05, second 07:10-08:40 → overlaps false, minutes 0 (max(0, 08:40 minus 09:40))",
+    "TC-14 · REQ-1 · first 00:00-01:30, second 00:45-02:00 → overlaps true, minutes 45 (01:30 minus 00:45)",
+    "TC-15 · REQ-1 · first 22:10-23:59, second 23:40-23:59 → overlaps true, minutes 19 (23:59 minus 23:40)",
+    "TC-16 · REQ-3 · first 14:05-16:22, second 16:22-18:01 → overlaps false, minutes 0 (16:22 minus 16:22)"
+  ],
+  "script": "test('windows 09:00 to 11:00 and 10:30 to 12:00 overlap by 30 minutes', function () {\n  assert.deepEqual(code.windowOverlap({ start: '09:00', end: '11:00' }, { start: '10:30', end: '12:00' }), { overlaps: true, minutes: 30 });\n});\n\ntest('windows that only touch at 12:00 do not overlap', function () {\n  assert.deepEqual(code.windowOverlap({ start: '09:00', end: '12:00' }, { start: '12:00', end: '13:00' }), { overlaps: false, minutes: 0 });\n});\n\ntest('swapped windows 10:30 to 12:00 and 09:00 to 11:00 overlap by 30 minutes', function () {\n  assert.deepEqual(code.windowOverlap({ start: '10:30', end: '12:00' }, { start: '09:00', end: '11:00' }), { overlaps: true, minutes: 30 });\n});\n\ntest('swapped windows that only touch at 12:00 do not overlap', function () {\n  assert.deepEqual(code.windowOverlap({ start: '12:00', end: '13:00' }, { start: '09:00', end: '12:00' }), { overlaps: false, minutes: 0 });\n});\n\ntest('windows that share one minute overlap by 1 minute', function () {\n  assert.deepEqual(code.windowOverlap({ start: '09:00', end: '10:00' }, { start: '09:59', end: '11:30' }), { overlaps: true, minutes: 1 });\n});\n\ntest('windows one minute apart do not overlap', function () {\n  assert.deepEqual(code.windowOverlap({ start: '09:00', end: '10:00' }, { start: '10:01', end: '11:17' }), { overlaps: false, minutes: 0 });\n});\n\ntest('a window fully inside another overlaps by 90 minutes', function () {\n  assert.deepEqual(code.windowOverlap({ start: '08:00', end: '14:00' }, { start: '10:15', end: '11:45' }), { overlaps: true, minutes: 90 });\n});\n\ntest('an inner window given first still overlaps by 90 minutes', function () {\n  assert.deepEqual(code.windowOverlap({ start: '10:15', end: '11:45' }, { start: '08:00', end: '14:00' }), { overlaps: true, minutes: 90 });\n});\n\ntest('windows 08:20 to 10:05 and 09:50 to 12:40 overlap by 15 minutes', function () {\n  assert.deepEqual(code.windowOverlap({ start: '08:20', end: '10:05' }, { start: '09:50', end: '12:40' }), { overlaps: true, minutes: 15 });\n});\n\ntest('swapped windows 09:50 to 12:40 and 08:20 to 10:05 overlap by 15 minutes', function () {\n  assert.deepEqual(code.windowOverlap({ start: '09:50', end: '12:40' }, { start: '08:20', end: '10:05' }), { overlaps: true, minutes: 15 });\n});\n\ntest('windows 10:59 to 13:00 and 10:00 to 12:00 overlap by 61 minutes', function () {\n  assert.deepEqual(code.windowOverlap({ start: '10:59', end: '13:00' }, { start: '10:00', end: '12:00' }), { overlaps: true, minutes: 61 });\n});\n\ntest('windows 07:10 to 08:40 and 09:40 to 12:05 do not overlap', function () {\n  assert.deepEqual(code.windowOverlap({ start: '07:10', end: '08:40' }, { start: '09:40', end: '12:05' }), { overlaps: false, minutes: 0 });\n});\n\ntest('swapped windows 09:40 to 12:05 and 07:10 to 08:40 do not overlap', function () {\n  assert.deepEqual(code.windowOverlap({ start: '09:40', end: '12:05' }, { start: '07:10', end: '08:40' }), { overlaps: false, minutes: 0 });\n});\n\ntest('early windows 00:00 to 01:30 and 00:45 to 02:00 overlap by 45 minutes', function () {\n  assert.deepEqual(code.windowOverlap({ start: '00:00', end: '01:30' }, { start: '00:45', end: '02:00' }), { overlaps: true, minutes: 45 });\n});\n\ntest('late windows 22:10 to 23:59 and 23:40 to 23:59 overlap by 19 minutes', function () {\n  assert.deepEqual(code.windowOverlap({ start: '22:10', end: '23:59' }, { start: '23:40', end: '23:59' }), { overlaps: true, minutes: 19 });\n});\n\ntest('windows that only touch at 16:22 do not overlap', function () {\n  assert.deepEqual(code.windowOverlap({ start: '14:05', end: '16:22' }, { start: '16:22', end: '18:01' }), { overlaps: false, minutes: 0 });\n});\n",
+  "costUsd": 0.017494,
+  "seconds": 228
+}

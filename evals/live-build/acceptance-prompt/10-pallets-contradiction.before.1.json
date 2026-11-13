@@ -1,0 +1,20 @@
+{
+  "build": "10-pallets-contradiction",
+  "variant": "before",
+  "n": 1,
+  "model": "grok-4.7",
+  "recordedAt": "2026-11-12T19:01:25.299Z",
+  "cases": [
+    "TC-1 · REQ-4 count limit rounds up · cartons=100, cartonWeightKg=8 → pallets=3, cartonsPerPallet=48",
+    "TC-2 · REQ-3 weight limit binds before the count limit · cartons=90, cartonWeightKg=25 → pallets=3, cartonsPerPallet=40",
+    "TC-3 · REQ-2 cartons cannot be split across pallets · cartons=5, cartonWeightKg=400 → pallets=3, cartonsPerPallet=2",
+    "TC-4 · REQ-4 exact multiple of cartons per pallet · cartons=96, cartonWeightKg=8 → pallets=2, cartonsPerPallet=48",
+    "TC-5 · REQ-4 one carton over an exact multiple rounds up · cartons=97, cartonWeightKg=8 → pallets=3, cartonsPerPallet=48",
+    "TC-6 · REQ-4 zero cartons · cartons=0, cartonWeightKg=8 → pallets=0, cartonsPerPallet=48",
+    "TC-7 · REQ-5 carton heavier than 1000 kg · cartons=1, cartonWeightKg=1001 → error: carton too heavy for a pallet",
+    "TC-8 · REQ-5 weight not greater than 0 · cartons=1, cartonWeightKg=0 → error: invalid cartonWeightKg"
+  ],
+  "script": "test(\"count limit rounds up\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 100, cartonWeightKg: 8 }), { pallets: 3, cartonsPerPallet: 48 });\n});\n\ntest(\"weight limit binds before the count limit\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 90, cartonWeightKg: 25 }), { pallets: 3, cartonsPerPallet: 40 });\n});\n\ntest(\"cartons cannot be split across pallets\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 5, cartonWeightKg: 400 }), { pallets: 3, cartonsPerPallet: 2 });\n});\n\ntest(\"exact multiple of cartons per pallet\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 96, cartonWeightKg: 8 }), { pallets: 2, cartonsPerPallet: 48 });\n});\n\ntest(\"one carton over an exact multiple rounds up\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 97, cartonWeightKg: 8 }), { pallets: 3, cartonsPerPallet: 48 });\n});\n\ntest(\"zero cartons\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 0, cartonWeightKg: 8 }), { pallets: 0, cartonsPerPallet: 48 });\n});\n\ntest(\"carton heavier than 1000 kg\", function () {\n  assert.throws(function () {\n    code.palletsNeeded({ cartons: 1, cartonWeightKg: 1001 });\n  }, /^carton too heavy for a pallet$/);\n});\n\ntest(\"weight not greater than 0\", function () {\n  assert.throws(function () {\n    code.palletsNeeded({ cartons: 1, cartonWeightKg: 0 });\n  }, /^invalid cartonWeightKg$/);\n});\n",
+  "costUsd": 0.010450000000000001,
+  "seconds": 107.39999999999999
+}

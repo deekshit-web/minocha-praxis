@@ -1,0 +1,20 @@
+{
+  "build": "09-window-overlap",
+  "variant": "before",
+  "n": 1,
+  "model": "grok-4.7",
+  "recordedAt": "2026-11-12T19:51:00.407Z",
+  "cases": [
+    "TC-1 · REQ-2, REQ-3 · same day 09:00-11:00 and 10:30-12:00 → overlapping, 30 minutes",
+    "TC-2 · REQ-3 · same day 09:00-12:00 and 12:00-13:00 → not overlapping, 0 minutes",
+    "TC-3 · REQ-4 · same day 10:30-12:00 and 09:00-11:00 → overlapping, 30 minutes",
+    "TC-4 · REQ-4 · same day 12:00-13:00 and 09:00-12:00 → not overlapping, 0 minutes",
+    "TC-5 · REQ-2, REQ-3 · same day 08:00-09:00 and 10:00-11:00 → not overlapping, 0 minutes",
+    "TC-6 · REQ-4 · same day 10:00-11:00 and 08:00-09:00 → not overlapping, 0 minutes",
+    "TC-7 · REQ-2, REQ-3 · same day 09:00-12:00 and 10:00-11:00 → overlapping, 60 minutes",
+    "TC-8 · REQ-4 · same day 10:00-11:00 and 09:00-12:00 → overlapping, 60 minutes"
+  ],
+  "script": "test(\"09:00 to 11:00 and 10:30 to 12:00 overlap by 30 minutes\", function () {\n  var actual = code.windowOverlap({ start: \"09:00\", end: \"11:00\" }, { start: \"10:30\", end: \"12:00\" });\n  assert.deepEqual(actual, { overlaps: true, minutes: 30 });\n});\n\ntest(\"09:00 to 12:00 and 12:00 to 13:00 only touch and do not overlap\", function () {\n  var actual = code.windowOverlap({ start: \"09:00\", end: \"12:00\" }, { start: \"12:00\", end: \"13:00\" });\n  assert.deepEqual(actual, { overlaps: false, minutes: 0 });\n});\n\ntest(\"10:30 to 12:00 and 09:00 to 11:00 overlap by 30 minutes in swapped order\", function () {\n  var actual = code.windowOverlap({ start: \"10:30\", end: \"12:00\" }, { start: \"09:00\", end: \"11:00\" });\n  assert.deepEqual(actual, { overlaps: true, minutes: 30 });\n});\n\ntest(\"12:00 to 13:00 and 09:00 to 12:00 only touch and do not overlap in swapped order\", function () {\n  var actual = code.windowOverlap({ start: \"12:00\", end: \"13:00\" }, { start: \"09:00\", end: \"12:00\" });\n  assert.deepEqual(actual, { overlaps: false, minutes: 0 });\n});\n\ntest(\"08:00 to 09:00 and 10:00 to 11:00 are separate and do not overlap\", function () {\n  var actual = code.windowOverlap({ start: \"08:00\", end: \"09:00\" }, { start: \"10:00\", end: \"11:00\" });\n  assert.deepEqual(actual, { overlaps: false, minutes: 0 });\n});\n\ntest(\"10:00 to 11:00 and 08:00 to 09:00 are separate and do not overlap in swapped order\", function () {\n  var actual = code.windowOverlap({ start: \"10:00\", end: \"11:00\" }, { start: \"08:00\", end: \"09:00\" });\n  assert.deepEqual(actual, { overlaps: false, minutes: 0 });\n});\n\ntest(\"09:00 to 12:00 fully covers 10:00 to 11:00 and overlaps by 60 minutes\", function () {\n  var actual = code.windowOverlap({ start: \"09:00\", end: \"12:00\" }, { start: \"10:00\", end: \"11:00\" });\n  assert.deepEqual(actual, { overlaps: true, minutes: 60 });\n});\n\ntest(\"10:00 to 11:00 inside 09:00 to 12:00 overlaps by 60 minutes in swapped order\", function () {\n  var actual = code.windowOverlap({ start: \"10:00\", end: \"11:00\" }, { start: \"09:00\", end: \"12:00\" });\n  assert.deepEqual(actual, { overlaps: true, minutes: 60 });\n});\n",
+  "costUsd": 0.011616000000000001,
+  "seconds": 141.6
+}

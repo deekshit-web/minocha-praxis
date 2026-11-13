@@ -67,7 +67,8 @@ A person makes every approval. Model C only recommends.
 6. **Code.** Model A writes the module to a contract (function names and data shapes). Model B reviews. Model A
    applies or declines each point, with a reason.
 7. **Tests.** Model A writes unit tests for its own code. Model B writes acceptance tests **from the PRD, without
-   seeing the code**. They run for real, and a failure in either suite gives Model A up to two fix rounds. In a fix
+   seeing the code**, asked for each requirement and then the edges where code usually goes wrong (limits, zero and
+   one, first and last, month ends). They run for real, and a failure in either suite gives Model A up to two fix rounds. In a fix
    round Model A may rewrite its own unit tests if it judges one wrong (the record says so), but never the acceptance
    tests.
 8. **Release.** A release gate, staging, smoke tests, Model C's go or no-go, a person approves production.

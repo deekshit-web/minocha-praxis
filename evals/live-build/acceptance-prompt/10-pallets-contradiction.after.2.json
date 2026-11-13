@@ -1,0 +1,28 @@
+{
+  "build": "10-pallets-contradiction",
+  "variant": "after",
+  "n": 2,
+  "model": "grok-4.7",
+  "recordedAt": "2026-11-12T19:57:07.523Z",
+  "cases": [
+    "TC-1 · AC-1 REQ-3 count limit binds: floor(1000/8)=125, c=min(48,125)=48, ceil(100/48)=3 · {cartons:100, cartonWeightKg:8} → {pallets:3, cartonsPerPallet:48}",
+    "TC-2 · AC-2 REQ-3 weight limit binds: floor(1000/25)=40, c=min(48,40)=40, ceil(90/40)=3 · {cartons:90, cartonWeightKg:25} → {pallets:3, cartonsPerPallet:40}",
+    "TC-3 · AC-3 floor, not total weight: floor(1000/400)=2, c=2, ceil(5/2)=3 · {cartons:5, cartonWeightKg:400} → {pallets:3, cartonsPerPallet:2}",
+    "TC-4 · AC-4 exact multiple of c: 96/48=2 · {cartons:96, cartonWeightKg:8} → {pallets:2, cartonsPerPallet:48}",
+    "TC-5 · AC-4 one past an exact multiple: ceil(97/48)=3 · {cartons:97, cartonWeightKg:8} → {pallets:3, cartonsPerPallet:48}",
+    "TC-6 · AC-4 exactly 48 cartons, 20 kg (960 kg): c=min(48,floor(1000/20))=48, ceil(48/48)=1 · {cartons:48, cartonWeightKg:20} → {pallets:1, cartonsPerPallet:48}",
+    "TC-7 · REQ-4 AC-5 zero cartons: ceil(0/48)=0 · {cartons:0, cartonWeightKg:8} → {pallets:0, cartonsPerPallet:48}",
+    "TC-8 · count cap one below 48: ceil(47/48)=1 · {cartons:47, cartonWeightKg:8} → {pallets:1, cartonsPerPallet:48}",
+    "TC-9 · count cap one above 48: ceil(49/48)=2 · {cartons:49, cartonWeightKg:8} → {pallets:2, cartonsPerPallet:48}",
+    "TC-10 · one carton, weight one below 1000: floor(1000/999)=1, ceil(1/1)=1 · {cartons:1, cartonWeightKg:999} → {pallets:1, cartonsPerPallet:1}",
+    "TC-11 · one carton, weight exactly 1000 still fits: floor(1000/1000)=1 · {cartons:1, cartonWeightKg:1000} → {pallets:1, cartonsPerPallet:1}",
+    "TC-12 · REQ-5 AC-5 weight over 1000 · {cartons:1, cartonWeightKg:1001} → throws Error \"carton too heavy for a pallet\"",
+    "TC-13 · REQ-5 AC-5 weight of 0 kg · {cartons:1, cartonWeightKg:0} → throws Error \"invalid cartonWeightKg\"",
+    "TC-14 · REQ-5 negative cartons, one below zero · {cartons:-1, cartonWeightKg:8} → throws Error \"invalid cartons\"",
+    "TC-15 · REQ-5 non-whole carton count · {cartons:1.5, cartonWeightKg:8} → throws Error \"invalid cartons\"",
+    "TC-16 · REQ-5 non-numeric weight · {cartons:1, cartonWeightKg:\"8\"} → throws Error \"invalid cartonWeightKg\""
+  ],
+  "script": "test(\"count limit binds for 100 cartons of 8 kg and needs 3 pallets\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 100, cartonWeightKg: 8 }), { pallets: 3, cartonsPerPallet: 48 });\n});\n\ntest(\"weight limit binds for 90 cartons of 25 kg and needs 3 pallets\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 90, cartonWeightKg: 25 }), { pallets: 3, cartonsPerPallet: 40 });\n});\n\ntest(\"floor of weight not total weight for 5 cartons of 400 kg needs 3 pallets\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 5, cartonWeightKg: 400 }), { pallets: 3, cartonsPerPallet: 2 });\n});\n\ntest(\"exact multiple of cartons per pallet for 96 cartons of 8 kg is 2 pallets\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 96, cartonWeightKg: 8 }), { pallets: 2, cartonsPerPallet: 48 });\n});\n\ntest(\"one past an exact multiple for 97 cartons of 8 kg is 3 pallets\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 97, cartonWeightKg: 8 }), { pallets: 3, cartonsPerPallet: 48 });\n});\n\ntest(\"exactly 48 cartons of 20 kg fits on 1 pallet\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 48, cartonWeightKg: 20 }), { pallets: 1, cartonsPerPallet: 48 });\n});\n\ntest(\"zero cartons returns 0 pallets\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 0, cartonWeightKg: 8 }), { pallets: 0, cartonsPerPallet: 48 });\n});\n\ntest(\"one below the count cap of 48 needs 1 pallet\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 47, cartonWeightKg: 8 }), { pallets: 1, cartonsPerPallet: 48 });\n});\n\ntest(\"one above the count cap of 48 needs 2 pallets\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 49, cartonWeightKg: 8 }), { pallets: 2, cartonsPerPallet: 48 });\n});\n\ntest(\"one carton of 999 kg needs 1 pallet\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 1, cartonWeightKg: 999 }), { pallets: 1, cartonsPerPallet: 1 });\n});\n\ntest(\"one carton of exactly 1000 kg still fits on 1 pallet\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 1, cartonWeightKg: 1000 }), { pallets: 1, cartonsPerPallet: 1 });\n});\n\ntest(\"weight over 1000 kg throws carton too heavy\", function () {\n  assert.throws(function () {\n    code.palletsNeeded({ cartons: 1, cartonWeightKg: 1001 });\n  }, /carton too heavy for a pallet/);\n});\n\ntest(\"weight of 0 kg throws invalid cartonWeightKg\", function () {\n  assert.throws(function () {\n    code.palletsNeeded({ cartons: 1, cartonWeightKg: 0 });\n  }, /invalid cartonWeightKg/);\n});\n\ntest(\"negative carton count throws invalid cartons\", function () {\n  assert.throws(function () {\n    code.palletsNeeded({ cartons: -1, cartonWeightKg: 8 });\n  }, /invalid cartons/);\n});\n\ntest(\"non-whole carton count throws invalid cartons\", function () {\n  assert.throws(function () {\n    code.palletsNeeded({ cartons: 1.5, cartonWeightKg: 8 });\n  }, /invalid cartons/);\n});\n\ntest(\"non-numeric weight throws invalid cartonWeightKg\", function () {\n  assert.throws(function () {\n    code.palletsNeeded({ cartons: 1, cartonWeightKg: \"8\" });\n  }, /invalid cartonWeightKg/);\n});\n",
+  "costUsd": 0.018822,
+  "seconds": 254.6
+}

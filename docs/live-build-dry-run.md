@@ -127,7 +127,8 @@ separately and together, in a child process with no environment, no file access 
 | **All** | **208** | **67%** | **63%** | **67%** |
 
 - **Model B's acceptance tests, written without seeing the code, added nothing.** Every mutant they caught, Model A's
-  unit tests caught too. Model A's tests caught more in three builds (01, 07, 10).
+  unit tests caught too. Model A's tests caught more in three builds (01, 07, 10). Model B's prompt has since been
+  changed (see "A better prompt for Model B's tests").
 - **Two scores of 2 mutants (02, 06) say little.** That code has almost no comparisons or numbers to break.
 
 ### Sorting the 69 survivors
@@ -195,6 +196,40 @@ re-run after the fix and did not change: the three tests now pass but catch no e
 leaves out any test that fails on the real code, since such a test would "catch" every mutant (with the old assert,
 01 and 07 scored 100%).
 
+### A better prompt for Model B's tests
+
+The ordinary gaps are values a careful tester tries first, so Model B's prompt now asks for them. It used to say only
+"write the acceptance test cases from the PRD, at most 8". It now asks for up to 16, covering every requirement and
+then the edges where code usually goes wrong: each limit exactly and one step either side; zero, one and the smallest
+allowed value; an empty list and a single item; an item a rule picks out being first, in the middle and last; the 1st
+and last day of a month, December and January, a leap day; one case per named error. It also asks for values where a
+plausible mistake gives a different answer (the 90, 80, 70, 100 coincidence above), and for no test of behaviour the
+PRD leaves open. The prompt names no build. It is `ACCEPTANCE_CASES_PROMPT` in `studio/src/build.ts`.
+
+To measure it, `npm run acceptance-eval` re-ran only Model B's two test steps (cases, then script) on the ten
+recorded PRDs and contracts, twice with the old prompt and twice with the new, and `npm run acceptance-score` scored
+every script against the recorded code. 40 samples cost $0.80 (plus about $0.06 for three failed answers).
+
+| Prompt | Tests a build | Tests wrong on the real code | Mutants caught (of 175 that can change a result) | Ordinary gaps closed (of 15) |
+| --- | --- | --- | --- | --- |
+| As recorded | 7.3 | 0 | 75% | 0 |
+| Old prompt, run again (2 samples) | 7.3 | 0 | 75% | 0 |
+| New prompt (2 samples) | 15.3 | 0 | **85%** | **11.5** |
+
+- **Better in 7 builds, worse in none.** 10 pallets went from 63% to 83%, 01 claim window from 76% to 92%, 09 window
+  overlap from 89% to 100%.
+- **No wrong tests.** None of the 306 new tests fails on the real code.
+- **Still open:** 07's exact-half rounding (rightly untested: the PRD leaves it open), a principal of 1 or less (07),
+  a carton of 1 kg or less (10), and a price of exactly 1 (05, closed in one sample of two). None of the 7 extreme
+  gaps or the 13 invalid-input gaps closed.
+- **The cost:** about $0.013 more a build, and about 4.5 minutes longer (Model B's two steps took 450 s, not 181 s).
+- **Less reliable at first.** 3 of 23 answers to the new prompt did not match the answer schema, against 0 of 20 for
+  the old one (network failures aside); in a build that would have stopped it. The build now asks once more when an
+  answer does not match the schema, and counts both calls. A second bad answer still stops the build.
+
+**Read this as an upper bound.** The prompt was written after looking at these ten builds' gaps, and it was measured
+on the same ten. The fair test is on builds it has not seen.
+
 ## What this does not show
 
 - **No build failed.** The red-run and fix-round path has never run on live output. To test it I would need briefs
@@ -224,6 +259,7 @@ leaves out any test that fails on the real code, since such a test would "catch"
 | The results in one file | `evals/live-build/results-2026-11-12.json` |
 | The runner | `scripts/live-build-dry-run.mjs` |
 | Mutation testing on the ten builds: every mutant, which test caught it, the survivors | `evals/live-build/mutation-2026-11-12.json` (`npm run live-build-mutation`, free) |
+| Model B's test steps re-run with the old and new prompt (40 answers), the failures, and their scores | `evals/live-build/acceptance-prompt/`, `evals/live-build/acceptance-score-2026-11-13.json` (`npm run acceptance-eval`, about $0.80; `npm run acceptance-score`, free) |
 | The 69 survivors sorted: each gap with the input that shows it, each equivalent mutant with its reason | `evals/live-build/survivors-2026-11-12.json`, reasons in `evals/live-build/survivors-equivalent.json` (`npm run live-build-survivors`, free) |
 | The rating kit: 29 findings, a blind sheet for each of two raters, a page per build, and the key | `evals/live-build/judging/` (`npm run judging-prepare`, then `npm run judging-analyze`) |
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { ModelProvider } from "@northwind/orchestrator";
-import { BuildLimitError, type BuildSeats, recordBuild, sandboxRun } from "./build.ts";
+import { CompletionError, type ModelProvider } from "@northwind/orchestrator";
+import { ACCEPTANCE_CASES_PROMPT, BuildLimitError, type BuildSeats, recordBuild, sandboxRun } from "./build.ts";
 import { loadSpecs } from "./workflows.ts";
 
 const spec = loadSpecs(undefined, { recordings: false }).find((item) => item.id === "fmcg-build")!;
@@ -68,6 +68,50 @@ test("A failing unit test also starts a fix round. When Model A judges its own t
   assert.equal(recording.fixes[0]?.unitScriptChanged, true);
   assert.match(recording.unitScript, /orderTotal\(\[\]\), 0\)/);
   assert.equal(recording.finalCode, recording.runs[0]?.code);
+});
+
+test("When a model's answer does not match the schema, the build asks once more and counts both calls.", async () => {
+  const code = "({ orderTotal(items) { return items.reduce((sum, item) => sum + item, 0); } })";
+  const answers = {
+    arch: { text: "Components." },
+    archReview: { findings: [], strengths: "Clear." },
+    archFinal: { text: "Components, revised.", resolutions: [] },
+    code: { code, summary: "The module." },
+    codeReview: { findings: [], strengths: "Fine." },
+    codeRevise: { code, resolutions: [] },
+    unit: { script: 'test("unit", () => assert.equal(code.orderTotal([]), 0));' },
+    cases: { cases: ["TC-1 · REQ-1 · [2, 3] → 5"] },
+    script: { script: 'test("adds the items", () => assert.equal(code.orderTotal([2, 3]), 5));' },
+  };
+  const order = { a: ["arch", "archFinal", "code", "codeRevise", "unit"], b: ["archReview", "codeReview", "cases", "script"] };
+  const seats = scripted(order, answers);
+  const b = seats.b;
+  let failed = false;
+  seats.b = (instructions, schema) => {
+    const seat = b(instructions, schema);
+    if (instructions !== ACCEPTANCE_CASES_PROMPT) return seat;
+    const usage = { inputTokens: 500, outputTokens: 200, cacheReadTokens: 0, cacheWriteTokens: 0 };
+    return { ...seat, complete: async (request) => {
+      if (!failed) {
+        failed = true;
+        throw new CompletionError("model-unparsed:analystA", "grok-4.7", usage, 0.02);
+      }
+      return seat.complete(request);
+    } };
+  };
+  const recording = await recordBuild(spec, "REQ-1 The order total is the sum of the items.", seats);
+  assert.ok(failed);
+  assert.deepEqual(recording.testCases, ["TC-1 · REQ-1 · [2, 3] → 5"]);
+  const caseCalls = recording.calls.filter((call) => call.role === "testCases");
+  assert.deepEqual(caseCalls.map((call) => call.costUsd), [0.02, 0.01]);
+  assert.equal(recording.runs.at(-1)?.failing, 0);
+});
+
+test("A second answer that does not match the schema stops the build.", async () => {
+  const seats = scripted({ a: ["arch"], b: [] }, { arch: { text: "x" } });
+  const usage = { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 };
+  seats.a = () => ({ mode: "live", complete: async () => { throw new CompletionError("model-unparsed:analystA", "claude-opus-5-5", usage, 0.01); } });
+  await assert.rejects(recordBuild(spec, "REQ-1 x", seats), /model-unparsed/);
 });
 
 /** Seats that answer from a script, in the order each side is asked. */

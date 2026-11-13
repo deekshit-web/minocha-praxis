@@ -1,0 +1,18 @@
+{
+  "build": "06-reorder-point",
+  "variant": "before",
+  "n": 2,
+  "model": "grok-4.7",
+  "recordedAt": "2026-11-12T18:57:05.298Z",
+  "cases": [
+    "TC-1 · REQ-1: lead-time demand is average daily sales multiplied by supplier lead time in days · average daily sales 50, lead time 6 days → lead-time demand 300",
+    "TC-2 · REQ-2: safety stock is 20 percent of lead-time demand · lead-time demand 300 → safety stock 60",
+    "TC-3 · REQ-3: reorder point is lead-time demand plus safety stock · lead-time demand 300, safety stock 60 → reorder point 360",
+    "TC-4 · REQ-3: reorder point equals 1.2 times lead-time demand · lead-time demand 300 → reorder point 360",
+    "TC-5 · REQ-4 and AC-2: recommend a reorder when stock on hand is at the reorder point · reorder point 360, stock on hand 360 → recommend a reorder",
+    "TC-6 · REQ-4 and AC-3: do not recommend a reorder when stock on hand is above the reorder point · reorder point 360, stock on hand 361 → do not recommend a reorder"
+  ],
+  "script": "test(\"lead-time demand is average daily sales multiplied by supplier lead time in days\", function () {\n  var result = code.reorderCheck({ averageDailySales: 50, leadTimeDays: 6, stockOnHand: 360 });\n  assert.equal(result.leadTimeDemand, 300);\n});\n\ntest(\"safety stock is 20 percent of lead-time demand\", function () {\n  var result = code.reorderCheck({ averageDailySales: 50, leadTimeDays: 6, stockOnHand: 360 });\n  assert.equal(result.leadTimeDemand, 300);\n  assert.equal(result.safetyStock, 60);\n});\n\ntest(\"reorder point is lead-time demand plus safety stock\", function () {\n  var result = code.reorderCheck({ averageDailySales: 50, leadTimeDays: 6, stockOnHand: 360 });\n  assert.equal(result.leadTimeDemand, 300);\n  assert.equal(result.safetyStock, 60);\n  assert.equal(result.reorderPoint, result.leadTimeDemand + result.safetyStock);\n  assert.equal(result.reorderPoint, 360);\n});\n\ntest(\"reorder point equals 1.2 times lead-time demand\", function () {\n  var result = code.reorderCheck({ averageDailySales: 50, leadTimeDays: 6, stockOnHand: 360 });\n  assert.equal(result.leadTimeDemand, 300);\n  assert.equal(result.reorderPoint, 1.2 * result.leadTimeDemand);\n  assert.equal(result.reorderPoint, 360);\n});\n\ntest(\"recommend a reorder when stock on hand is at the reorder point\", function () {\n  var result = code.reorderCheck({ averageDailySales: 50, leadTimeDays: 6, stockOnHand: 360 });\n  assert.equal(result.reorderPoint, 360);\n  assert.equal(result.reorder, true);\n});\n\ntest(\"do not recommend a reorder when stock on hand is above the reorder point\", function () {\n  var result = code.reorderCheck({ averageDailySales: 50, leadTimeDays: 6, stockOnHand: 361 });\n  assert.equal(result.reorderPoint, 360);\n  assert.equal(result.reorder, false);\n});\n",
+  "costUsd": 0.010048,
+  "seconds": 127.2
+}

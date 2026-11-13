@@ -1,4 +1,4 @@
-import { CLAUDE_MODEL, ClaudeModel, GROK_MODEL, GrokModel, type ModelProvider, type SeatSpec, callCost, repoRoot } from "@northwind/orchestrator";
+import { CLAUDE_MODEL, ClaudeModel, CompletionError, GROK_MODEL, GrokModel, type ModelProvider, type SeatSpec, callCost, repoRoot } from "@northwind/orchestrator";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as z from "zod/v4";
@@ -36,12 +36,24 @@ const TEST_RULES =
   "Write the body of a test script. It may call test(name, fn) and assert.equal(actual, expected), assert.deepEqual, assert.ok, assert.match(text, regex), assert.throws(fn, regex). " +
   "The module under test is `code`. No imports, require, network, timers or globals. Each test name says what it checks in plain words.";
 
+/** Model B's acceptance test cases, from the PRD only. Mutation testing on ten live builds showed the earlier prompt
+ * ("at most 8") left ordinary boundaries untested (a single carton, a price of 0 or 1, a date on the 1st or the 31st),
+ * so this one asks for the edges where code usually goes wrong. */
+export const ACCEPTANCE_CASES_PROMPT =
+  "Write the acceptance test cases for this feature from the PRD only: one line each, 'TC-n · <requirement> · <inputs> → <expected result>'. At most 16. " +
+  "Cover every requirement and acceptance criterion, then the edges where code usually goes wrong: for each limit or threshold, the value exactly at it and one step on either side; " +
+  "zero, one and the smallest allowed value; an empty list and a single item; an item a rule picks out being first, in the middle and last; " +
+  "for dates, the 1st and the last day of a month, December and January, and a leap day; and one case for each error the PRD names. " +
+  "Choose input values so that a plausible mistake gives a different answer: avoid values where, for example, dropping the wrong item or rounding the other way happens to give the same result. " +
+  "Work out every expected result exactly from the PRD, showing the arithmetic briefly where it is not obvious. Do not test behaviour the PRD leaves open.";
+export const ACCEPTANCE_SCRIPT_PROMPT = `Write the test script for these cases, one test per case, using the exact expected values the case gives. You have never seen the code; work from the contract. ${TEST_RULES}`;
+
 const Architecture = z.object({ text: z.string() });
 const Revision = z.object({ text: z.string(), resolutions: z.array(z.object({ finding: z.string(), outcome: z.enum(["applied", "declined"]), note: z.string() })) });
 const Code = z.object({ code: z.string(), summary: z.string() });
 const CodeRevision = z.object({ code: z.string(), resolutions: z.array(z.object({ finding: z.string(), outcome: z.enum(["applied", "declined"]), note: z.string() })) });
-const Script = z.object({ script: z.string() });
-const Cases = z.object({ cases: z.array(z.string()) });
+export const Script = z.object({ script: z.string() });
+export const Cases = z.object({ cases: z.array(z.string()) });
 const Fix = z.object({ code: z.string(), change: z.string(), unitScript: z.string().optional() });
 
 export const BuildRecordingSchema = z.object({
@@ -149,12 +161,28 @@ export function liveBuildSeats(context: string): BuildSeats {
 export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildSeats, now = () => new Date(), options: BuildOptions = {}): Promise<BuildRecording> {
   const startedAt = Date.now();
   const calls: RecordedCall[] = [];
-  const ask = async <T>(seat: ModelProvider, role: string, prompt: string, schema: z.ZodType<T>, model: string): Promise<T> => {
+  const ask = async <T>(seat: ModelProvider, role: string, prompt: string, schema: z.ZodType<T>, model: string, attempt = 1): Promise<T> => {
     const spent = calls.reduce((total, call) => total + call.costUsd, 0);
     if (options.maxCostUsd !== undefined && spent >= options.maxCostUsd) throw new BuildLimitError(`The build stopped before "${role}": its calls so far cost $${spent.toFixed(2)}, which is the limit of $${options.maxCostUsd.toFixed(2)}.`);
     if (options.maxSeconds !== undefined && (Date.now() - startedAt) / 1000 >= options.maxSeconds) throw new BuildLimitError(`The build stopped before "${role}": it ran for more than ${Math.round(options.maxSeconds / 60)} minutes.`);
     const started = Date.now();
-    const answer = await seat.complete({ role: "analystA", prompt });
+    let answer: Awaited<ReturnType<ModelProvider["complete"]>>;
+    try {
+      answer = await seat.complete({ role: "analystA", prompt });
+    } catch (error) {
+      // A model now and then returns an answer that does not match the schema (3 of 23 of Model B's longer test-case
+      // answers in one trial). Ask once more, and count what the failed attempt cost.
+      if (!(error instanceof CompletionError) || !error.message.startsWith("model-unparsed") || attempt > 1) throw error;
+      calls.push({
+        role,
+        model: error.model,
+        seconds: Math.round((Date.now() - started) / 100) / 10,
+        inputTokens: error.usage.inputTokens + error.usage.cacheReadTokens + error.usage.cacheWriteTokens,
+        outputTokens: error.usage.outputTokens,
+        costUsd: error.costUsd ?? callCost(error.model.startsWith("grok") ? GROK_MODEL : CLAUDE_MODEL, error.usage) ?? 0,
+      });
+      return ask(seat, role, prompt, schema, model, attempt + 1);
+    }
     const usage = answer.usage ?? { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
     const answered = answer.model ?? model;
     calls.push({
@@ -251,9 +279,9 @@ export async function recordBuild(spec: WorkflowSpec, prd: string, seats: BuildS
   // Tests: Model A's unit tests of its own code; Model B's cases and script from the PRD and contract only.
   const [unit, cases] = await Promise.all([
     ask(seats.a(`Write unit tests for your own module, at most 6 tests. ${TEST_RULES}`, Script), "unitTests", `${PRD}\n\nYour code:\n${revised.code}`, Script, A),
-    ask(seats.b("Write the acceptance test cases for this feature from the PRD only: one line each, 'TC-n · <requirement> · <inputs> → <expected result>'. At most 8.", Cases), "testCases", PRD, Cases, B),
+    ask(seats.b(ACCEPTANCE_CASES_PROMPT, Cases), "testCases", PRD, Cases, B),
   ]);
-  const script = await ask(seats.b(`Write the test script for these cases. You have never seen the code; work from the contract. ${TEST_RULES}`, Script), "testScript", `${PRD}\n\nThe test cases:\n${cases.cases.join("\n")}`, Script, B);
+  const script = await ask(seats.b(ACCEPTANCE_SCRIPT_PROMPT, Script), "testScript", `${PRD}\n\nThe test cases:\n${cases.cases.join("\n")}`, Script, B);
 
   // Run, and let Model A fix failures from either suite, up to two rounds. Model A wrote the unit tests, so a failing
   // one may be the test's fault: the fix may rewrite them, and the record says so. The acceptance tests are never

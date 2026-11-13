@@ -1,0 +1,20 @@
+{
+  "build": "10-pallets-contradiction",
+  "variant": "before",
+  "n": 2,
+  "model": "grok-4.7",
+  "recordedAt": "2026-11-12T19:02:48.543Z",
+  "cases": [
+    "TC-1 · REQ-4 round up; 2 pallets hold at most 96 cartons · cartons=100, cartonWeightKg=8 → pallets=3, cartonsPerPallet=48",
+    "TC-2 · REQ-3 weight limit binds: c=min(48, floor(1000/25))=40 · cartons=90, cartonWeightKg=25 → pallets=3, cartonsPerPallet=40",
+    "TC-3 · REQ-2 cartons cannot be split; floor(1000/400)=2 · cartons=5, cartonWeightKg=400 → pallets=3, cartonsPerPallet=2",
+    "TC-4 · REQ-4 exact multiple of cartons per pallet · cartons=96, cartonWeightKg=8 → pallets=2, cartonsPerPallet=48",
+    "TC-5 · REQ-4 one carton over an exact multiple rounds up · cartons=97, cartonWeightKg=8 → pallets=3, cartonsPerPallet=48",
+    "TC-6 · REQ-2 both limits; 48 x 20 kg = 960 kg fits one pallet · cartons=48, cartonWeightKg=20 → pallets=1, cartonsPerPallet=48",
+    "TC-7 · REQ-5 weight over 1000 kg cannot be loaded · cartons=1, cartonWeightKg=1001 → error: carton too heavy for a pallet",
+    "TC-8 · REQ-4 zero cartons · cartons=0, cartonWeightKg=8 → pallets=0, cartonsPerPallet=48"
+  ],
+  "script": "test(\"100 cartons of 8 kg round up to 3 pallets because 2 pallets hold at most 96 cartons\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 100, cartonWeightKg: 8 }), { pallets: 3, cartonsPerPallet: 48 });\n});\n\ntest(\"90 cartons of 25 kg need 3 pallets because the weight limit allows only 40 cartons per pallet\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 90, cartonWeightKg: 25 }), { pallets: 3, cartonsPerPallet: 40 });\n});\n\ntest(\"5 cartons of 400 kg need 3 pallets because cartons cannot be split and each pallet holds 2\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 5, cartonWeightKg: 400 }), { pallets: 3, cartonsPerPallet: 2 });\n});\n\ntest(\"96 cartons of 8 kg fill exactly 2 pallets\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 96, cartonWeightKg: 8 }), { pallets: 2, cartonsPerPallet: 48 });\n});\n\ntest(\"97 cartons of 8 kg is one carton over an exact multiple and rounds up to 3 pallets\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 97, cartonWeightKg: 8 }), { pallets: 3, cartonsPerPallet: 48 });\n});\n\ntest(\"48 cartons of 20 kg fit on 1 pallet under both the count and weight limits\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 48, cartonWeightKg: 20 }), { pallets: 1, cartonsPerPallet: 48 });\n});\n\ntest(\"a carton heavier than 1000 kg cannot be loaded and throws an error\", function () {\n  assert.throws(function () {\n    code.palletsNeeded({ cartons: 1, cartonWeightKg: 1001 });\n  }, /carton too heavy for a pallet/);\n});\n\ntest(\"zero cartons need zero pallets\", function () {\n  assert.deepEqual(code.palletsNeeded({ cartons: 0, cartonWeightKg: 8 }), { pallets: 0, cartonsPerPallet: 48 });\n});\n",
+  "costUsd": 0.01027,
+  "seconds": 185.60000000000002
+}

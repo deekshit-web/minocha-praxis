@@ -1,0 +1,15 @@
+{
+  "build": "07-interest-days",
+  "variant": "before",
+  "n": 1,
+  "model": "grok-4.7",
+  "recordedAt": "2026-11-12T19:01:38.528Z",
+  "cases": [
+    "TC-1 · REQ-1, REQ-2, REQ-3, REQ-4: accept principal, annual rate, start and end; days = end minus start; interest = principal x rate x days / 365; round to 2 decimals · principal 10000.00, annual rate 0.06, start 2026-03-01, end 2026-04-01 → days 31, interest 50.96",
+    "TC-2 · REQ-3: divisor stays 365 in a leap year, including a period that contains 29 February · principal 10000.00, annual rate 0.06, start 2028-02-01, end 2028-03-01 → days 29, interest 47.67",
+    "TC-3 · REQ-2: start date counts and end date does not, so equal dates are 0 days · principal 10000.00, annual rate 0.06, start 2026-03-01, end 2026-03-01 → days 0, interest 0.00"
+  ],
+  "script": "test(\"returns 31 days and 50.96 interest for 10000 at 6 percent from 2026-03-01 to 2026-04-01\", function () {\n  var actual = code.simpleInterest({\n    principal: 10000.00,\n    annualRate: 0.06,\n    startDate: \"2026-03-01\",\n    endDate: \"2026-04-01\"\n  });\n  assert.deepEqual(actual, { days: 31, interest: 50.96 });\n});\n\ntest(\"returns 29 days and 47.67 interest in a leap year using divisor 365\", function () {\n  var actual = code.simpleInterest({\n    principal: 10000.00,\n    annualRate: 0.06,\n    startDate: \"2028-02-01\",\n    endDate: \"2028-03-01\"\n  });\n  assert.deepEqual(actual, { days: 29, interest: 47.67 });\n});\n\ntest(\"returns 0 days and 0.00 interest when the start date and end date are the same\", function () {\n  var actual = code.simpleInterest({\n    principal: 10000.00,\n    annualRate: 0.06,\n    startDate: \"2026-03-01\",\n    endDate: \"2026-03-01\"\n  });\n  assert.deepEqual(actual, { days: 0, interest: 0.00 });\n});\n",
+  "costUsd": 0.009418,
+  "seconds": 273.3
+}

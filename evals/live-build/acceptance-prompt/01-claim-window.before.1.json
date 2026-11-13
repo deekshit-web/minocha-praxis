@@ -1,0 +1,19 @@
+{
+  "build": "01-claim-window",
+  "variant": "before",
+  "n": 1,
+  "model": "grok-4.7",
+  "recordedAt": "2026-11-12T18:52:52.468Z",
+  "cases": [
+    "TC-1 · REQ-1 AC-1 denial date counts as day 0 · denialDate 2026-01-10, checkDate 2026-01-10 → allowed, elapsed 0, 120 days left",
+    "TC-2 · REQ-1 REQ-2 AC-2 appeal allowed inside the window · denialDate 2026-01-10, checkDate 2026-03-10 → allowed, elapsed 59, 61 days left",
+    "TC-3 · REQ-2 REQ-3 AC-3 day 120 inclusive still allowed · denialDate 2026-01-10, checkDate 2026-05-10 → allowed, elapsed 120, 0 days left",
+    "TC-4 · REQ-2 REQ-3 AC-4 elapsed days over 120 is closed · denialDate 2026-01-10, checkDate 2026-05-11 → closed, elapsed 121, 0 days left",
+    "TC-5 · REQ-3 status is explicit when days left is 0 · check 2026-05-10 → allowed and 0 days left; check 2026-05-11 → closed and 0 days left",
+    "TC-6 · REQ-3 days left is 120 minus elapsed days when allowed, else 0 · elapsed 0 → 120; elapsed 59 → 61; elapsed 120 → 0; elapsed 121 → 0",
+    "TC-7 · REQ-4 check date earlier than denial date · checkDate before denialDate → reject as invalid input, pending requester confirmation"
+  ],
+  "script": "test(\"denial date counts as day 0\", function () {\n  var result = code.checkAppealWindow({ denialDate: \"2026-01-10\", checkDate: \"2026-01-10\" });\n  assert.deepEqual(result, { allowed: true, daysLeft: 120, elapsedDays: 0 });\n});\n\ntest(\"appeal allowed inside the window\", function () {\n  var result = code.checkAppealWindow({ denialDate: \"2026-01-10\", checkDate: \"2026-03-10\" });\n  assert.deepEqual(result, { allowed: true, daysLeft: 61, elapsedDays: 59 });\n});\n\ntest(\"day 120 inclusive still allowed\", function () {\n  var result = code.checkAppealWindow({ denialDate: \"2026-01-10\", checkDate: \"2026-05-10\" });\n  assert.deepEqual(result, { allowed: true, daysLeft: 0, elapsedDays: 120 });\n});\n\ntest(\"elapsed days over 120 is closed\", function () {\n  var result = code.checkAppealWindow({ denialDate: \"2026-01-10\", checkDate: \"2026-05-11\" });\n  assert.deepEqual(result, { allowed: false, daysLeft: 0, elapsedDays: 121 });\n});\n\ntest(\"status is explicit when days left is 0\", function () {\n  var lastDay = code.checkAppealWindow({ denialDate: \"2026-01-10\", checkDate: \"2026-05-10\" });\n  var after = code.checkAppealWindow({ denialDate: \"2026-01-10\", checkDate: \"2026-05-11\" });\n  assert.equal(lastDay.allowed, true);\n  assert.equal(lastDay.daysLeft, 0);\n  assert.equal(after.allowed, false);\n  assert.equal(after.daysLeft, 0);\n});\n\ntest(\"days left is 120 minus elapsed days when allowed else 0\", function () {\n  var day0 = code.checkAppealWindow({ denialDate: \"2026-01-10\", checkDate: \"2026-01-10\" });\n  var day59 = code.checkAppealWindow({ denialDate: \"2026-01-10\", checkDate: \"2026-03-10\" });\n  var day120 = code.checkAppealWindow({ denialDate: \"2026-01-10\", checkDate: \"2026-05-10\" });\n  var day121 = code.checkAppealWindow({ denialDate: \"2026-01-10\", checkDate: \"2026-05-11\" });\n  assert.equal(day0.elapsedDays, 0);\n  assert.equal(day0.daysLeft, 120 - day0.elapsedDays);\n  assert.equal(day59.elapsedDays, 59);\n  assert.equal(day59.daysLeft, 120 - day59.elapsedDays);\n  assert.equal(day120.elapsedDays, 120);\n  assert.equal(day120.daysLeft, 120 - day120.elapsedDays);\n  assert.equal(day121.elapsedDays, 121);\n  assert.equal(day121.daysLeft, 0);\n});\n\ntest(\"check date earlier than denial date is rejected\", function () {\n  assert.throws(function () {\n    code.checkAppealWindow({ denialDate: \"2026-01-10\", checkDate: \"2026-01-09\" });\n  }, /checkDate is before denialDate/);\n});\n",
+  "costUsd": 0.013107999999999998,
+  "seconds": 128.5
+}

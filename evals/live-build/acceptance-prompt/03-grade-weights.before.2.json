@@ -1,0 +1,20 @@
+{
+  "build": "03-grade-weights",
+  "variant": "before",
+  "n": 2,
+  "model": "grok-4.7",
+  "recordedAt": "2026-11-12T19:36:17.799Z",
+  "cases": [
+    "TC-1 · REQ-1 final = 0.2*homework avg + 0.3*quiz avg + 0.5*exam · homework 90, 80, 70, 100; quizzes 80, 70; exam 60 → 70.5",
+    "TC-2 · REQ-2 fewer than 4 homework scores: average all, no drop · homework 90, 80, 70; quizzes 80, 70; exam 60 → 68.5",
+    "TC-3 · REQ-3 a category with no scores counts as 0 · homework 90, 80, 70, 100; quizzes none; exam 60 → 48.0",
+    "TC-4 · REQ-4 round the final to 1 decimal and show that decimal · homework 80, 80, 85; quizzes 70, 71; exam 77 → 76.0",
+    "TC-5 · REQ-2 tied lowest homework score: drop only one · homework 50, 50, 70, 90; quizzes 80, 100; exam 80 → 81.0",
+    "TC-6 · REQ-2 quizzes are averaged with no drop · homework 90, 80, 70; quizzes 50, 60, 70, 80; exam 60 → 65.5",
+    "TC-7 · REQ-3 no homework scores counts as 0 · homework none; quizzes 80, 70; exam 60 → 52.5",
+    "TC-8 · REQ-3 no exam score counts as 0 · homework 90, 80, 70, 100; quizzes 80, 70; exam none → 40.5"
+  ],
+  "script": "test('final grade equals 20 percent of homework average plus 30 percent of quiz average plus 50 percent of exam', function () {\n  assert.deepEqual(code.finalGrade({ homework: [90, 80, 70, 100], quizzes: [80, 70], exam: [60] }), {\n    homeworkAverage: 90,\n    quizAverage: 75,\n    examScore: 60,\n    final: 70.5,\n    display: '70.5',\n    droppedHomework: 70\n  });\n});\n\ntest('fewer than four homework scores are all averaged and the lowest is not dropped', function () {\n  assert.deepEqual(code.finalGrade({ homework: [90, 80, 70], quizzes: [80, 70], exam: [60] }), {\n    homeworkAverage: 80,\n    quizAverage: 75,\n    examScore: 60,\n    final: 68.5,\n    display: '68.5',\n    droppedHomework: null\n  });\n});\n\ntest('no quiz scores count as zero', function () {\n  assert.deepEqual(code.finalGrade({ homework: [90, 80, 70, 100], quizzes: [], exam: [60] }), {\n    homeworkAverage: 90,\n    quizAverage: 0,\n    examScore: 60,\n    final: 48.0,\n    display: '48.0',\n    droppedHomework: 70\n  });\n});\n\ntest('final grade rounds to one decimal place and display always shows that decimal', function () {\n  assert.deepEqual(code.finalGrade({ homework: [80, 80, 85], quizzes: [70, 71], exam: [77] }), {\n    homeworkAverage: (80 + 80 + 85) / 3,\n    quizAverage: 70.5,\n    examScore: 77,\n    final: 76.0,\n    display: '76.0',\n    droppedHomework: null\n  });\n});\n\ntest('tied lowest homework score drops only one of them', function () {\n  assert.deepEqual(code.finalGrade({ homework: [50, 50, 70, 90], quizzes: [80, 100], exam: [80] }), {\n    homeworkAverage: 70,\n    quizAverage: 90,\n    examScore: 80,\n    final: 81.0,\n    display: '81.0',\n    droppedHomework: 50\n  });\n});\n\ntest('quiz scores are averaged with no score dropped', function () {\n  assert.deepEqual(code.finalGrade({ homework: [90, 80, 70], quizzes: [50, 60, 70, 80], exam: [60] }), {\n    homeworkAverage: 80,\n    quizAverage: 65,\n    examScore: 60,\n    final: 65.5,\n    display: '65.5',\n    droppedHomework: null\n  });\n});\n\ntest('no homework scores count as zero', function () {\n  assert.deepEqual(code.finalGrade({ homework: [], quizzes: [80, 70], exam: [60] }), {\n    homeworkAverage: 0,\n    quizAverage: 75,\n    examScore: 60,\n    final: 52.5,\n    display: '52.5',\n    droppedHomework: null\n  });\n});\n\ntest('no exam score counts as zero', function () {\n  assert.deepEqual(code.finalGrade({ homework: [90, 80, 70, 100], quizzes: [80, 70], exam: [] }), {\n    homeworkAverage: 90,\n    quizAverage: 75,\n    examScore: 0,\n    final: 40.5,\n    display: '40.5',\n    droppedHomework: 70\n  });\n});\n",
+  "costUsd": 0.014297999999999998,
+  "seconds": 232.3
+}

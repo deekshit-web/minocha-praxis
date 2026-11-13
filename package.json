@@ -23,6 +23,8 @@
     "judging-analyze": "node scripts/judging.mjs analyze",
     "live-build-mutation": "node scripts/live-build-mutation.mjs",
     "live-build-survivors": "node scripts/live-build-survivors.mjs",
+    "acceptance-eval": "node scripts/acceptance-eval.mjs",
+    "acceptance-score": "node scripts/acceptance-score.mjs",
     "railway-plan": "NODE_OPTIONS=--import=tsx railway config plan",
     "railway-apply": "NODE_OPTIONS=--import=tsx railway config apply"
   },
