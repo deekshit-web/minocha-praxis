@@ -35,7 +35,7 @@ export {
 } from "./panel.ts";
 export { CompletionError, FixturePlayer, PanelCallError, ResumingProvider, playPanel, recordedLines, UnconfiguredModel } from "./provider.ts";
 export { CLAUDE_MODEL, ClaudeModel, type SeatSpec } from "./claude.ts";
-export { GROK_MODEL, GrokModel, SeatRouter } from "./grok.ts";
+export { GROK_MODEL, GrokModel, SeatRouter, type GrokEffort } from "./grok.ts";
 export { CritiqueSchema, PrdSchema, synthesisSchema } from "./schemas.ts";
 export type { CallMetric, Completion, CompletionRequest, ModelProvider, SeatAnswer } from "./provider.ts";
 export { callCost, type TokenUsage } from "./pricing.ts";

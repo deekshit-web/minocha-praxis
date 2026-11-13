@@ -1,0 +1,29 @@
+{
+  "build": "17-due-dates",
+  "variant": "current-low",
+  "n": 2,
+  "model": "grok-4.7",
+  "reasoningEffort": "low",
+  "recordedAt": "2026-11-13T13:13:28.208Z",
+  "cases": [
+    "TC-1 · AC-1, REQ-4 and REQ-5: day 31 clamps in short months and the next month returns to 31 · startDate=2026-01-31, count=3 → 2026-02-28, 2026-03-31, 2026-04-30",
+    "TC-2 · AC-2: December start crosses into January, and leap-year February ends on the 29th · startDate=2027-12-31, count=3 → 2028-01-31, 2028-02-29, 2028-03-31",
+    "TC-3 · AC-3: a day that exists in every month is never adjusted · startDate=2026-01-15, count=2 → 2026-02-15, 2026-03-15",
+    "TC-4 · REQ-1 smallest stated count is one payment, a single-item result · startDate=2026-06-15, count=1 → 2026-07-15",
+    "TC-5 · first day of a month stays the 1st · startDate=2026-01-01, count=2 → 2026-02-01, 2026-03-01",
+    "TC-6 · non-leap February threshold, day 28 exists so it is not clamped · startDate=2026-01-28, count=1 → 2026-02-28",
+    "TC-7 · non-leap February, one day past the end clamps to the 28th · startDate=2026-01-29, count=1 → 2026-02-28",
+    "TC-8 · leap February, day 28 is one below the 29th and is not clamped · startDate=2024-01-28, count=1 → 2024-02-28",
+    "TC-9 · leap day itself exists, so day 29 is kept · startDate=2024-01-29, count=1 → 2024-02-29",
+    "TC-10 · leap February, one day past the 29th clamps to the 29th · startDate=2024-01-30, count=1 → 2024-02-29",
+    "TC-11 · 30-day month threshold, day 30 exists in April · startDate=2026-03-30, count=1 → 2026-04-30",
+    "TC-12 · day 31 is one past April's end, then May returns to 31 rather than staying at 30 · startDate=2026-03-31, count=2 → 2026-04-30, 2026-05-31",
+    "TC-13 · shortened February is in the middle, not first or last, and March returns to 31 · startDate=2025-12-31, count=4 → 2026-01-31, 2026-02-28, 2026-03-31, 2026-04-30",
+    "TC-14 · a later shortened month is last, while the earlier clamp did not change the original day · startDate=2026-01-31, count=4 → 2026-02-28, 2026-03-31, 2026-04-30, 2026-05-31",
+    "TC-15 · September clamps 31 to 30 and October returns to 31 · startDate=2026-08-31, count=2 → 2026-09-30, 2026-10-31",
+    "TC-16 · start on a leap day; the 12th payment is non-leap February's last day and the 13th returns to 29, not 28 · startDate=2028-02-29, count=13 → 2028-03-29, 2028-04-29, 2028-05-29, 2028-06-29, 2028-07-29, 2028-08-29, 2028-09-29, 2028-10-29, 2028-11-29, 2028-12-29, 2029-01-29, 2029-02-28, 2029-03-29"
+  ],
+  "script": "test(\"day 31 clamps in short months and the next month returns to 31\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2026-01-31\", count: 3 }), [\"2026-02-28\", \"2026-03-31\", \"2026-04-30\"]);\n});\ntest(\"December start crosses into January and leap-year February ends on the 29th\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2027-12-31\", count: 3 }), [\"2028-01-31\", \"2028-02-29\", \"2028-03-31\"]);\n});\ntest(\"a day that exists in every month is never adjusted\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2026-01-15\", count: 2 }), [\"2026-02-15\", \"2026-03-15\"]);\n});\ntest(\"smallest stated count is one payment and returns a single date\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2026-06-15\", count: 1 }), [\"2026-07-15\"]);\n});\ntest(\"first day of a month stays the 1st\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2026-01-01\", count: 2 }), [\"2026-02-01\", \"2026-03-01\"]);\n});\ntest(\"non-leap February keeps day 28 because it exists\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2026-01-28\", count: 1 }), [\"2026-02-28\"]);\n});\ntest(\"non-leap February clamps one day past the end to the 28th\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2026-01-29\", count: 1 }), [\"2026-02-28\"]);\n});\ntest(\"leap February keeps day 28 one below the 29th\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2024-01-28\", count: 1 }), [\"2024-02-28\"]);\n});\ntest(\"leap day itself exists so day 29 is kept\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2024-01-29\", count: 1 }), [\"2024-02-29\"]);\n});\ntest(\"leap February clamps one day past the 29th to the 29th\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2024-01-30\", count: 1 }), [\"2024-02-29\"]);\n});\ntest(\"day 30 exists in a 30-day April\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2026-03-30\", count: 1 }), [\"2026-04-30\"]);\n});\ntest(\"day 31 clamps in April and May returns to 31\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2026-03-31\", count: 2 }), [\"2026-04-30\", \"2026-05-31\"]);\n});\ntest(\"shortened February in the middle does not change March back from 31\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2025-12-31\", count: 4 }), [\"2026-01-31\", \"2026-02-28\", \"2026-03-31\", \"2026-04-30\"]);\n});\ntest(\"an earlier clamp does not change the original day for a later shortened month\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2026-01-31\", count: 4 }), [\"2026-02-28\", \"2026-03-31\", \"2026-04-30\", \"2026-05-31\"]);\n});\ntest(\"September clamps 31 to 30 and October returns to 31\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2026-08-31\", count: 2 }), [\"2026-09-30\", \"2026-10-31\"]);\n});\ntest(\"start on a leap day clamps the next non-leap February then returns to 29\", function () {\n  assert.deepEqual(code.dueDates({ startDate: \"2028-02-29\", count: 13 }), [\"2028-03-29\", \"2028-04-29\", \"2028-05-29\", \"2028-06-29\", \"2028-07-29\", \"2028-08-29\", \"2028-09-29\", \"2028-10-29\", \"2028-11-29\", \"2028-12-29\", \"2029-01-29\", \"2029-02-28\", \"2029-03-29\"]);\n});\n",
+  "costUsd": 0.047546,
+  "seconds": 63.800000000000004
+}

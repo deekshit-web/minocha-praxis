@@ -1,0 +1,29 @@
+{
+  "build": "14-gpa-rounding",
+  "variant": "current-low",
+  "n": 2,
+  "model": "grok-4.7",
+  "reasoningEffort": "low",
+  "recordedAt": "2026-11-13T13:01:07.618Z",
+  "cases": [
+    "TC-1 · REQ-1, REQ-2, AC-1 · grade points 3.7 credits 3, 3.3 credits 3, 2.0 credits 2 · (11.1+9.9+4.0)/8=3.125 half-to-even → 3.12",
+    "TC-2 · REQ-2, REQ-3, AC-2 · grade points 4.0, 3.0, 2.0, 1.7 at 1 credit each · 10.7/4=2.675 half-to-even → 2.68",
+    "TC-3 · REQ-4, AC-3 · empty course list · no GPA",
+    "TC-4 · REQ-4, AC-3 · grade points 0 credits 0 and grade points 0.0 credits 0.0 · total credits 0 → no GPA",
+    "TC-5 · REQ-1 single course · grade points 3.7 credits 1 · 3.7/1=3.70 → 3.70",
+    "TC-6 · REQ-2 halfway, lower digit even · grade points 1.225 credits 1 · 1.225 → 1.22",
+    "TC-7 · REQ-2 one step below that halfway · grade points 1.224 credits 1 · 1.224 → 1.22",
+    "TC-8 · REQ-2 one step above that halfway · grade points 1.226 credits 1 · 1.226 → 1.23",
+    "TC-9 · REQ-2 halfway, higher digit even · grade points 1.235 credits 1 · 1.235 → 1.24",
+    "TC-10 · REQ-2 one step below that halfway · grade points 1.234 credits 1 · 1.234 → 1.23",
+    "TC-11 · REQ-2 one step above that halfway · grade points 1.236 credits 1 · 1.236 → 1.24",
+    "TC-12 · REQ-1 mixed decimal forms · grade points 4 credits 1, 3.0 credits 1, 2.00 credits 3 · (4+3+6)/5=2.60 → 2.60",
+    "TC-13 · REQ-2 round only the final quotient · grade points 1.005 credits 3, 1.015 credits 1 · (3.015+1.015)/4=1.0075 → 1.01",
+    "TC-14 · REQ-1 unequal credits · grade points 1 credits 1, 2 credits 2 · (1+4)/3=1.666... → 1.67",
+    "TC-15 · REQ-2 one step below 3.125 · grade points 3.124 credits 1 · 3.124 → 3.12",
+    "TC-16 · REQ-2 one step above 3.125 · grade points 3.126 credits 1 · 3.126 → 3.13"
+  ],
+  "script": "test(\"weighted credits for 3.7, 3.3 and 2.0 round 3.125 to 3.12\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"3.7\", credits: \"3\" },\n    { gradePoints: \"3.3\", credits: \"3\" },\n    { gradePoints: \"2.0\", credits: \"2\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"3.12\" });\n});\n\ntest(\"four one-credit grades round 2.675 half to even to 2.68\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"4.0\", credits: \"1\" },\n    { gradePoints: \"3.0\", credits: \"1\" },\n    { gradePoints: \"2.0\", credits: \"1\" },\n    { gradePoints: \"1.7\", credits: \"1\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"2.68\" });\n});\n\ntest(\"empty course list has no gpa\", function () {\n  var actual = code.calculateGpa({ courses: [] });\n  assert.deepEqual(actual, { gpa: null });\n});\n\ntest(\"courses whose credits total zero have no gpa\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"0\", credits: \"0\" },\n    { gradePoints: \"0.0\", credits: \"0.0\" }\n  ] });\n  assert.deepEqual(actual, { gpa: null });\n});\n\ntest(\"single course 3.7 on one credit stays 3.70\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"3.7\", credits: \"1\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"3.70\" });\n});\n\ntest(\"halfway 1.225 rounds to even last digit 1.22\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"1.225\", credits: \"1\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"1.22\" });\n});\n\ntest(\"one step below halfway 1.224 rounds to 1.22\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"1.224\", credits: \"1\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"1.22\" });\n});\n\ntest(\"one step above halfway 1.226 rounds to 1.23\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"1.226\", credits: \"1\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"1.23\" });\n});\n\ntest(\"halfway 1.235 rounds to even last digit 1.24\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"1.235\", credits: \"1\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"1.24\" });\n});\n\ntest(\"one step below halfway 1.234 rounds to 1.23\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"1.234\", credits: \"1\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"1.23\" });\n});\n\ntest(\"one step above halfway 1.236 rounds to 1.24\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"1.236\", credits: \"1\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"1.24\" });\n});\n\ntest(\"mixed decimal forms of 4, 3.0 and 2.00 weight to 2.60\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"4\", credits: \"1\" },\n    { gradePoints: \"3.0\", credits: \"1\" },\n    { gradePoints: \"2.00\", credits: \"3\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"2.60\" });\n});\n\ntest(\"rounds only the final quotient 1.0075 to 1.01\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"1.005\", credits: \"3\" },\n    { gradePoints: \"1.015\", credits: \"1\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"1.01\" });\n});\n\ntest(\"unequal credits 1 and 2 give repeating 1.666 which rounds to 1.67\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"1\", credits: \"1\" },\n    { gradePoints: \"2\", credits: \"2\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"1.67\" });\n});\n\ntest(\"one step below 3.125 which is 3.124 rounds to 3.12\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"3.124\", credits: \"1\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"3.12\" });\n});\n\ntest(\"one step above 3.125 which is 3.126 rounds to 3.13\", function () {\n  var actual = code.calculateGpa({ courses: [\n    { gradePoints: \"3.126\", credits: \"1\" }\n  ] });\n  assert.deepEqual(actual, { gpa: \"3.13\" });\n});\n",
+  "costUsd": 0.08521,
+  "seconds": 175.1
+}

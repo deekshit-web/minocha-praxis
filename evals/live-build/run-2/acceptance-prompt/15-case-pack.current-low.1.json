@@ -1,0 +1,28 @@
+{
+  "build": "15-case-pack",
+  "variant": "current-low",
+  "n": 1,
+  "model": "grok-4.7",
+  "reasoningEffort": "low",
+  "recordedAt": "2026-11-13T13:00:31.463Z",
+  "cases": [
+    "TC-1 · AC-1, REQ-2, REQ-4 · orderUnits=25, caseSize=12 → cases=3, shippedUnits=36 (ceil(25/12)=ceil(2.0833)=3; 3*12=36)",
+    "TC-2 · AC-2, REQ-3 · orderUnits=5, caseSize=12 → cases=2, shippedUnits=24 (ceil(5/12)=1, raised to 2; 2*12=24)",
+    "TC-3 · AC-3, REQ-2 · orderUnits=24, caseSize=12 → cases=2, shippedUnits=24 (24/12=2 exactly; minimum already met, no extra case)",
+    "TC-4 · REQ-3, threshold exactly 1 computed case (one step below 2) · orderUnits=12, caseSize=12 → cases=2, shippedUnits=24 (ceil(12/12)=1, raised to 2; 2*12=24)",
+    "TC-5 · REQ-3, one step below one full case · orderUnits=11, caseSize=12 → cases=2, shippedUnits=24 (ceil(11/12)=1, raised to 2; 2*12=24)",
+    "TC-6 · REQ-3, smallest positive order, non-12 case size · orderUnits=1, caseSize=8 → cases=2, shippedUnits=16 (ceil(1/8)=1, raised to 2; 2*8=16)",
+    "TC-7 · REQ-2, just below halfway between 2 and 3 · orderUnits=29, caseSize=12 → cases=3, shippedUnits=36 (29/12=2.4167, ceil=3; 3*12=36)",
+    "TC-8 · REQ-2, just above halfway between 2 and 3 · orderUnits=31, caseSize=12 → cases=3, shippedUnits=36 (31/12=2.5833, ceil=3; 3*12=36)",
+    "TC-9 · REQ-2, exact halfway · orderUnits=30, caseSize=12 → cases=3, shippedUnits=36 (30/12=2.5, ceiling is 3; 3*12=36)",
+    "TC-10 · REQ-2, one step below an exact 3-case multiple · orderUnits=35, caseSize=12 → cases=3, shippedUnits=36 (ceil(35/12)=ceil(2.9167)=3; 3*12=36)",
+    "TC-11 · REQ-2, exact multiple above the minimum · orderUnits=36, caseSize=12 → cases=3, shippedUnits=36 (36/12=3 exactly; 3*12=36)",
+    "TC-12 · REQ-2, one step above an exact 3-case multiple · orderUnits=37, caseSize=12 → cases=4, shippedUnits=48 (ceil(37/12)=ceil(3.0833)=4; 4*12=48)",
+    "TC-13 · REQ-2, REQ-4, case size other than 12 · orderUnits=21, caseSize=10 → cases=3, shippedUnits=30 (ceil(21/10)=ceil(2.1)=3; 3*10=30)",
+    "TC-14 · REQ-3, smallest case size · orderUnits=1, caseSize=1 → cases=2, shippedUnits=2 (ceil(1/1)=1, raised to 2; 2*1=2)",
+    "TC-15 · REQ-2, mixed number forms · orderUnits=13.0, caseSize=6 → cases=3, shippedUnits=18 (ceil(13.0/6)=ceil(2.1667)=3; 3*6=18)"
+  ],
+  "script": "test(\"25 units of case size 12 ships 3 cases and 36 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 25, caseSize: 12 }), { cases: 3, shippedUnits: 36 });\n});\n\ntest(\"5 units of case size 12 is raised to 2 cases and 24 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 5, caseSize: 12 }), { cases: 2, shippedUnits: 24 });\n});\n\ntest(\"24 units of case size 12 is an exact 2 cases and 24 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 24, caseSize: 12 }), { cases: 2, shippedUnits: 24 });\n});\n\ntest(\"exactly one computed case is raised to 2 cases and 24 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 12, caseSize: 12 }), { cases: 2, shippedUnits: 24 });\n});\n\ntest(\"one unit below one full case is raised to 2 cases and 24 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 11, caseSize: 12 }), { cases: 2, shippedUnits: 24 });\n});\n\ntest(\"one unit of case size 8 is raised to 2 cases and 16 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 1, caseSize: 8 }), { cases: 2, shippedUnits: 16 });\n});\n\ntest(\"29 units of case size 12 rounds up to 3 cases and 36 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 29, caseSize: 12 }), { cases: 3, shippedUnits: 36 });\n});\n\ntest(\"31 units of case size 12 rounds up to 3 cases and 36 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 31, caseSize: 12 }), { cases: 3, shippedUnits: 36 });\n});\n\ntest(\"30 units of case size 12 is exact halfway and ships 3 cases and 36 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 30, caseSize: 12 }), { cases: 3, shippedUnits: 36 });\n});\n\ntest(\"35 units of case size 12 stays at 3 cases and 36 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 35, caseSize: 12 }), { cases: 3, shippedUnits: 36 });\n});\n\ntest(\"36 units of case size 12 is an exact 3 cases and 36 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 36, caseSize: 12 }), { cases: 3, shippedUnits: 36 });\n});\n\ntest(\"37 units of case size 12 rounds up to 4 cases and 48 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 37, caseSize: 12 }), { cases: 4, shippedUnits: 48 });\n});\n\ntest(\"21 units of case size 10 ships 3 cases and 30 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 21, caseSize: 10 }), { cases: 3, shippedUnits: 30 });\n});\n\ntest(\"one unit of case size 1 is raised to 2 cases and 2 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 1, caseSize: 1 }), { cases: 2, shippedUnits: 2 });\n});\n\ntest(\"13.0 units of case size 6 ships 3 cases and 18 units\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 13.0, caseSize: 6 }), { cases: 3, shippedUnits: 18 });\n});",
+  "costUsd": 0.052636,
+  "seconds": 105.39999999999999
+}

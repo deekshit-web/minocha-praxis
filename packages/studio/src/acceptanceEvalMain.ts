@@ -2,6 +2,7 @@ import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, write
 import { join, resolve } from "node:path";
 import { CompletionError, GROK_MODEL, callCost, repoRoot } from "@northwind/orchestrator";
 import type * as z from "zod/v4";
+import type { GrokEffort } from "@northwind/orchestrator";
 import { ACCEPTANCE_CASES_PROMPT, ACCEPTANCE_SCRIPT_PROMPT, Cases, Script, liveBuildSeats } from "./build.ts";
 import { specFor } from "./live.ts";
 import { panelContext } from "./record.ts";
@@ -11,9 +12,11 @@ import { DOMAINS, type DomainId } from "./workflows.ts";
  * `npm run acceptance-eval -- [--run=evals/live-build] [--variants=before,after] [--samples=2] [--cap=1.00]`: re-runs
  * only Model B's two test steps (the cases, then the script) on a run's ten live builds (<run>/records/), on the same
  * PRD and contract the build gave Model B, with each prompt named: "before" (the first run's), "after" (13 November,
- * which the second run's builds used) and "current" (ACCEPTANCE_CASES_PROMPT as it is now). Each answer is saved to
+ * which the second run's builds used), "current" (ACCEPTANCE_CASES_PROMPT as it is now) and "current-low" (the same,
+ * with Grok reasoning at "low" effort instead of xAI's default "high"). Each answer is saved to
  * <run>/acceptance-prompt/<build>.<variant>.<n>.json, and a saved answer is not asked again, so a run can be resumed.
- * Spends real money on Model B (about $0.007 a call); stops before the cap.
+ * Spends real money on Model B, mostly on its hidden reasoning. The cap counts every answer saved in the folder, and
+ * a job does not start unless the cap leaves room for it and for the jobs still running, at the mean cost so far.
  */
 
 // The prompts the ten live builds were recorded with, kept to compare against.
@@ -34,7 +37,9 @@ const VARIANTS = {
   before: [BEFORE_CASES, BEFORE_SCRIPT],
   after: [AFTER_CASES, ACCEPTANCE_SCRIPT_PROMPT],
   current: [ACCEPTANCE_CASES_PROMPT, ACCEPTANCE_SCRIPT_PROMPT],
+  "current-low": [ACCEPTANCE_CASES_PROMPT, ACCEPTANCE_SCRIPT_PROMPT],
 } as const;
+const EFFORT: Partial<Record<keyof typeof VARIANTS, GrokEffort>> = { "current-low": "low" };
 type Variant = keyof typeof VARIANTS;
 
 const args = process.argv.slice(2);
@@ -53,6 +58,8 @@ const briefs = JSON.parse(readFileSync(join(runDir, "briefs.json"), "utf8")) as 
 // would fail the same step of a real build. Failed calls that were charged count towards the cap.
 const failuresPath = join(outDir, "failures.jsonl");
 let spent = 0;
+let dearest = 0;
+let running = 0;
 for (const file of readdirSync(outDir).filter((name) => name.endsWith(".json"))) spent += JSON.parse(readFileSync(join(outDir, file), "utf8")).costUsd ?? 0;
 if (existsSync(failuresPath)) for (const line of readFileSync(failuresPath, "utf8").split("\n").filter(Boolean)) spent += JSON.parse(line).costUsd ?? 0;
 console.log(`Already spent on earlier answers: $${spent.toFixed(3)}. Cap for this run: $${cap.toFixed(2)} in all.`);
@@ -80,9 +87,9 @@ for (const file of readdirSync(recordsDir).filter((name) => name.endsWith(".json
   }
 }
 
-async function ask<T>(context: string, instructions: string, schema: z.ZodType<T>, prompt: string): Promise<{ value: T; costUsd: number; seconds: number }> {
+async function ask<T>(context: string, instructions: string, schema: z.ZodType<T>, prompt: string, effort?: GrokEffort): Promise<{ value: T; costUsd: number; seconds: number }> {
   const started = Date.now();
-  const answer = await liveBuildSeats(context).b(instructions, schema).complete({ role: "analystA", prompt }).catch((error: unknown) => {
+  const answer = await liveBuildSeats(context, { grokEffort: effort }).b(instructions, schema).complete({ role: "analystA", prompt }).catch((error: unknown) => {
     const charged = error instanceof CompletionError ? (error.costUsd ?? callCost(GROK_MODEL, error.usage) ?? 0) : 0;
     spent += charged;
     throw Object.assign(error instanceof Error ? error : new Error(String(error)), { charged });
@@ -96,19 +103,31 @@ async function ask<T>(context: string, instructions: string, schema: z.ZodType<T
 async function runJob(job: Job): Promise<void> {
   const path = join(outDir, `${job.build}.${job.variant}.${job.n}.json`);
   if (existsSync(path)) return;
-  if (spent >= cap) return console.log(`${job.build} ${job.variant} ${job.n}: skipped, the cap of $${cap.toFixed(2)} is reached`);
+  // Room for this job and the ones still running, at the dearest answer so far (a guess of $0.30 before any). The
+  // mean was not enough: cheap low-effort answers pulled it down while dearer ones were running, and a run overshot.
+  const reserve = Math.max(dearest, 0.3);
+  if (spent + (running + 1) * reserve > cap) return console.log(`${job.build} ${job.variant} ${job.n}: skipped, the cap of $${cap.toFixed(2)} is reached`);
   const [casesPrompt, scriptPrompt] = VARIANTS[job.variant];
+  const effort = EFFORT[job.variant];
+  // This job's own spending: with several jobs at once, the change in the total would count the others' too.
+  let own = 0;
+  running += 1;
   try {
-    const cases = await ask(job.context, casesPrompt, Cases, job.prd);
-    const script = await ask(job.context, scriptPrompt, Script, `${job.prd}\n\nThe test cases:\n${cases.value.cases.join("\n")}`);
-    const saved = { build: job.build, variant: job.variant, n: job.n, model: GROK_MODEL, recordedAt: new Date().toISOString(), cases: cases.value.cases, script: script.value.script, costUsd: cases.costUsd + script.costUsd, seconds: cases.seconds + script.seconds };
+    const cases = await ask(job.context, casesPrompt, Cases, job.prd, effort);
+    own += cases.costUsd;
+    const script = await ask(job.context, scriptPrompt, Script, `${job.prd}\n\nThe test cases:\n${cases.value.cases.join("\n")}`, effort);
+    const saved = { build: job.build, variant: job.variant, n: job.n, model: GROK_MODEL, reasoningEffort: effort ?? "default (high)", recordedAt: new Date().toISOString(), cases: cases.value.cases, script: script.value.script, costUsd: cases.costUsd + script.costUsd, seconds: cases.seconds + script.seconds };
     writeFileSync(path, `${JSON.stringify(saved, null, 2)}\n`);
     console.log(`${job.build} ${job.variant} ${job.n}: ${saved.cases.length} cases, $${saved.costUsd.toFixed(4)}, ${saved.seconds} s`);
   } catch (error) {
     const reason = error instanceof Error ? error.message.slice(0, 200) : String(error);
-    const charged = (error as { charged?: number }).charged ?? 0;
-    appendFileSync(failuresPath, `${JSON.stringify({ build: job.build, variant: job.variant, n: job.n, at: new Date().toISOString(), reason, costUsd: charged })}\n`);
+    // The failed call's charge, plus the cases call if it had already succeeded, so a later run counts both.
+    own += (error as { charged?: number }).charged ?? 0;
+    appendFileSync(failuresPath, `${JSON.stringify({ build: job.build, variant: job.variant, n: job.n, at: new Date().toISOString(), reason, costUsd: own })}\n`);
     console.log(`${job.build} ${job.variant} ${job.n}: FAILED ${reason}`);
+  } finally {
+    running -= 1;
+    dearest = Math.max(dearest, own);
   }
 }
 

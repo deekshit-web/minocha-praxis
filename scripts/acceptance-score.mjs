@@ -89,7 +89,7 @@ for (const file of readdirSync(join(evalDir, "records")).filter((name) => name.e
 }
 
 const gapCount = (kind) => Object.values(gapKind).filter((k) => k === kind).length;
-const variants = ["recorded", "before", "after", "current"].filter((v) => rows.some((r) => r.variant === v));
+const variants = ["recorded", "before", "after", "current", "current-low"].filter((v) => rows.some((r) => r.variant === v));
 const summary = {};
 for (const variant of variants) {
   const these = rows.filter((r) => r.variant === variant && !r.error);

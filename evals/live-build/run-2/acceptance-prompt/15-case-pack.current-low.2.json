@@ -1,0 +1,29 @@
+{
+  "build": "15-case-pack",
+  "variant": "current-low",
+  "n": 2,
+  "model": "grok-4.7",
+  "reasoningEffort": "low",
+  "recordedAt": "2026-11-13T13:01:04.562Z",
+  "cases": [
+    "TC-1 · AC-1: round a non-multiple up and ship cases times case size · orderUnits 25, caseSize 12 → 3 cases, 36 units",
+    "TC-2 · AC-2: an order that rounds to fewer than 2 cases is raised to 2 · orderUnits 5, caseSize 12 → 2 cases, 24 units",
+    "TC-3 · AC-3: an exact multiple is not rounded further and a result of exactly 2 is not raised · orderUnits 24, caseSize 12 → 2 cases, 24 units",
+    "TC-4 · a result of exactly 1 case, the threshold minus one, is raised to 2 · orderUnits 12, caseSize 12 → 2 cases, 24 units",
+    "TC-5 · one unit below one case still rounds to 1 and is raised to 2 · orderUnits 11, caseSize 12 → 2 cases, 24 units",
+    "TC-6 · the smallest positive order rounds to 1 case and is raised to 2 · orderUnits 1, caseSize 12 → 2 cases, 24 units",
+    "TC-7 · one unit above one case rounds to exactly 2 and is not raised further · orderUnits 13, caseSize 12 → 2 cases, 24 units",
+    "TC-8 · one unit below two cases rounds up to exactly 2 and ships 2 cases · orderUnits 23, caseSize 12 → 2 cases, 24 units",
+    "TC-9 · one unit above two cases, with case size taken from the input, rounds up to 3 · orderUnits 17, caseSize 8 → 3 cases, 24 units",
+    "TC-10 · exactly two cases for a non-example case size stays 2 · orderUnits 16, caseSize 8 → 2 cases, 16 units",
+    "TC-11 · an exact multiple above the minimum is not rounded further · orderUnits 24, caseSize 8 → 3 cases, 24 units",
+    "TC-12 · one unit below an exact multiple rounds up by one case only · orderUnits 23, caseSize 8 → 3 cases, 24 units",
+    "TC-13 · the exact halfway value 30/12 = 2.5 rounds up to 3 · orderUnits 30, caseSize 12 → 3 cases, 36 units",
+    "TC-14 · one input step below halfway, 29/12, rounds up to 3 · orderUnits 29, caseSize 12 → 3 cases, 36 units",
+    "TC-15 · one input step above halfway, 31/12, rounds up to 3 · orderUnits 31, caseSize 12 → 3 cases, 36 units",
+    "TC-16 · the same quantity in integer and decimal form · orderUnits 25, caseSize 12.0 → 3 cases, 36 units"
+  ],
+  "script": "test(\"round a non-multiple up and ship cases times case size\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 25, caseSize: 12 }), { cases: 3, shippedUnits: 36 });\n});\n\ntest(\"an order that rounds to fewer than 2 cases is raised to 2\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 5, caseSize: 12 }), { cases: 2, shippedUnits: 24 });\n});\n\ntest(\"an exact multiple is not rounded further and a result of exactly 2 is not raised\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 24, caseSize: 12 }), { cases: 2, shippedUnits: 24 });\n});\n\ntest(\"a result of exactly 1 case, the threshold minus one, is raised to 2\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 12, caseSize: 12 }), { cases: 2, shippedUnits: 24 });\n});\n\ntest(\"one unit below one case still rounds to 1 and is raised to 2\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 11, caseSize: 12 }), { cases: 2, shippedUnits: 24 });\n});\n\ntest(\"the smallest positive order rounds to 1 case and is raised to 2\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 1, caseSize: 12 }), { cases: 2, shippedUnits: 24 });\n});\n\ntest(\"one unit above one case rounds to exactly 2 and is not raised further\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 13, caseSize: 12 }), { cases: 2, shippedUnits: 24 });\n});\n\ntest(\"one unit below two cases rounds up to exactly 2 and ships 2 cases\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 23, caseSize: 12 }), { cases: 2, shippedUnits: 24 });\n});\n\ntest(\"one unit above two cases, with case size taken from the input, rounds up to 3\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 17, caseSize: 8 }), { cases: 3, shippedUnits: 24 });\n});\n\ntest(\"exactly two cases for a non-example case size stays 2\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 16, caseSize: 8 }), { cases: 2, shippedUnits: 16 });\n});\n\ntest(\"an exact multiple above the minimum is not rounded further\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 24, caseSize: 8 }), { cases: 3, shippedUnits: 24 });\n});\n\ntest(\"one unit below an exact multiple rounds up by one case only\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 23, caseSize: 8 }), { cases: 3, shippedUnits: 24 });\n});\n\ntest(\"the exact halfway value 30/12 = 2.5 rounds up to 3\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 30, caseSize: 12 }), { cases: 3, shippedUnits: 36 });\n});\n\ntest(\"one input step below halfway, 29/12, rounds up to 3\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 29, caseSize: 12 }), { cases: 3, shippedUnits: 36 });\n});\n\ntest(\"one input step above halfway, 31/12, rounds up to 3\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 31, caseSize: 12 }), { cases: 3, shippedUnits: 36 });\n});\n\ntest(\"the same quantity in integer and decimal form\", function () {\n  assert.deepEqual(code.roundOrderToCases({ orderUnits: 25, caseSize: 12.0 }), { cases: 3, shippedUnits: 36 });\n});\n",
+  "costUsd": 0.057082,
+  "seconds": 122.3
+}

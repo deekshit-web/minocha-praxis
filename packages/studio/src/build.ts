@@ -1,4 +1,4 @@
-import { CLAUDE_MODEL, ClaudeModel, CompletionError, GROK_MODEL, GrokModel, type ModelProvider, type SeatSpec, callCost, repoRoot } from "@northwind/orchestrator";
+import { CLAUDE_MODEL, ClaudeModel, CompletionError, GROK_MODEL, GrokModel, type GrokEffort, type ModelProvider, type SeatSpec, callCost, repoRoot } from "@northwind/orchestrator";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as z from "zod/v4";
@@ -150,11 +150,11 @@ export interface BuildSeats {
   run: typeof sandboxRun;
 }
 
-export function liveBuildSeats(context: string): BuildSeats {
+export function liveBuildSeats(context: string, options: { grokEffort?: GrokEffort } = {}): BuildSeats {
   const all = (seat: SeatSpec) => ({ analystA: seat, analystB: seat, critiqueOfA: seat, critiqueOfB: seat, synthesizer: seat });
   return {
     a: (instructions, schema) => new ClaudeModel(context, all({ instructions, schema })),
-    b: (instructions, schema) => new GrokModel(context, { analystA: { instructions, schema } }),
+    b: (instructions, schema) => new GrokModel(context, { analystA: { instructions, schema } }, options.grokEffort ? { reasoningEffort: options.grokEffort } : {}),
     run: sandboxRun,
   };
 }

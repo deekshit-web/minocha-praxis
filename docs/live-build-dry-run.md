@@ -288,6 +288,43 @@ that state a hard rule plainly do not make the code fail, because the panel and 
 exercise the path live would take a fault the pipeline cannot see coming, for example code deliberately broken before
 the first run. The path itself is covered by the build tests with scripted models.
 
+## Closing the second run's gaps, and how hard Grok reasons (13 November)
+
+**A sharper prompt for Model B's test cases.** Run 2's two ordinary gaps came from how Model B chose its values. In
+14 every case used whole-number credits, so a mistake that reads `"3"` as `0.3` scaled every credit alike and cancelled
+out. In 16 the case "just under a half cent" was 0.0048, though the 3% band can reach 0.0049. `ACCEPTANCE_CASES_PROMPT`
+now also asks for the closest values on each side of a rounding half that the inputs can produce, for each written form
+of an input (`"3"` and `"3.0"`) mixed within one case, and for unequal amounts. It names no build.
+
+**Grok's reasoning effort.** xAI's console showed that Grok's hidden reasoning was 87% of the week's xAI bill (see the
+correction at the top). grok-4.7 reasons at "high" unless told otherwise, so the same re-run also tried "low"
+(`GROK_REASONING_EFFORT`, or the `reasoningEffort` option). Model B's two test steps were re-run on all ten run-2
+builds, two samples each, and scored against the recorded code:
+
+| Model B's test steps | Mutants caught | 14's gap closed | 16's gap closed | Tests that fail on correct code | Cost an answer | Time an answer |
+| --- | --- | --- | --- | --- | --- | --- |
+| Recorded in the run (13 November prompt) | 85% | 0 of 1 | 0 of 1 | 0 | – | – |
+| New prompt, default effort ("high") | 85.3% | 2 of 2 | 0 of 2 | 0 | about $0.22 | about 400 s |
+| New prompt, "low" effort | 84.3% | 2 of 2 | 0 of 2 | 3 (in 2 of 20 scripts) | $0.076 | 147 s |
+
+Costs are for the cases and the script together, from the answers recorded after reasoning was counted. Mutants caught
+leaves out the equivalent ones.
+
+- **The new prompt closes 14's gap every time, at either effort, but not 16's.** No answer tried a remainder of
+  exactly 49 hundredths of a cent. So one of the two ordinary gaps is closed.
+- **"Low" costs about a third as much and takes about a third of the time,** for a score one point lower. Build by
+  build the two are equal or within a mutant or two, except one "low" sample on 15 (36% against 45%).
+- **But "low" wrote three wrong tests and "high" none.** Two, on 13, read "deduction" as the full penalty even when the
+  score is floored at zero; the older prompt made the same reading, so the PRD may be ambiguous there. The third, on
+  12, is a malformed check. In a real build a wrong test sends Model A into a fix round, which costs more than the
+  reasoning saved.
+- **So Model B's tests stay at the default effort.** "Medium" was not tried. Model B's reviews, the steps that ran
+  four to eleven minutes and where most of the reasoning goes, were not tested at "low" at all.
+
+The re-run spent about $3.50 on xAI, some $0.50 over its $3 cap: the cap kept room for answers still running at the
+mean cost so far, which cheap "low" answers pulled down while dearer ones were running. It now keeps room at the
+dearest answer so far.
+
 ## What this does not show
 
 - **No build failed.** The red-run and fix-round path has never run on live output. Four briefs built to make the
@@ -319,6 +356,7 @@ the first run. The path itself is covered by the build tests with scripted model
 | The second run: briefs, records, results, mutation testing, the 53 survivors sorted, and the independent check of the four trap builds | `evals/live-build/run-2/` (`npm run live-build-mutation -- evals/live-build/run-2/records`; `npm run live-build-survivors -- evals/live-build/run-2`; `npm run live-build-trap-check`, all free) |
 | Mutation testing on the ten builds: every mutant, which test caught it, the survivors | `evals/live-build/mutation-2026-11-12.json` (`npm run live-build-mutation`, free) |
 | Model B's test steps re-run with the old and new prompt (40 answers), the failures, and their scores | `evals/live-build/acceptance-prompt/`, `evals/live-build/acceptance-score-2026-11-13.json` (`npm run acceptance-eval`, about $0.80; `npm run acceptance-score`, free) |
+| Run 2: Model B's test steps re-run with the 13 November prompt, the new prompt, and the new prompt at "low" effort, and their scores | `evals/live-build/run-2/acceptance-prompt/`, `evals/live-build/run-2/acceptance-score-2026-11-13.json` (`npm run acceptance-eval -- --run=evals/live-build/run-2 --variants=current,current-low`, about $3.50; `npm run acceptance-score -- evals/live-build/run-2`, free) |
 | The 69 survivors sorted: each gap with the input that shows it, each equivalent mutant with its reason | `evals/live-build/survivors-2026-11-12.json`, reasons in `evals/live-build/survivors-equivalent.json` (`npm run live-build-survivors`, free) |
 | The rating kit: 29 findings, a blind sheet for each of two raters, a page per build, and the key | `evals/live-build/judging/` (`npm run judging-prepare`, then `npm run judging-analyze`) |
 
