@@ -69,6 +69,10 @@ Each seat answers in a fixed JSON shape (`orchestrator/src/schemas.ts`), and the
 
 Build output, sandboxes and test bundles go to `runs/`, which git ignores.
 
+### The expo loop
+
+`npm run studio`, then open `http://127.0.0.1:4320/expo` for a silent, self-contained 88-second loop for a booth monitor (eight scenes, no model call, no network request, so it also works offline). Space pauses, the arrow keys move between scenes, `F` goes full screen. Add `?scene=5` to start on a scene, or `?scene=5&t=12000&still=1` to hold one frame. The hash shown in the approval scene is a real SHA-256 computed in the page. The QR code points at the hosted studio.
+
 ### Kodiflex Foundry, the workflow studio
 
 `npm run studio` serves Kodiflex Foundry, a demo for passers-by that costs nothing to run. Pick a domain (healthcare, education, FMCG, financial services, logistics) and a workflow: a feature build (requirements, then code, a failing test, a fix and a release gate) or a document or decision. Each run shows the same pipeline as the live panel: two drafts from Claude and Grok that cannot see each other, crossed reviews in which one catches a serious defect, a merge, plain code checks, and a pause for a person to approve. Every output is written in advance and no model is called. The page shows what each call would cost and how long it would take live, priced from the same table as the live runs, and a "Tokens spent" tile that stays at 0. Link straight to a workflow with `#<id>`, for example `http://127.0.0.1:4320/#fmcg-document`.

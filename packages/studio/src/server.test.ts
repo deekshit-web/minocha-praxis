@@ -31,6 +31,11 @@ test("The studio serves its catalog and each simulated workflow. It rejects requ
     assert.match((await fetch(`${origin}/api/evidence?download=1`)).headers.get("content-disposition") ?? "", /attachment/);
     const page = await (await fetch(`${origin}/`)).text();
     assert.match(page, /no model is called/i);
+    const expo = await fetch(`${origin}/expo`);
+    assert.match(expo.headers.get("content-type") ?? "", /text\/html/);
+    const expoPage = await expo.text();
+    assert.match(expoPage, /Kodiflex Foundry/);
+    assert.doesNotMatch(expoPage, /(?:src|href)=["']https?:/i, "the expo loop must make no network request");
     assert.equal((await fetch(`${origin}/api/catalog`, { method: "POST", headers: { origin: "https://evil.example" } })).status, 403);
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
