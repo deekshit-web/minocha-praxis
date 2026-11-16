@@ -72,6 +72,11 @@ export function createStudioServer(options: StudioOptions = {}): Server {
         send(res, 200, readFileSync(join(repoRoot(), "packages/studio/public/index.html"), "utf8"), "text/html; charset=utf-8");
         return;
       }
+      if (req.method === "GET" && url.pathname === "/expo") {
+        // The silent loop for the booth monitor. A single self-contained page: no model call, no network request.
+        send(res, 200, readFileSync(join(repoRoot(), "packages/studio/public/expo.html"), "utf8"), "text/html; charset=utf-8");
+        return;
+      }
       if (req.method === "GET" && (url.pathname === "/checks.js" || url.pathname === "/tests.js")) {
         send(res, 200, readFileSync(join(repoRoot(), "packages/studio/public", url.pathname.slice(1)), "utf8"), "text/javascript; charset=utf-8");
         return;
