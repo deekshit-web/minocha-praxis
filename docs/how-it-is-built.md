@@ -127,7 +127,7 @@ Twenty-two real runs so far, all on made-up briefs and all on a local machine: t
 run on 12 November, and a second ten-build run on 13 November. The write-ups are in `docs/live-build-dry-run.md`, and the records are in `evals/live-build/`.
 
 Recorded costs undercount Model B: they leave out Grok's hidden reasoning, which was 87% of one week's xAI bill. A
-build probably cost about $1.50, not $0.35; see the correction at the top of `docs/live-build-dry-run.md`.
+build probably cost about $1.50, not $0.35; see the correction at the top of `docs/live-build-dry-run.md`. The demo page now shows an estimated cost for such calls (`costEstimated`, $0.00056 a second of Grok time).
 
 | Runs | Recorded cost per build (Model B undercounted) | Time | Result |
 | --- | --- | --- | --- |
